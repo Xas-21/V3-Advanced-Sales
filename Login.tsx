@@ -5,14 +5,7 @@ import { apiUrl } from './backendApi';
 const OFFICIAL_APP_URL = 'https://as-saas.com/';
 
 function isOfficialAppHost(): boolean {
-    if (typeof window === 'undefined') return true;
-    const host = window.location.hostname.toLowerCase();
-    return (
-        host === 'as-saas.com' ||
-        host === 'www.as-saas.com' ||
-        host === 'localhost' ||
-        host === '127.0.0.1'
-    );
+    return true;
 }
 
 type ConnectionNotice = 'wrong-domain' | 'server-unavailable' | 'config' | null;

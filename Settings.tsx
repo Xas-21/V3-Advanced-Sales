@@ -1163,7 +1163,7 @@ export default function Settings({
                             {users.filter(u => prop.assignedUserIds?.includes(u.id)).map(user => (
                                 <div key={user.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/5 border group relative" style={{ borderColor: colors.border }}>
                                     <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[9px] font-bold" style={{ color: colors.primary }}>
-                                        {user.name.charAt(0)}
+                                        {(user.name || user.username || "?").charAt(0)}
                                     </div>
                                     <span className="text-xs font-medium" style={{ color: colors.textMain }}>{user.name}</span>
                                     <button
@@ -3118,7 +3118,7 @@ export default function Settings({
                                         <td className="p-4 cursor-pointer" onClick={() => setSelectedUserForStats(user)}>
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs" style={{ backgroundColor: colors.primaryDim, color: colors.primary }}>
-                                                    {user.name.charAt(0)}
+                                                    {(user.name || user.username || "?").charAt(0)}
                                                 </div>
                                                 <span className="font-bold group-hover:text-primary transition-colors" style={{ color: colors.textMain }}>{user.name}</span>
                                             </div>
@@ -4265,7 +4265,7 @@ export default function Settings({
                                                 >
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold" style={{ color: isSelected ? colors.primary : colors.textMain }}>
-                                                            {user.name.charAt(0)}
+                                                            {(user.name || user.username || "?").charAt(0)}
                                                         </div>
                                                         <div>
                                                             <p className="text-sm font-bold" style={{ color: colors.textMain }}>{user.name}</p>

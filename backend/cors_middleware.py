@@ -26,17 +26,31 @@ def _normalize_origin(origin: str) -> str:
 
 
 def _render_host(host: str) -> bool:
-    host = host.lower().rstrip(".")
-    return host == "onrender.com" or host.endswith(".onrender.com")
+    # Render is no longer used. Kept only to EXCLUDE it from allowed origins.
+    return False
 
 
 def _expand_www_variants(origins: list[str]) -> list[str]:
-    """Allow both apex and www for custom domains (not Render hosts)."""
+    """Allow both apex and www for real custom domains only.
+
+    IP addresses (e.g. 187.55.225.134) and localhost-style hosts get NO www
+    variant — `www.187.55.225.134` / `www.localhost` are never valid origins.
+    """
+    import ipaddress
+
     out = list(origins)
     for origin in origins:
         parsed = urlparse(origin)
         host = (parsed.hostname or "").lower()
         if not host or _render_host(host):
+            continue
+        # Skip IP literals and localhost — www. makes no sense there.
+        try:
+            ipaddress.ip_address(host)
+            continue
+        except ValueError:
+            pass
+        if host in ("localhost", "127.0.0.1", "::1"):
             continue
         if host.startswith("www."):
             alt = _normalize_origin(f"{parsed.scheme}://{host[4:]}")
@@ -81,10 +95,7 @@ def build_cors_settings() -> tuple[list[str], str | None]:
 
     origins = _expand_www_variants(origins)
 
-    regex = os.getenv(
-        "CORS_ORIGIN_REGEX",
-        r"^https://([a-z0-9-]+\.)*onrender\.com$",
-    ).strip()
+    regex = os.getenv("CORS_ORIGIN_REGEX", "").strip()
     if regex:
         re.compile(regex)
     else:

@@ -5,7 +5,7 @@ import unicodedata
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from psycopg import connect, sql
 from psycopg.rows import dict_row
@@ -39,16 +39,51 @@ _ROW_COLLECTIONS = {"users", "properties", "room_types", "venues", "taxes", "fin
 _MAP_COLLECTIONS = {"crm_state"}
 
 
+def _tenant_scope() -> Optional[set]:
+    """Return the set of property_ids the current user may see, or None for admin-wide.
+
+    Reads the request-scoped user set by the auth middleware. Returns:
+      - None  -> admin (no restriction)
+      - set() -> non-admin with no assigned properties (sees nothing scoped)
+      - set(ids) -> allowed property ids
+    """
+    try:
+        from dependencies import get_current_user_ctx
+    except Exception:
+        return None
+    user = get_current_user_ctx()
+    if not user:
+        return None  # No auth context (e.g. public feedback route) -> caller's responsibility
+    if str(user.get("role") or "").strip().lower() in ("super_admin", "admin"):
+        return None
+    ids = set(user.get("property_ids") or [])
+    if user.get("propertyId"):
+        ids.add(user["propertyId"])
+    return ids
+
+
+def _filter_by_tenant(payloads: list, scope: Optional[set]) -> list:
+    if scope is None:
+        return payloads
+    out = []
+    for p in payloads:
+        if not isinstance(p, dict):
+            continue
+        pid = str(p.get("propertyId") or p.get("property_id") or "").strip()
+        if pid in scope:
+            out.append(p)
+    return out
+
+
 def get_database_url() -> str:
     return os.getenv("DATABASE_URL", "").strip()
 
 
 def storage_mode() -> str:
-    if _FORCE_FILE_STORAGE:
-        return "file"
-    if os.getenv("USE_FILE_STORAGE", "").strip().lower() in ("1", "true", "yes"):
-        return "file"
-    return "postgres" if get_database_url() else "file"
+    # Postgres-only: the system requires a live database. No JSON file fallback
+    # (per owner directive) — letting the app silently serve stale JSON is worse
+    # than an explicit outage.
+    return "postgres" if get_database_url() else "unavailable"
 
 
 def set_force_file_storage_after_pg_failure(reason: str | None = None) -> None:
@@ -124,6 +159,58 @@ def _ensure_db_schema():
             )
             conn.commit()
     _DB_SCHEMA_READY = True
+
+
+def _ensure_feed_tables():
+    """Social Feed: posts, comments, and emoji reactions (FK-enforced, relational)."""
+    pool = _get_pool()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS feed_posts (
+                    id TEXT PRIMARY KEY,
+                    author_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    property_id TEXT,
+                    body TEXT NOT NULL DEFAULT '',
+                    image_url TEXT,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                );
+                """
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_feed_posts_property_id ON feed_posts(property_id);"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_feed_posts_created_at ON feed_posts(created_at DESC);"
+            )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS feed_comments (
+                    id TEXT PRIMARY KEY,
+                    post_id TEXT NOT NULL REFERENCES feed_posts(id) ON DELETE CASCADE,
+                    author_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    body TEXT NOT NULL,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                );
+                """
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_feed_comments_post_id ON feed_comments(post_id);"
+            )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS feed_reactions (
+                    post_id TEXT NOT NULL REFERENCES feed_posts(id) ON DELETE CASCADE,
+                    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    emoji TEXT NOT NULL,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    PRIMARY KEY (post_id, user_id, emoji)
+                );
+                """
+            )
+            conn.commit()
 
 
 def _ensure_special_tables():
@@ -552,6 +639,7 @@ def init_database():
         _ensure_general_migration()
         _ensure_special_tables()
         _ensure_special_migration()
+        _ensure_feed_tables()
     except Exception as e:
         set_force_file_storage_after_pg_failure(repr(e))
 
@@ -634,7 +722,7 @@ def list_requests_rows(property_id: str | None = None) -> list[dict]:
                     """
                 )
             rows = cur.fetchall()
-    return [r["payload"] for r in rows]
+    return _filter_by_tenant([r["payload"] for r in rows], _tenant_scope())
 
 
 def upsert_request_row(data: dict) -> dict:
@@ -737,7 +825,7 @@ def list_accounts_rows(property_id: str | None = None) -> list[dict]:
             str(item.get("id") or ""),
         )
     )
-    return out
+    return _filter_by_tenant(out, _tenant_scope())
 
 
 def upsert_account_row(data: dict) -> dict:
@@ -926,7 +1014,7 @@ def list_collection_rows(collection_name: str, property_id: str | None = None) -
                     (cname,),
                 )
             rows = cur.fetchall()
-    return [r["payload"] for r in rows]
+    return _filter_by_tenant([r["payload"] for r in rows], _tenant_scope())
 
 
 def upsert_collection_row(

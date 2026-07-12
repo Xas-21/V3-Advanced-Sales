@@ -1,0 +1,75 @@
+services:
+  as-postgres-v2:
+    image: postgres:18-alpine
+    container_name: as-postgres-V2
+    environment:
+      - POSTGRES_USER=neondb_owner
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=neondb
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U neondb_owner -d neondb
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    ports:
+      - 5433:5432
+    volumes:
+      - as-postgres-v2-data:/var/lib/postgresql
+  as-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: as-backend
+    environment:
+      - USE_FILE_STORAGE=false
+      - DATABASE_URL=${DATABASE_URL}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - CORS_ORIGINS=https://app.as-saas.com
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.as-backend.rule=Host(`app.as-saas.com`) && PathPrefix(`/api`)
+      - traefik.http.routers.as-backend.entrypoints=websecure
+      - traefik.http.routers.as-backend.tls.certresolver=letsencrypt
+      - traefik.http.services.as-backend.loadbalancer.server.port=8000
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    ports:
+      - 8000:8000
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - as-postgres
+  as-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: as-frontend
+    command: sh -c "npm install --no-audit --no-fund && npm run dev -- --host 0.0.0.0"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.as-frontend.rule=Host(`app.as-saas.com`)
+      - traefik.http.routers.as-frontend.entrypoints=websecure
+      - traefik.http.routers.as-frontend.tls.certresolver=letsencrypt
+      - traefik.http.services.as-frontend.loadbalancer.server.port=5173
+    restart: unless-stopped
+    volumes:
+      - ./:/app
+      - as-frontend-node-modules:/app/node_modules
+    depends_on:
+      - as-backend
+volumes:
+  as-postgres-data: 
+  as-frontend-node-modules: 
+  as-postgres-v2-data:

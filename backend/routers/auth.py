@@ -1,146 +1,171 @@
-import bcrypt as _bcrypt
+"""Authentication endpoints: login, logout, change-password, property switch.
+
+Replaces the file-based split-brain. Sessions are signed, httpOnly, server-side
+revocable, and tenant-scoped.
+"""
+from __future__ import annotations
+
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Cookie
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from utils import USERS_FILE, read_json_file, write_json_file
+
+import auth_db
+from auth_db import (
+    ROLE_SUPER_ADMIN,
+    ROLE_ADMIN,
+    can_access_property,
+    is_admin,
+)
+from security import SESSION_COOKIE_NAME, SESSION_TTL_SECONDS
 
 router = APIRouter(prefix="/api")
 
 _login_attempts: dict[str, list[datetime]] = defaultdict(list)
+_MAX_ATTEMPTS = 10
+_WINDOW = timedelta(minutes=1)
+
+
+def _check_rate_limit(ip: str):
+    now = datetime.utcnow()
+    _login_attempts[ip] = [t for t in _login_attempts[ip] if t > now - _WINDOW]
+    if len(_login_attempts[ip]) >= _MAX_ATTEMPTS:
+        raise HTTPException(status_code=429, detail="Too many login attempts. Try again later.")
+
+
+def _record_attempt(ip: str):
+    _login_attempts[ip].append(datetime.utcnow())
 
 
 class LoginRequest(BaseModel):
     username: str
-    password: Optional[str] = None
+    password: str
 
 
 class ChangePasswordRequest(BaseModel):
-    username: str
     current_password: str
     new_password: str
 
 
-def _hash_password(pwd: str) -> str:
-    return _bcrypt.hashpw(pwd.encode("utf-8"), _bcrypt.gensalt()).decode("utf-8")
-
-
-def _is_bcrypt_hash(s: str) -> bool:
-    return s.startswith("$2b$") or s.startswith("$2a$") or s.startswith("$2y$")
-
-
-def _check_password(pwd: str, stored: str) -> bool:
-    if not pwd or not stored:
-        return False
-    if _is_bcrypt_hash(stored):
-        try:
-            return _bcrypt.checkpw(pwd.encode("utf-8"), stored.encode("utf-8"))
-        except Exception:
-            return False
-    return stored == pwd
-
-
-def _needs_rehash(stored: str) -> bool:
-    return bool(stored) and not _is_bcrypt_hash(stored)
-
-
-def _check_login_rate_limit(ip: str):
-    now = datetime.utcnow()
-    _login_attempts[ip] = [t for t in _login_attempts[ip] if t > now - timedelta(minutes=1)]
-    if len(_login_attempts[ip]) >= 5:
-        raise HTTPException(status_code=429, detail="Too many login attempts. Try again in 1 minute.")
-
-
-def _record_login_attempt(ip: str):
-    _login_attempts[ip].append(datetime.utcnow())
-
-
-def _next_session_version(user: dict) -> int:
-    return int(user.get("sessionVersion") or 0) + 1
-
-
-@router.post("/auth/change-password")
-def change_password(request: ChangePasswordRequest):
-    if not request.new_password or len(request.new_password) < 4:
-        raise HTTPException(
-            status_code=400,
-            detail="New password must be at least 4 characters",
-        )
-
-    users = read_json_file(USERS_FILE)
-    idx = next(
-        (
-            i
-            for i, u in enumerate(users)
-            if str(u.get("username", "")).lower() == request.username.strip().lower()
-        ),
-        -1,
-    )
-    if idx < 0:
-        raise HTTPException(status_code=401, detail="Invalid username or password")
-
-    user = users[idx]
-    stored = str(user.get("password", ""))
-    if not _check_password(request.current_password, stored):
-        raise HTTPException(status_code=401, detail="Invalid username or password")
-
-    if _check_password(request.new_password, stored):
-        raise HTTPException(
-            status_code=400,
-            detail="New password must be different from the current password",
-        )
-
-    new_ver = _next_session_version(user)
-    users[idx] = {**user, "password": _hash_password(request.new_password), "sessionVersion": new_ver}
-    write_json_file(USERS_FILE, users)
-    return {"ok": True, "sessionVersion": new_ver}
+def _public_user(user: dict) -> dict:
+    """Safe user projection sent to the client (never includes password hash)."""
+    return {
+        "id": user["id"],
+        "username": user.get("username"),
+        "name": user.get("name"),
+        "email": user.get("email"),
+        "role": user.get("role"),
+        "status": user.get("status"),
+        "propertyId": user.get("propertyId"),
+        "property_ids": user.get("property_ids") or ([user["propertyId"]] if user.get("propertyId") else []),
+        "permissionGrants": user.get("permissionGrants", []),
+        "permissionRevokes": user.get("permissionRevokes", []),
+        "sessionVersion": user.get("sessionVersion", 0),
+        "avatar": user.get("avatar"),
+        "isAdmin": is_admin(user),
+    }
 
 
 @router.post("/login")
 def login(request: LoginRequest, http_req: Request):
-    ip_addr = http_req.client.host if http_req.client else "127.0.0.1"
-    _check_login_rate_limit(ip_addr)
+    ip = http_req.client.host if http_req.client else "127.0.0.1"
+    _check_rate_limit(ip)
 
-    if request.password is None or request.password == "":
-        _record_login_attempt(ip_addr)
-        raise HTTPException(
-            status_code=400,
-            detail="password field is required",
-        )
+    if not request.username or not request.password:
+        _record_attempt(ip)
+        raise HTTPException(status_code=400, detail="Username and password are required")
 
-    users = read_json_file(USERS_FILE)
+    ok, reason = auth_db.authenticate(request.username.strip(), request.password)
+    if not ok:
+        _record_attempt(ip)
+        raise HTTPException(status_code=401, detail=reason)
 
-    user = next(
-        (u for u in users if u["username"].lower() == request.username.lower()),
-        None,
-    )
+    user = auth_db.get_user_by_username(request.username.strip())
+    assert user is not None
+    token = auth_db.create_session(user["id"], int(user.get("sessionVersion") or 0))
 
-    if not user:
-        _record_login_attempt(ip_addr)
-        raise HTTPException(status_code=401, detail="Invalid username or password")
-
-    stored = user["password"]
-    if not _check_password(request.password, stored):
-        _record_login_attempt(ip_addr)
-        raise HTTPException(status_code=401, detail="Invalid username or password")
-
-    if _needs_rehash(stored):
-        user["password"] = _hash_password(request.password)
-        write_json_file(USERS_FILE, users)
-
-    result = {k: v for k, v in user.items() if k != "password"}
-    if "sessionVersion" not in result:
-        result["sessionVersion"] = int(user.get("sessionVersion") or 0)
-    body = {"user": result}
+    body = {"user": _public_user(user), "token": token}
     resp = JSONResponse(content=body)
     resp.set_cookie(
-        key="session_id",
-        value=str(user.get("id", user["username"])),
-        max_age=86400,
+        key=SESSION_COOKIE_NAME,
+        value=token,
+        max_age=SESSION_TTL_SECONDS,
         httponly=True,
         samesite="lax",
+        secure=True,  # TLS via Traefik
+        path="/",
     )
     return resp
+
+
+@router.post("/logout")
+def logout(session_id: Optional[str] = Cookie(default=None, alias=SESSION_COOKIE_NAME)):
+    if session_id:
+        from utils import _get_pool
+
+        try:
+            pool = _get_pool()
+            with pool.connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("UPDATE sessions SET revoked = TRUE WHERE token = %s;", (session_id,))
+                    conn.commit()
+        except Exception:
+            pass
+    resp = JSONResponse(content={"ok": True})
+    resp.delete_cookie(SESSION_COOKIE_NAME, path="/")
+    return resp
+
+
+@router.post("/auth/change-password")
+def change_password(request: ChangePasswordRequest, session_id: Optional[str] = Cookie(default=None, alias=SESSION_COOKIE_NAME)):
+    user = auth_db.resolve_session(session_id)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    assert user is not None
+    ok, msg = auth_db.change_password(user["id"], request.current_password, request.new_password)
+    if not ok:
+        raise HTTPException(status_code=400, detail=msg)
+    # Issue a fresh token for the same (now-bumped) version so the client stays logged in.
+    new_ver = int(auth_db.get_user_by_id(user["id"]).get("sessionVersion") or 0)
+    token = auth_db.create_session(user["id"], new_ver)
+    body = {"ok": True, "token": token, "sessionVersion": new_ver}
+    resp = JSONResponse(content=body)
+    resp.set_cookie(
+        key=SESSION_COOKIE_NAME,
+        value=token,
+        max_age=SESSION_TTL_SECONDS,
+        httponly=True,
+        samesite="lax",
+        secure=True,
+        path="/",
+    )
+    return resp
+
+
+@router.get("/auth/me")
+def auth_me(session_id: Optional[str] = Cookie(default=None, alias=SESSION_COOKIE_NAME)):
+    user = auth_db.resolve_session(session_id)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    return _public_user(user)
+
+
+@router.post("/auth/switch-property")
+def switch_property(
+    payload: dict,
+    session_id: Optional[str] = Cookie(default=None, alias=SESSION_COOKIE_NAME),
+):
+    """Multi-tenant property switch. Only allowed if the user is admin OR the
+    requested property is in their assigned scope."""
+    user = auth_db.resolve_session(session_id)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    target = payload.get("propertyId")
+    if not target:
+        raise HTTPException(status_code=400, detail="propertyId required")
+    if not can_access_property(user, target):
+        raise HTTPException(status_code=403, detail="You are not assigned to this property")
+    return {"ok": True, "propertyId": target, "property_ids": user.get("property_ids")}

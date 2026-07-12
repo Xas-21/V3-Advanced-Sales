@@ -80,6 +80,7 @@ import {
 import Login from './Login';
 import LandingPage from './LandingPage';
 import RequestFeedbackPublicPage from './RequestFeedbackPublicPage';
+import { useWebSocket, type WebSocketMessage } from './websocket-client';
 import CRM, { CRM_QUARTER_MONTH_BLOCKS, type CrmSalesPeriod } from './CRM';
 import Contracts from './Contracts';
 import Reports from './Reports';
@@ -4561,6 +4562,56 @@ export default function AdvancedSalesDashboard() {
     }, [tasks, activeProperty?.id]);
 
     const [sharedRequests, setSharedRequests] = useState<any[]>([]);
+
+    // Real-time live updates via WebSocket (placed after state declarations to avoid TDZ)
+    const handleLiveUpdate = useCallback((msg: WebSocketMessage) => {
+        if (msg.entity === 'request') {
+            if (msg.type === 'created' || msg.type === 'updated') {
+                setSharedRequests((prev) => {
+                    const idx = prev.findIndex((r: any) => String(r.id) === String(msg.data.id));
+                    if (idx >= 0) {
+                        const updated = [...prev];
+                        updated[idx] = msg.data;
+                        return updated;
+                    } else {
+                        return [...prev, msg.data];
+                    }
+                });
+                // Also sync CRM pipeline
+                setCrmState((prev) => ({
+                    ...prev,
+                    pipeline: syncAllPipelineCardsFromRequests(prev.pipeline, [msg.data], crmRequestRevenue),
+                }));
+            } else if (msg.type === 'deleted') {
+                setSharedRequests((prev) => prev.filter((r: any) => String(r.id) !== String(msg.data.id)));
+                setCrmState((prev) => ({
+                    ...prev,
+                    pipeline: clearPipelineLinkForDeletedRequest(prev.pipeline, String(msg.data.id)),
+                }));
+            }
+        }
+
+        if (msg.entity === 'account') {
+            if (msg.type === 'created' || msg.type === 'updated') {
+                setAccounts((prev) => {
+                    const idx = prev.findIndex((a: any) => String(a.id) === String(msg.data.id));
+                    if (idx >= 0) {
+                        const updated = [...prev];
+                        updated[idx] = msg.data;
+                        return updated;
+                    } else {
+                        return [...prev, msg.data];
+                    }
+                });
+            } else if (msg.type === 'deleted') {
+                setAccounts((prev) => prev.filter((a: any) => String(a.id) !== String(msg.data.id)));
+            }
+        }
+    }, [crmRequestRevenue, syncAllPipelineCardsFromRequests, clearPipelineLinkForDeletedRequest]);
+
+    // Connect to WebSocket when user is authenticated
+    useWebSocket(handleLiveUpdate);
+
     const [promotions, setPromotions] = useState<any[]>([]);
     const [propertyFinancialKpis, setPropertyFinancialKpis] = useState<any[]>([]);
     const [pendingOpenRequestId, setPendingOpenRequestId] = useState<string | null>(null);

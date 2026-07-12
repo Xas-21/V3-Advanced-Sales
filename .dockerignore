@@ -1,0 +1,16 @@
+# Build context exclusions — keep context small and avoid root-owned pyc permission errors
+**/__pycache__/
+**/*.pyc
+.git
+.gitignore
+node_modules
+**/node_modules
+backend/__pycache__
+scripts/
+migrations/
+as-dev*
+*.md
+.env
+.env.*
+Dockerfile*
+docker-compose*.yml

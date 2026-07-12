@@ -272,8 +272,8 @@ def main():
     )
 
     # Validate shared visibility for Abdullah + Sultan on Shaden
-    abd_client = login("Abdullah", "password123")
-    sultan_client = login("Sultan.jan", "password123")
+    abd_client = login("Abdullah", os.environ.get("TEST_ADMIN_PASS", ""))
+    sultan_client = login("Sultan.jan", os.environ.get("TEST_SULTAN_PASS", ""))
 
     abd_accounts = get_json(abd_client, f"/api/accounts?propertyId={shaden_id}")
     sul_accounts = get_json(sultan_client, f"/api/accounts?propertyId={shaden_id}")

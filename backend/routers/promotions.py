@@ -1,22 +1,22 @@
 from fastapi import APIRouter
 from typing import Optional
 
-from utils import delete_promotion_row, list_promotions_rows, upsert_promotion_row
+from data_access import delete_flat, list_flat, upsert_flat
 
-router = APIRouter(prefix="/api", tags=["Promotions"])
-
-
-@router.get("/promotions")
-def list_promotions(propertyId: Optional[str] = None):
-    return list_promotions_rows(propertyId)
+router = APIRouter(prefix="/api/promotions")
 
 
-@router.post("/promotions")
-def upsert_promotion(data: dict):
-    return upsert_promotion_row(data)
+@router.get("")
+def get_promotions(propertyId: Optional[str] = None):
+    return list_flat("promotions", propertyId)
 
 
-@router.delete("/promotions/{promotion_id}")
-def remove_promotion(promotion_id: str, propertyId: str):
-    delete_promotion_row(promotion_id, propertyId)
+@router.post("")
+def save_promotion(data: dict):
+    return upsert_flat("promotions", data, id_prefix="PR")
+
+
+@router.delete("/{id}")
+def delete_promotion(id: str, propertyId: Optional[str] = None):
+    delete_flat("promotions", id, propertyId)
     return {"message": "Deleted successfully"}

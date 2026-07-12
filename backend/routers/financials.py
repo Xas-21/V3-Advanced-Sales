@@ -1,26 +1,22 @@
 from fastapi import APIRouter
 from typing import Optional
-from utils import delete_collection_row, delete_property_collection_row, list_collection_rows, upsert_collection_row
+
+from data_access import delete_flat, list_flat, upsert_flat
 
 router = APIRouter(prefix="/api/financials")
 
+
 @router.get("")
 def get_financials(propertyId: Optional[str] = None):
-    return list_collection_rows("financials", propertyId)
+    return list_flat("financials", propertyId)
+
 
 @router.post("")
-def save_financial(data: dict):
-    item = {**(data if isinstance(data, dict) else {})}
-    prop_id = str(item.get("propertyId", "")).strip()
-    year = str(item.get("year", "")).strip()
-    if not item.get("id") and prop_id and year:
-        item["id"] = f"{prop_id}_{year}"
-    return upsert_collection_row("financials", item, prefix="F", row_id_with_property=True)
+def save_financials(data: dict):
+    return upsert_flat("financials", data, id_prefix="F")
+
 
 @router.delete("/{id}")
-def delete_financial(id: str, propertyId: Optional[str] = None):
-    if propertyId:
-        delete_property_collection_row("financials", id, propertyId)
-    else:
-        delete_collection_row("financials", id)
+def delete_financials(id: str, propertyId: Optional[str] = None):
+    delete_flat("financials", id, propertyId)
     return {"message": "Deleted successfully"}

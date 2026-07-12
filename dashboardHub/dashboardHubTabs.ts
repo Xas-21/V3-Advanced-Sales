@@ -20,7 +20,7 @@ export type DashboardHubTabDef = {
 };
 
 export const DASHBOARD_HUB_TABS: DashboardHubTabDef[] = [
-    { id: 'feed', label: 'Feed', live: false },
+    { id: 'feed', label: 'Feed', live: true },
     { id: 'dashboard', label: 'Dashboard', live: true },
     { id: 'requests', label: 'Requests', live: false },
     { id: 'rooms', label: 'Rooms', live: false },

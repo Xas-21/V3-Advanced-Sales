@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from crm_recovery import crm_item_count, merge_recovery_block
-from utils import CRM_STATE_FILE, list_accounts_rows, list_requests_rows, read_json_file, write_json_file
+from data_access import get_crm_state as dal_get_crm_state, list_accounts, list_requests, upsert_crm_state
 
 router = APIRouter(prefix="/api", tags=["CRM"])
 
@@ -19,7 +19,7 @@ DEFAULT_BUCKETS = {
 PIPELINE_KEYS = ["waiting", "qualified", "proposal", "negotiation", "won", "notInterested"]
 
 
-def _normalize_leads(raw: Any) -> Dict[str, list]:
+def _normalize_leads(raw):
     if not isinstance(raw, dict):
         return {**DEFAULT_BUCKETS}
     out = {**DEFAULT_BUCKETS}
@@ -29,11 +29,11 @@ def _normalize_leads(raw: Any) -> Dict[str, list]:
     return out
 
 
-def _default_pipeline() -> Dict[str, list]:
+def _default_pipeline():
     return {k: [] for k in PIPELINE_KEYS}
 
 
-def _normalize_pipeline(raw: Any) -> Dict[str, list]:
+def _normalize_pipeline(raw):
     out = _default_pipeline()
     if not isinstance(raw, dict):
         return out
@@ -44,16 +44,9 @@ def _normalize_pipeline(raw: Any) -> Dict[str, list]:
     return out
 
 
-def _migrate_block(block: dict) -> dict:
-    """Ensure salesCalls + pipeline; migrate legacy leads if present."""
-    sales_calls: List[Any] = []
-    pipeline = _default_pipeline()
-
-    if isinstance(block.get("salesCalls"), list):
-        sales_calls = block["salesCalls"]
-    if isinstance(block.get("pipeline"), dict):
-        pipeline = _normalize_pipeline(block["pipeline"])
-
+def _migrate_block(block):
+    sales_calls = block.get("salesCalls") if isinstance(block.get("salesCalls"), list) else []
+    pipeline = _normalize_pipeline(block.get("pipeline")) if isinstance(block.get("pipeline"), dict) else _default_pipeline()
     legacy = block.get("leads")
     if isinstance(legacy, dict):
         normalized = _normalize_leads(legacy)
@@ -62,9 +55,8 @@ def _migrate_block(block: dict) -> dict:
         for k in PIPELINE_KEYS:
             if not pipeline.get(k) and isinstance(normalized.get(k), list):
                 pipeline[k] = normalized[k]
-
     return {
-        "salesCalls": sales_calls if isinstance(sales_calls, list) else [],
+        "salesCalls": sales_calls,
         "pipeline": pipeline,
         "accountActivities": block.get("accountActivities")
         if isinstance(block.get("accountActivities"), dict)
@@ -74,34 +66,22 @@ def _migrate_block(block: dict) -> dict:
 
 @router.get("/crm-state")
 def get_crm_state(propertyId: Optional[str] = None):
-    store = read_json_file(CRM_STATE_FILE, default={})
-    if not isinstance(store, dict):
-        store = {}
     key = propertyId or "global"
-    block = store.get(key) or {}
-    if not isinstance(block, dict):
-        block = {}
+    block = dal_get_crm_state(key) or {}
     migrated = _migrate_block(block)
     return {
         "propertyId": key,
         "salesCalls": migrated["salesCalls"],
         "pipeline": migrated["pipeline"],
         "accountActivities": migrated["accountActivities"],
-        # Legacy field for older clients (read-only compat)
-        "leads": {
-            "new": migrated["salesCalls"],
-            **migrated["pipeline"],
-        },
+        "leads": {"new": migrated["salesCalls"], **migrated["pipeline"]},
     }
 
 
 @router.post("/crm-state")
 def save_crm_state(data: dict):
-    store = read_json_file(CRM_STATE_FILE, default={})
-    if not isinstance(store, dict):
-        store = {}
     key = data.get("propertyId") or "global"
-    prev = store.get(key) if isinstance(store.get(key), dict) else {}
+    prev = dal_get_crm_state(key) or {}
 
     sales_calls = data.get("salesCalls")
     if not isinstance(sales_calls, list):
@@ -121,7 +101,6 @@ def save_crm_state(data: dict):
             for k in PIPELINE_KEYS:
                 if k in legacy:
                     pipeline[k] = legacy[k]
-
     pipeline = _normalize_pipeline(pipeline)
     activities = data.get("accountActivities", prev.get("accountActivities") or {})
     if not isinstance(activities, dict):
@@ -138,57 +117,26 @@ def save_crm_state(data: dict):
             detail="Refusing to save empty CRM state over existing data. Use POST /api/crm-state/recover if you need to rebuild.",
         )
 
-    store[key] = {
-        "salesCalls": sales_calls,
-        "pipeline": pipeline,
-        "accountActivities": activities,
-    }
-    write_json_file(CRM_STATE_FILE, store)
+    upsert_crm_state(key, incoming_block)
+    migrated = _migrate_block(incoming_block)
     return {
         "propertyId": key,
-        "salesCalls": sales_calls,
-        "pipeline": pipeline,
-        "accountActivities": activities,
+        "salesCalls": migrated["salesCalls"],
+        "pipeline": migrated["pipeline"],
+        "accountActivities": migrated["accountActivities"],
     }
-
-
-def _legacy_blob_block(property_id: str) -> dict | None:
-    try:
-        from utils import _connect, storage_mode
-
-        if storage_mode() != "postgres":
-            return None
-        with _connect() as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT payload FROM app_collections WHERE name = 'crm_state';")
-                row = cur.fetchone()
-                if row and isinstance(row.get("payload"), dict):
-                    block = row["payload"].get(property_id)
-                    return block if isinstance(block, dict) else None
-    except Exception:
-        return None
-    return None
 
 
 @router.post("/crm-state/recover")
 def recover_crm_state(propertyId: Optional[str] = None):
-    """Rebuild pipeline from requests; restore salesCalls from legacy snapshot when possible."""
     key = str(propertyId or "").strip()
     if not key:
         raise HTTPException(status_code=400, detail="propertyId required")
-
-    store = read_json_file(CRM_STATE_FILE, default={})
-    if not isinstance(store, dict):
-        store = {}
-    current = store.get(key) if isinstance(store.get(key), dict) else {}
-    legacy_blob = _legacy_blob_block(key)
-
-    requests = list_requests_rows(key)
-    accounts = list_accounts_rows(key)
-    recovered = merge_recovery_block(current, requests, accounts, key, legacy_blob)
-
-    store[key] = recovered
-    write_json_file(CRM_STATE_FILE, store)
+    current = dal_get_crm_state(key) or {}
+    requests = list_requests(key)
+    accounts = list_accounts(key)
+    recovered = merge_recovery_block(current, requests, accounts, key, None)
+    upsert_crm_state(key, recovered)
     migrated = _migrate_block(recovered)
     pipe_total = sum(len(migrated["pipeline"].get(k) or []) for k in PIPELINE_KEYS)
     return {
