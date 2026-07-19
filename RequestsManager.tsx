@@ -5577,8 +5577,8 @@ export default function RequestsManager({
 
                             let effectiveAmt = Number(newPayment.amount || 0);
                             let effectiveMethod = newPayment.method;
-                            let ledgerType: LedgerType | null = null;
                             let clFlag = false;
+                            const ledgerPosts: { type: LedgerType; amount: number }[] = [];
 
                             if (paymentSource === 'balance') {
                                 effectiveMethod = 'Balance';
@@ -5586,31 +5586,39 @@ export default function RequestsManager({
                                     balanceMode === 'full'
                                         ? applicableFromBalance(accountBalance, requestDue)
                                         : applicableFromBalance(accountBalance, Number(newPayment.amount || 0));
-                                ledgerType = 'allocation';
+                                if (effectiveAmt > 0) ledgerPosts.push({ type: 'allocation', amount: effectiveAmt });
                             } else if (paymentSource === 'cl') {
-                                effectiveMethod = 'CL';
-                                effectiveAmt = requestDue;
-                                ledgerType = 'cl_charge';
-                                clFlag = true;
+                                // CL: the part covered by prepaid credit is paid now (allocation);
+                                // the uncovered remainder is charged (cl_charge) and collected later.
+                                const covered = applicableFromBalance(accountBalance, requestDue);
+                                const uncovered = Math.max(0, requestDue - covered);
+                                effectiveMethod = 'Balance';
+                                effectiveAmt = covered; // only the covered part counts as paid on the request
+                                if (covered > 0) ledgerPosts.push({ type: 'allocation', amount: covered });
+                                if (uncovered > 0) ledgerPosts.push({ type: 'cl_charge', amount: uncovered });
+                                clFlag = uncovered > 0; // only "collect later" when something remains owed
                             }
 
-                            if (ledgerType && acctId && effectiveAmt > 0) {
+                            if (acctId && ledgerPosts.length > 0) {
                                 const { postLedgerEntry } = await import('./accountLedgerApi');
-                                await postLedgerEntry({
-                                    type: ledgerType,
-                                    amount: effectiveAmt,
-                                    accountId: acctId,
-                                    propertyId: String(activeProperty?.id || ''),
-                                    requestId: String(reqForAmt?.id || ''),
-                                    method: effectiveMethod,
-                                    note: newPayment.note || '',
-                                    date: newPayment.date,
-                                    user: requestLogUser,
-                                });
+                                for (const p of ledgerPosts) {
+                                    await postLedgerEntry({
+                                        type: p.type,
+                                        amount: p.amount,
+                                        accountId: acctId,
+                                        propertyId: String(activeProperty?.id || ''),
+                                        requestId: String(reqForAmt?.id || ''),
+                                        method: effectiveMethod,
+                                        note: newPayment.note || '',
+                                        date: newPayment.date,
+                                        user: requestLogUser,
+                                    });
+                                }
                             }
 
                             const amt = effectiveAmt;
                             const postingMethod = effectiveMethod;
+                            const appendPayment = amt > 0;
                             const paymentRow = {
                                 ...newPayment,
                                 method: postingMethod,
@@ -5621,7 +5629,7 @@ export default function RequestsManager({
                             if (paymentModalSource === 'form') {
                                 setAccForm((prev: any) => {
                                     const st = String(prev.status || '').trim();
-                                    const newPayments = [...(prev.payments || []), paymentRow];
+                                    const newPayments = appendPayment ? [...(prev.payments || []), paymentRow] : [...(prev.payments || [])];
                                     const paidSum = sumPaymentAmounts(newPayments);
                                     const finAfter = calculateAccFinancialsForRequest(
                                         { ...prev, payments: newPayments },
@@ -5699,7 +5707,7 @@ export default function RequestsManager({
                                 });
                             } else if (paymentModalSource === 'detail' && selectedRequest) {
                                 const req = selectedRequest;
-                                const newPayments = [...(req.payments || []), paymentRow];
+                                const newPayments = appendPayment ? [...(req.payments || []), paymentRow] : [...(req.payments || [])];
                                 const paidSum = sumPaymentAmounts(newPayments);
                                 const totalCost = parseFloat(String(req.totalCost ?? '0').replace(/,/g, '')) || 0;
                                 let paymentStatus = 'Unpaid';
@@ -5742,7 +5750,7 @@ export default function RequestsManager({
                             } else {
                                 const req = activeOptionsMenu !== null ? requests[activeOptionsMenu] : null;
                                 if (req) {
-                                    const newPayments = [...(req.payments || []), paymentRow];
+                                    const newPayments = appendPayment ? [...(req.payments || []), paymentRow] : [...(req.payments || [])];
                                     const paidSum = sumPaymentAmounts(newPayments);
                                     const totalCost = parseFloat(String(req.totalCost ?? '0').replace(/,/g, '')) || 0;
                                     let paymentStatus = 'Unpaid';
