@@ -2175,8 +2175,8 @@
     "semantic_hash": ""
   },
   ".github/workflows/ci.yml": {
-    "mtime": 1784479383.6041505,
-    "ast_hash": "fbfdbaa0164b29e1e5667e59b9d8ab28",
+    "mtime": 1784482338.3716242,
+    "ast_hash": "99d0ba9a12a1f42f5378ed76d5215182",
     "semantic_hash": ""
   },
   "plans/038-user-get-tenant-scope.md": {

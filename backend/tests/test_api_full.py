@@ -63,6 +63,45 @@ def test_admin():
 PROP_ID = os.environ.get("TEST_PROP_ID", "Psvnv5dahi")
 
 
+@pytest.fixture(scope="module", autouse=True)
+def ensure_test_property():
+    """Guarantee the PROP_ID property row exists so FK-dependent inserts (users,
+    requests, accounts) succeed on a fresh database such as CI. On an existing
+    DB (local/prod) where the row already exists this is a no-op, and it only
+    deletes the row on teardown if this fixture created it — never a real one.
+    Autouse so every test in this module has the property available."""
+    import psycopg
+    from utils import get_database_url
+
+    created = False
+    conn = psycopg.connect(get_database_url())
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1 FROM properties WHERE id = %s", (PROP_ID,))
+            if cur.fetchone() is None:
+                cur.execute(
+                    "INSERT INTO properties (id, name) VALUES (%s, %s) ON CONFLICT (id) DO NOTHING",
+                    (PROP_ID, "Pytest Property"),
+                )
+                created = True
+        conn.commit()
+    finally:
+        conn.close()
+    try:
+        yield PROP_ID
+    finally:
+        if created:
+            # FK from users/requests/accounts -> properties is ON DELETE SET NULL,
+            # so this delete is safe even if a test left rows referencing it.
+            conn = psycopg.connect(get_database_url())
+            try:
+                with conn.cursor() as cur:
+                    cur.execute("DELETE FROM properties WHERE id = %s", (PROP_ID,))
+                conn.commit()
+            finally:
+                conn.close()
+
+
 def test_health():
     r = client.get("/api/health")
     assert r.status_code == 200

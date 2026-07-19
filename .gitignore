@@ -27,3 +27,8 @@ PRODUCTION_DEPLOYMENT_2026-07-12.md
 backend/uploads/
 **/uploads/.gitkeep
 
+# Committed data exports / legacy file-storage seed data (PII) — never track
+*.csv
+backend/data/*.json
+!backend/data/*.example.json
+

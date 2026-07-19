@@ -389,9 +389,9 @@ ALTER TABLE accounts
   ADD CONSTRAINT accounts_owner_user_id_fkey
   FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE SET NULL;
 
-ALTER TABLE requests
-  ADD CONSTRAINT requests_created_by_user_id_fkey
-  FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE SET NULL;
+-- requests.created_by_user_id already has an inline FK at the table definition,
+-- which Postgres auto-names requests_created_by_user_id_fkey. Re-adding it here
+-- duplicates the constraint name and aborts a fresh apply (CI / new databases).
 
 -- ---------------------------------------------------------------------------
 -- Relationship foreign keys (added 2026-07-12) — full relational integrity
