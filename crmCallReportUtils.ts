@@ -185,7 +185,7 @@ export function getCallLogEntriesForLead(lead: any): SalesCallLogEntry[] {
                 loggedByUserId: String(e?.loggedByUserId || '').trim() || undefined,
                 loggedByName: String(e?.loggedByName || '').trim() || undefined,
             }))
-            .filter((e) => e.at);
+            .filter((e: { at: string }) => e.at);
     }
     return parseLegacyCallLogsFromDescription(lead);
 }

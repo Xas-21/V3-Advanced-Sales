@@ -30,12 +30,14 @@ export default defineConfig({
             interval: 1000,
         },
         proxy: {
+            // Host `npx vite` cannot resolve Docker DNS `as-backend`; use localhost.
+            // Docker Compose frontend still sets CHOKIDAR_USEPOLLING and runs on the compose network.
             '/api': {
-                target: 'http://as-backend:8000',
+                target: process.env.VITE_DEV_API_PROXY || (process.env.CHOKIDAR_USEPOLLING === 'true' ? 'http://as-backend:8000' : 'http://127.0.0.1:8000'),
                 changeOrigin: true,
             },
             '/ws': {
-                target: 'ws://as-backend:8000',
+                target: process.env.VITE_DEV_WS_PROXY || (process.env.CHOKIDAR_USEPOLLING === 'true' ? 'ws://as-backend:8000' : 'ws://127.0.0.1:8000'),
                 ws: true,
                 changeOrigin: true,
             },
@@ -47,11 +49,11 @@ export default defineConfig({
         strictPort: true,
         proxy: {
             '/api': {
-                target: 'http://as-backend:8000',
+                target: process.env.VITE_DEV_API_PROXY || (process.env.CHOKIDAR_USEPOLLING === 'true' ? 'http://as-backend:8000' : 'http://127.0.0.1:8000'),
                 changeOrigin: true,
             },
             '/ws': {
-                target: 'ws://as-backend:8000',
+                target: process.env.VITE_DEV_WS_PROXY || (process.env.CHOKIDAR_USEPOLLING === 'true' ? 'ws://as-backend:8000' : 'ws://127.0.0.1:8000'),
                 ws: true,
                 changeOrigin: true,
             },

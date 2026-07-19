@@ -11,7 +11,7 @@
 
 import { useEffect, useRef } from 'react';
 
-interface WebSocketMessage {
+export interface WebSocketMessage {
   // 'refresh' = a bulk change occurred; consumers should refetch rather than
   // merge a single payload (used e.g. for account-rename cascades).
   type: 'created' | 'updated' | 'deleted' | 'refresh';

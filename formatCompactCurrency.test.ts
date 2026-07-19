@@ -28,9 +28,9 @@ describe('formatCompactAmount', () => {
         expect(formatCompactAmount(-1500)).toBe('-1.5K');
     });
 
-    it('characterizes top-of-K band rounding', () => {
-        // characterization: suspected bug, see report — 999_999 → "1000K" (rounds past 999.9K instead of 1M)
-        expect(formatCompactAmount(999_999)).toBe('1000K');
+    it('promotes top-of-K band rounding into millions', () => {
+        // 999_999 / 1000 rounds to 1000K; promote to M instead of emitting an out-of-band K label
+        expect(formatCompactAmount(999_999)).toBe('1.00M');
     });
 });
 

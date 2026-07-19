@@ -17,7 +17,8 @@ import { computeRequestRevenueBreakdownNoTax } from './operationalSegmentRevenue
 import { formatSarCompact } from './formatSar';
 import { getTagColor, setTagColorForName, TAG_COLORS_EVENT, readTagColors, writeTagColors } from './tagColorSettings';
 import type { ContractRecord, ContractStatus } from './contractsStore';
-import { formatCurrencyAmount, resolveCurrencyCode, type CurrencyCode } from './currency';
+import { type CurrencyCode } from './currency';
+import { useCurrencyFormatters } from './useCurrencyFormatters';
 import { getPrimaryOperationalDate } from './userProfileMetrics';
 import {
     buildAccountProfileChartData,
@@ -136,7 +137,7 @@ export default function CRMProfileView({
     segmentOptions,
 }: CRMProfileViewProps) {
     const colors = theme.colors;
-    const selectedCurrency = resolveCurrencyCode(currency);
+    const { selectedCurrency, formatCurrencyAmount } = useCurrencyFormatters(currency);
     const isShellPerformanceRange =
         shellAccountPerformanceRange != null && onShellAccountPerformanceRangeChange != null;
     const [internalPerformanceDateRange, setInternalPerformanceDateRange] = useState(getDefaultAccountPerformanceRange);
@@ -1187,7 +1188,7 @@ export default function CRMProfileView({
                                 <div>
                                     <p className="text-xs mb-1" style={{ color: colors.textMuted }}>Total spend (paid)</p>
                                     <p className="text-xl font-bold font-mono" style={{ color: colors.primary }}>
-                                        {formatCurrencyAmount(totalSpend, selectedCurrency, { maximumFractionDigits: 0 })}
+                                        {formatCurrencyAmount(totalSpend, 0)}
                                     </p>
                                 </div>
                                 <div>

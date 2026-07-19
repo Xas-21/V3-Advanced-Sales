@@ -11,10 +11,10 @@ import {
     XAxis,
     YAxis,
     Tooltip,
-    Legend,
 } from 'recharts';
-import { formatCompactCurrency } from './formatCompactCurrency';
-import { formatCurrencyAmount, resolveCurrencyCode, type CurrencyCode } from './currency';
+import { ChartLegend } from './rechartsChartLegend';
+import { type CurrencyCode } from './currency';
+import { useCurrencyFormatters } from './useCurrencyFormatters';
 import type { AccountProfileChartRow } from './accountProfileChartData';
 import { chartTabSupportsVs, normalizeChartMetricValue } from './chartVsYearCompare';
 
@@ -66,7 +66,7 @@ export default function AccountProfilePerformanceChart({
 }: Props) {
     const vsOn = chartVsEnabled && chartTabSupportsVs(chartTab);
     const lySuffix = chartVsYear ? ` (${chartVsYear} LY)` : ' (LY)';
-    const selectedCurrency = resolveCurrencyCode(currency);
+    const { formatMoneyCompact, formatCurrencyAmount } = useCurrencyFormatters(currency);
     const normalizeRowCounts = (row: any, keys: string[]) => {
         const out = { ...row };
         for (const k of keys) {
@@ -110,7 +110,7 @@ export default function AccountProfilePerformanceChart({
         /** Single left scale (landing-style) so night/revenue lines don’t collide with dual-axis peripherals. */
         return { maxRooms, maxNights, maxCount: Math.max(maxRooms, maxNights) };
     }, [chartTab, chartDataForTab, vsOn]);
-    const moneyTickFormatter = (v: any) => formatCompactCurrency(Number(v || 0), selectedCurrency);
+    const moneyTickFormatter = (v: any) => formatMoneyCompact(Number(v || 0));
     const isMoneySeries = (dataKey: string, displayName: string) => {
         const key = dataKey.toLowerCase();
         const label = displayName.toLowerCase();
@@ -120,7 +120,7 @@ export default function AccountProfilePerformanceChart({
     const formatTooltipValue = (dataKey: string, displayName: string, raw: unknown) => {
         const n = Number(raw) || 0;
         if (isMoneySeries(dataKey, displayName)) {
-            return formatCurrencyAmount(n, selectedCurrency, { maximumFractionDigits: 2 });
+            return formatCurrencyAmount(n, 2);
         }
         const baseKey = dataKey.replace(/Ly$/i, '') || dataKey;
         return normalizeChartMetricValue(baseKey, n).toLocaleString();
@@ -177,7 +177,7 @@ export default function AccountProfilePerformanceChart({
         (chartDataForTab || []).reduce((sum: number, row: any) => sum + (Number(row?.[key]) || 0), 0);
     const formatLegendCount = (n: number) => Math.round(Number(n) || 0).toLocaleString();
     const formatLegendMoneyTotal = (amountSar: number) =>
-        formatCurrencyAmount(Number(amountSar) || 0, selectedCurrency, { maximumFractionDigits: 0 });
+        formatCurrencyAmount(Number(amountSar) || 0, 0);
     const statusLegendPayload = activeStatusSeries.map((s) => ({
         value: `${s.name} (${formatLegendCount(sumChartKey(s.key))})`,
         type: 'circle' as const,
@@ -306,7 +306,7 @@ export default function AccountProfilePerformanceChart({
                             tickFormatter={moneyTickFormatter}
                         />
                         <Tooltip content={comparisonTooltipContent} cursor={{ fill: colors.border }} />
-                        <Legend payload={revenueLegendPayload} iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px', color: colors.textMuted }} />
+                        <ChartLegend payload={revenueLegendPayload} iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px', color: colors.textMuted }} />
                         <Area type="monotone" dataKey="revenue" name="Revenue" stroke={colors.green} fill="url(#accProfColorRev)" />
                         <Line
                             type="monotone"
@@ -356,7 +356,7 @@ export default function AccountProfilePerformanceChart({
                             : { ...rechartsTooltipThemeProps(colors), cursor: { fill: colors.border } })}
                     />
                     {requestsLegendPayload ? (
-                        <Legend payload={requestsLegendPayload} iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px', color: colors.textMuted }} />
+                        <ChartLegend payload={requestsLegendPayload} iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px', color: colors.textMuted }} />
                     ) : null}
                     <Bar dataKey="totalRequests" name="Total Requests" fill={colors.blue} radius={[4, 4, 0, 0]} barSize={vsOn ? 14 : 20} />
                     {vsOn ? (
@@ -397,7 +397,7 @@ export default function AccountProfilePerformanceChart({
                             ? { content: comparisonTooltipContent, cursor: { fill: colors.border } }
                             : { ...rechartsTooltipThemeProps(colors), formatter: moneyTooltipFormatter })}
                     />
-                    <Legend payload={roomsLegendPayload} iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px', color: colors.textMuted }} />
+                    <ChartLegend payload={roomsLegendPayload} iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px', color: colors.textMuted }} />
                     <Bar yAxisId="rooms" dataKey="rooms" name="Rooms" fill={colors.cyan} radius={[4, 4, 0, 0]} barSize={vsOn ? 12 : 16} />
                     {vsOn ? (
                         <Bar
@@ -483,7 +483,7 @@ export default function AccountProfilePerformanceChart({
                             ? { content: comparisonTooltipContent, cursor: { fill: colors.border } }
                             : { ...rechartsTooltipThemeProps(colors), formatter: moneyTooltipFormatter })}
                     />
-                    <Legend payload={miceLegendPayload} iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px', color: colors.textMuted }} />
+                    <ChartLegend payload={miceLegendPayload} iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px', color: colors.textMuted }} />
                     <Bar yAxisId="left" dataKey="miceRequests" name="MICE Requests" fill={colors.purple} radius={[4, 4, 0, 0]} barSize={vsOn ? 14 : 20} />
                     {vsOn ? (
                         <Bar
@@ -554,7 +554,7 @@ export default function AccountProfilePerformanceChart({
                         domain={[0, 'dataMax']}
                     />
                     <Tooltip content={statusTooltipContent} cursor={{ fill: colors.border }} />
-                    <Legend payload={statusLegendPayload} iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px', color: colors.textMuted }} />
+                    <ChartLegend payload={statusLegendPayload} iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px', color: colors.textMuted }} />
                     <Bar dataKey="inquiry" stackId="a" name="Inquiry" fill={colors.textMuted} />
                     <Bar dataKey="accepted" stackId="a" name="Accepted" fill={colors.yellow} />
                     <Bar dataKey="tentative" stackId="a" name="Tentative" fill={colors.blue} />

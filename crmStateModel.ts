@@ -199,7 +199,7 @@ export function mirrorOrphanPipelineCardsToSalesCalls(state: CrmStatePayload): C
                 ? card.sourceCallIds.map((s: any) => String(s || '').trim()).filter(Boolean)
                 : [];
             const linkedHub =
-                sources.find((sid) => hubIds.has(sid)) || hubByPipelineCardId.get(cardId);
+                sources.find((sid: string) => hubIds.has(sid)) || hubByPipelineCardId.get(cardId);
 
             if (linkedHub) {
                 const nextSources = Array.from(new Set([...sources, linkedHub]));

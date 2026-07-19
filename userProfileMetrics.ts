@@ -269,14 +269,14 @@ function taskAssigneeEntries(task: any): { id: string; name: string }[] {
                 id: String(x?.id ?? x?.userId ?? '').trim(),
                 name: String(x?.name ?? '').trim(),
             }))
-            .filter((x) => x.name);
+            .filter((x: { id: string; name: string }) => x.name);
     }
     const raw = String(task?.assignedTo || '').trim();
     if (!raw) return [];
     return raw
         .split(/\s*,\s*/)
         .map((name) => ({ id: '', name: name.trim() }))
-        .filter((x) => x.name);
+        .filter((x: { id: string; name: string }) => x.name);
 }
 
 export function taskAssignedToUser(task: any, user: any): boolean {

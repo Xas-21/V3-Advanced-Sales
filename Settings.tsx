@@ -46,7 +46,8 @@ import {
     type PermissionId,
 } from './userPermissions';
 import { checkPasswordPolicy } from './passwordPolicy';
-import { formatCurrencyAmount, resolveCurrencyCode, type CurrencyCode } from './currency';
+import { type CurrencyCode } from './currency';
+import { useCurrencyFormatters } from './useCurrencyFormatters';
 import type {
     DeadlineAlertKind,
     DeadlineAlertRuleSettings,
@@ -161,9 +162,10 @@ export default function Settings({
     onRequireReLogin,
 }: SettingsProps) {
     const colors = theme.colors;
-    const selectedCurrency = resolveCurrencyCode(currency);
+    // Keep default maxFractionDigits=0 (site historically differed from the common default of 2).
+    const { formatCurrencyAmount } = useCurrencyFormatters(currency);
     const formatMoney = (amountSar: number, maxFractionDigits = 0) =>
-        formatCurrencyAmount(amountSar, selectedCurrency, { maximumFractionDigits: maxFractionDigits });
+        formatCurrencyAmount(amountSar, maxFractionDigits);
     const appIsAdmin = isSystemAdmin(currentUser);
     const [activeTab, setActiveTab] = useState('profile');
     const [properties, setProperties] = useState(initialProperties);
@@ -1073,7 +1075,7 @@ export default function Settings({
             setProperties((prev) =>
                 prev.map((p) => (String(p.id) === String(propertyId) ? { ...p, ...patch } : p))
             );
-            setManagingProperty((mp) =>
+            setManagingProperty((mp: any) =>
                 mp && String(mp.id) === String(propertyId) ? { ...mp, ...patch } : mp
             );
         };
@@ -3354,19 +3356,19 @@ export default function Settings({
                             <div className="flex justify-between items-center border-b border-white/5 pb-2">
                                 <span className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.textMuted }}>Rooms Budget</span>
                                 <span className="font-mono text-sm" style={{ color: colors.textMain }}>
-                                    {formatMoney(data.months.reduce((acc, m) => acc + m.roomsBudget, 0), 0)}
+                                    {formatMoney(data.months.reduce((acc: number, m: any) => acc + m.roomsBudget, 0), 0)}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center border-b border-white/5 pb-2">
                                 <span className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.textMuted }}>Food and Beverage Budget</span>
                                 <span className="font-mono text-sm" style={{ color: colors.textMain }}>
-                                    {formatMoney(data.months.reduce((acc, m) => acc + m.foodAndBeverageBudget, 0), 0)}
+                                    {formatMoney(data.months.reduce((acc: number, m: any) => acc + m.foodAndBeverageBudget, 0), 0)}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.textMuted }}>Sales Calls</span>
                                 <span className="font-mono text-sm" style={{ color: colors.cyan }}>
-                                    {data.months.reduce((acc, m) => acc + m.salesCalls, 0)} Targets
+                                    {data.months.reduce((acc: number, m: any) => acc + m.salesCalls, 0)} Targets
                                 </span>
                             </div>
                         </div>
