@@ -47,6 +47,7 @@ import { formatCrmFunnelRequestTypeDisplay } from './requestTypeUtils';
 import { apiUrl } from './backendApi';
 import ConfirmDialog from './ConfirmDialog';
 import CrmActivitiesView from './CrmActivitiesView';
+import CrmCardComments from './CrmCardComments';
 import AccountLinkedRequestsModal from './AccountLinkedRequestsModal';
 import RequestsManager from './RequestsManager';
 import {
@@ -3339,6 +3340,13 @@ export default function CRM({
                                                             </span>
                                                         </div>
                                                     </div>
+                                                    <CrmCardComments
+                                                        propertyId={String(activeProperty?.id || req?.propertyId || '')}
+                                                        targetType="request"
+                                                        targetId={String(req.id)}
+                                                        colors={colors}
+                                                        readOnly={crmReadOnly}
+                                                    />
                                                 </div>
                                             );
                                         })
@@ -3476,6 +3484,13 @@ export default function CRM({
                                                         {String(lead.accountManager || lead.ownerUserId || '').trim() || '—'}
                                                     </span>
                                                 </div>
+                                                <CrmCardComments
+                                                    propertyId={String(activeProperty?.id || lead?.propertyId || '')}
+                                                    targetType="account"
+                                                    targetId={String(lead.accountId || '')}
+                                                    colors={colors}
+                                                    readOnly={crmReadOnly}
+                                                />
                                             </div>
                                         ))
                                     )}
