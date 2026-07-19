@@ -47,7 +47,7 @@ import { formatCrmFunnelRequestTypeDisplay } from './requestTypeUtils';
 import { apiUrl } from './backendApi';
 import ConfirmDialog from './ConfirmDialog';
 import CrmActivitiesView from './CrmActivitiesView';
-import CrmCardComments from './CrmCardComments';
+import CrmCardComments from './CrmCardComments.tsx';
 import AccountLinkedRequestsModal from './AccountLinkedRequestsModal';
 import RequestsManager from './RequestsManager';
 import {

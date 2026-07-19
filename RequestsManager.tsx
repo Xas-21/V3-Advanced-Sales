@@ -313,7 +313,10 @@ const initialAccommodation = {
     payments: [] as any[],
     logs: [] as any[],
     segment: '',
-    promotionId: ''
+    promotionId: '',
+    /** Set when payment source is Collect Later (CL). */
+    collectLater: false as boolean,
+    paymentStatus: '' as string,
 };
 
 /** Remove all-zero placeholder room rows (keeps series/event+rooms rows that have stay dates). */
