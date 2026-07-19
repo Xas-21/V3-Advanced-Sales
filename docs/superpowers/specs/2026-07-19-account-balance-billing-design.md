@@ -41,25 +41,32 @@ Chosen over: (B) a JSON blob on `accounts` — breaks the relational child-table
 pattern accounts already use; (C) deriving from `request_payments` only — cannot
 represent unallocated deposits or transfers.
 
-### 3.1 Data model — `account_ledger_entries`
+### 3.1 Data model — `account_ledger` (reuse the flat-collection framework)
 
-New table (migration file, same style as `001_normalized_schema.sql`):
+`ponytail:` The backend already has a generic flat-collection framework
+(`_upsert_doc` / `_list_doc` / `_delete_doc`, exposed as `list_flat` /
+`upsert_flat` / `delete_flat`, driven by `_FLAT_WITH_PID` + `_EXTRACTORS`).
+`account_rates` (migration `011`, router `account_rates.py`) uses it with almost
+no bespoke code. The ledger reuses the same machinery — typed columns for
+querying + a `payload jsonb` holding the full entry. This avoids hand-written
+loader/upsert/delete SQL entirely.
+
+New migration `012_account_ledger.py` (mirrors `011_account_rates.py` exactly):
 
 ```sql
-CREATE TABLE IF NOT EXISTS account_ledger_entries (
+CREATE TABLE IF NOT EXISTS account_ledger (
     id          TEXT PRIMARY KEY,
-    account_id  TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+    property_id TEXT REFERENCES properties(id) ON DELETE CASCADE,
+    account_id  TEXT REFERENCES accounts(id) ON DELETE CASCADE,
     request_id  TEXT REFERENCES requests(id) ON DELETE SET NULL,
-    type        TEXT NOT NULL,      -- deposit | allocation | cl_charge | collection | refund | adjustment
-    amount      NUMERIC NOT NULL,   -- signed
-    date        DATE,
-    method      TEXT,               -- payment method for deposit/collection
-    note        TEXT,
-    entry_user  TEXT,
-    created_at  TIMESTAMPTZ DEFAULT now()
+    entry_type  TEXT,               -- deposit | allocation | cl_charge | collection | refund | adjustment
+    amount      NUMERIC,            -- signed
+    payload     JSONB,              -- full entry: {type, amount, date, method, note, user, requestId, accountId, propertyId}
+    created_at  TIMESTAMPTZ DEFAULT now(),
+    updated_at  TIMESTAMPTZ DEFAULT now()
 );
-CREATE INDEX IF NOT EXISTS idx_ledger_account ON account_ledger_entries(account_id);
-CREATE INDEX IF NOT EXISTS idx_ledger_request ON account_ledger_entries(request_id);
+CREATE INDEX IF NOT EXISTS ix_account_ledger_account ON account_ledger (account_id);
+CREATE INDEX IF NOT EXISTS ix_account_ledger_property_updated ON account_ledger (property_id, updated_at DESC, id);
 ```
 
 **Entry types and sign:**
@@ -76,34 +83,39 @@ CREATE INDEX IF NOT EXISTS idx_ledger_request ON account_ledger_entries(request_
 **Balance = `SUM(amount)`** across all entries for the account.
 Positive = prepaid credit available; negative = total outstanding (owed).
 
-### 3.2 Backend — `backend/data_access.py`
+### 3.2 Backend — `backend/data_access.py` (minimal additions)
 
-Follow the existing account-children pattern (`_insert_account_contact`,
-`_insert_account_activity`, the `_row_to_account_dict` loader, and the
-DELETE-then-reinsert children block inside `upsert_account`).
+Register `account_ledger` in the flat framework — no bespoke SQL:
 
-- `_row_to_account_dict` also loads `ledger` (ordered by `created_at`, `id`) and
-  computes `balance = sum(amount)`; both added to the account dict as
-  `ledger: [...]` and `balance: number`.
-- New helpers:
-  - `add_ledger_entry(account_id, entry) -> dict` — insert one entry, broadcast, return it with new balance.
-  - `list_ledger(account_id) -> list` — entries for the Billing history.
-  - `transfer_allocation(account_id, entry_id, to_request_id) -> dict` — repoint an
-    existing `allocation`/`cl_charge` entry's `request_id` (the "transfer/split"
-    action; splitting = create a second smaller allocation and reduce the first).
-- Ledger entries are **append-driven** via a dedicated endpoint (not rebuilt on
-  every `upsert_account`, so a normal account edit never touches the ledger).
+- Add `"account_ledger"` to `_FLAT_WITH_PID`.
+- Add extractor `_extract_account_ledger(p)` → typed cols
+  `{account_id, request_id, entry_type, amount}` (mirrors `_extract_account_rates`),
+  and register it in `_EXTRACTORS`.
+- Thin wrapper `save_ledger_entry(data) -> dict`: **normalize the amount sign by
+  `type`** (deposit/collection → `+abs`; allocation/cl_charge/refund → `−abs`;
+  adjustment → as-is) on the payload, then delegate to `upsert_flat("account_ledger", data, "LE")`.
+  This is the one server-side data-integrity guard (not lazy about balance integrity).
+- `transfer_allocation(entry_id, to_request_id)`: `get_flat` the entry, set
+  `requestId = to_request_id` in its payload, `save_ledger_entry` it back
+  (splitting = post one reduced allocation + one new allocation, both via `save_ledger_entry`).
 
-### 3.3 Backend — API (`backend/routers/accounts.py`, prefix `/api`)
+The account **balance is not stored** — it is computed as `SUM(amount)` on the
+client from the fetched entries (see §3.4). `ponytail:` the "Balance-apply must
+not go negative" rule is enforced client-side in the modal (consistent with the
+app's other client-side financial logic, e.g. `paymentStatus`); CL may go negative
+by design. Upgrade path = a server-side balance check summing the collection.
 
-- `GET  /accounts/{account_id}/ledger` → `{ balance, entries: [...] }`
-- `POST /accounts/{account_id}/ledger` → body `{ type, amount, request_id?, method?, note?, date? }`; server enforces sign per type; returns new balance + entry.
-- `POST /accounts/{account_id}/ledger/{entry_id}/transfer` → body `{ toRequestId }`.
+### 3.3 Backend — API (`backend/routers/account_ledger.py`, mirrors `account_rates.py`)
 
-Server-side rules (trust boundary — do not rely on the client):
-- `deposit`/`collection` stored as `+abs(amount)`; `allocation`/`cl_charge`/`refund` as `−abs(amount)`.
-- **Balance apply** (`allocation`) is rejected if it would drive balance < 0 (capped/blocked server-side); CL (`cl_charge`) is allowed to go negative.
-- Tenant/property scope reused from existing account access checks (`_assert_write_access`).
+New router registered in `main.py` next to `account_rates` (with `_auth_required`):
+
+- `GET    /api/account-ledger?accountId=&propertyId=` → entries (filtered by account, tenant-scoped by `list_flat`).
+- `POST   /api/account-ledger` → body is a full entry `{type, amount, accountId, propertyId, requestId?, method?, note?, date?}`; calls `save_ledger_entry`.
+- `POST   /api/account-ledger/{id}/transfer` → body `{ toRequestId }`; calls `transfer_allocation`.
+- `DELETE /api/account-ledger/{id}?propertyId=` → `delete_flat` (undo an entry).
+
+Tenant/property write access is enforced by the flat framework
+(`_assert_upsert_write_access` / `_assert_write_access`) — the real security boundary.
 
 ### 3.4 Frontend — shared helper `accountBalance.ts` (new)
 
@@ -181,21 +193,26 @@ permission that already gates Add Deposit).
 ## 8. Files touched (map)
 
 **Create**
-- `backend/migrations/00X_account_ledger.sql` — new table + indexes.
+- `backend/migrations/012_account_ledger.py` — new flat table + indexes (mirrors `011_account_rates.py`).
+- `backend/routers/account_ledger.py` — GET/POST/transfer/DELETE (mirrors `account_rates.py`).
+- `backend/tests/test_account_ledger.py` — API + sign-normalization + transfer tests.
 - `accountBalance.ts` — pure balance/owed helpers.
-- `AccountBillingPanel.tsx` — Billing tab UI (keeps `AccountsPage.tsx` from growing further).
+- `accountBalance.test.ts` — vitest for the helpers (worked example §6).
+- `accountLedgerApi.ts` — small ledger client (`fetchLedger`, `postLedgerEntry`, `transferAllocation`, `deleteLedgerEntry`).
+- `AccountBillingPanel.tsx` — Billing panel UI, opened as a modal like `AccountLinkedRequestsModal.tsx` (keeps `AccountsPage.tsx` from growing).
 
 **Modify**
-- `backend/data_access.py` — ledger loader in `_row_to_account_dict`, `add_ledger_entry`, `list_ledger`, `transfer_allocation`.
-- `backend/routers/accounts.py` — 3 ledger endpoints.
+- `backend/data_access.py` — add `account_ledger` to `_FLAT_WITH_PID`, `_extract_account_ledger`, register in `_EXTRACTORS`, add `save_ledger_entry` + `transfer_allocation`.
+- `backend/main.py` — `include_router(account_ledger.router, dependencies=_auth_required)`.
 - `RequestsManager.tsx` — payment source selector (Balance / CL) + guard in the shared Add Deposit modal.
-- `AccountsPage.tsx` / `CRMProfileView.tsx` — mount the Billing tab.
-- `backendApi.ts` (or a small `accountLedgerApi.ts`) — ledger client calls.
+- `AccountsPage.tsx` — a "Billing" button that opens `AccountBillingPanel`.
 
 ## 9. Testing
 
-- **Backend (pytest, `backend/tests/`):** balance = sum of entries; allocation cannot
-  drive balance negative (rejected); cl_charge can; transfer repoints request_id;
-  deposit/collection forced positive, allocation/cl_charge/refund forced negative.
+- **Backend (pytest, `backend/tests/test_account_ledger.py`):** `save_ledger_entry`
+  sign normalization (deposit/collection → +, allocation/cl_charge/refund → −);
+  POST then GET round-trips an entry filtered by `accountId`; transfer repoints
+  `requestId`; tenant write guard rejects a foreign property. (Balance-not-negative
+  is a client rule per §3.2, so it is covered by the frontend test, not backend.)
 - **Frontend pure logic (`accountBalance.ts`):** `computeBalance`, `requestOwed`,
   `outstandingTotal` — the worked example (§6) as one assert-based check.
