@@ -44,7 +44,12 @@ export function formatCompactAmount(value: number): string {
         return `${sign}${Math.round(n)}`;
     }
     if (n < 1_000_000) {
-        return `${sign}${formatScaledUnit(n / 1000)}K`;
+        const kLabel = formatScaledUnit(n / 1000);
+        // Rounding can push 999_999 → "1000K"; promote to M so the label stays in-band.
+        if (Number(kLabel) >= 1000) {
+            return `${sign}${formatMillionMantissa(n / 1_000_000)}M`;
+        }
+        return `${sign}${kLabel}K`;
     }
     return `${sign}${formatMillionMantissa(n / 1_000_000)}M`;
 }

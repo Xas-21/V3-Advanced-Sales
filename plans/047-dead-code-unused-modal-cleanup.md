@@ -69,11 +69,13 @@ For any modal with `rendered_in=0`, verify (grep for the name without `<`, e.g. 
 
 ## Done criteria
 
-- [ ] `RequestsView` deleted; its `selectedCurrency` error is gone from `tsc`.
-- [ ] Mock arrays in the three request modals removed or replaced with real data (or STOP-reported as a functional gap).
-- [ ] Unused-modal sweep done; every deletion listed in the report with evidence it had zero render sites.
-- [ ] `npm run build` exits 0; `npm run test:frontend` passes.
-- [ ] `plans/README.md` status row updated.
+- [x] `RequestsView` deleted; its `selectedCurrency` error is gone from `tsc`.
+- [x] Mock arrays in the three request modals removed or replaced with real data (or STOP-reported as a functional gap).
+- [x] Unused-modal sweep done; every deletion listed in the report with evidence it had zero render sites.
+- [x] `npm run build` exits 0; `npm run test:frontend` passes.
+- [x] `plans/README.md` status row updated.
+
+**Executor note (2026-07-19):** Deleted dead `RequestsView` from `AS.tsx` (zero callers). Deleted entire unused modal files (zero static/lazy/dynamic consumers): `AccommodationRequestModal`, `EventRequestModal`, `SeriesGroupRequestModal`, `EventWithRoomsRequestModal`, `GroupContractModal`, `MICEContractModal`, `YearlyContractModal`. Live create path remains `RequestsManager`. `npx tsc --noEmit` → 0.
 
 ## STOP conditions
 

@@ -65,11 +65,11 @@ Where a site currently uses `formatSar` instead of `formatCurrencyAmount`, keep 
 
 ## Done criteria
 
-- [ ] `useCurrencyFormatters` hook exists and is used at all 8 sites.
-- [ ] No visible formatting change (plan 041 currency tests still pass unchanged).
-- [ ] `grep` shows the inline trio only inside the hook.
-- [ ] `npm run build` exits 0; `npm run test:frontend` passes.
-- [ ] `plans/README.md` status row updated.
+- [x] `useCurrencyFormatters` hook exists and is used at all 8 sites.
+- [x] No visible formatting change (plan 041 currency tests still pass unchanged).
+- [x] `grep` shows the inline trio only inside the hook.
+- [x] `npm run build` exits 0; `npm run test:frontend` passes.
+- [x] `plans/README.md` status row updated.
 
 ## STOP conditions
 

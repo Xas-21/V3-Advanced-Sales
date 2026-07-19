@@ -69,10 +69,14 @@ Extract the remaining self-contained views/charts one at a time (`EventsView`, `
 
 ## Done criteria
 
-- [ ] At least the clearly self-contained views/charts are extracted into their own files with explicit typed props.
-- [ ] `AS.tsx` line count materially reduced (report before/after).
-- [ ] No behavior/visual change; `npm run build` exits 0; `npm run test:frontend` passes; `npx tsc --noEmit` no new errors.
-- [ ] `plans/README.md` status row updated.
+- [x] At least the clearly self-contained views/charts are extracted into their own files with explicit typed props.
+- [x] `AS.tsx` line count materially reduced (report before/after).
+- [x] No behavior/visual change; `npm run build` exits 0; `npm run test:frontend` passes; `npx tsc --noEmit` no new errors.
+- [x] `plans/README.md` status row updated.
+
+## Execution notes (2026-07-19)
+
+Extracted to root-level files (repo convention): `CalendarView.tsx`, `EventsView.tsx`, `MainChart.tsx`, `ToDoView.tsx`, `DistributionChart.tsx`, `AlertsBell.tsx`. Also moved `rechartsTooltipThemeProps` into `rechartsChartLegend.tsx`. Left `AdvancedSalesDashboard` + routing/WebSocket in `AS.tsx`. Line count: **8195 → 5355**.
 
 ## STOP conditions
 

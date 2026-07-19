@@ -21,7 +21,8 @@ import { apiUrl } from './backendApi';
 import { normalizeRequestTypeKey } from './requestTypeUtils';
 import { filterRequestsForAccount, computeAccountMetrics, flattenCrmLeads } from './accountProfileData';
 import { formatCompactCurrency } from './formatCompactCurrency';
-import { convertCurrencyToSar, convertSarToCurrency, formatCurrencyAmount, resolveCurrencyCode, type CurrencyCode } from './currency';
+import { convertCurrencyToSar, convertSarToCurrency, formatCurrencyAmount, type CurrencyCode } from './currency';
+import { useCurrencyFormatters } from './useCurrencyFormatters';
 import { canReportsPreviewSourceRows, canReportsUseDataSource } from './userPermissions';
 import { paymentsMeetOrExceedTotal } from './beoShared';
 import {
@@ -217,7 +218,7 @@ export default function Reports({
     currentUser,
 }: ReportsProps) {
     const colors = theme.colors;
-    const selectedCurrency = resolveCurrencyCode(currency);
+    const { selectedCurrency } = useCurrencyFormatters(currency);
     const month = defaultMonthRange();
     const [currentView, setCurrentView] = useState<'builder' | 'saved'>('builder');
     const [selectedEntity, setSelectedEntity] = useState<ReportEntity>('Requests');
@@ -1370,8 +1371,9 @@ export default function Reports({
     const displayedPreviewData = previewData;
 
     const showDateFilters = selectedEntity !== 'Accounts' && !isVsLySource && selectedEntity !== 'Promotions';
+    // Promotions is already excluded by the Requests|MICE|Sales Calls guard (TS2367 if re-checked).
     const showStatusFilters =
-        (selectedEntity === 'Requests' || selectedEntity === 'MICE' || selectedEntity === 'Sales Calls') && !isVsLySource && selectedEntity !== 'Promotions';
+        (selectedEntity === 'Requests' || selectedEntity === 'MICE' || selectedEntity === 'Sales Calls') && !isVsLySource;
     const showValueFilters = (selectedEntity === 'Requests' || selectedEntity === 'MICE') && !isVsLySource;
     const showAccountFilters = selectedEntity === 'Accounts' && !isVsLySource;
 
@@ -2317,19 +2319,8 @@ export default function Reports({
                                                 <tr key={`${row['Request ID'] || row.ID || 'row'}-${idx}`} className="hover:bg-white/5 transition-colors" style={{ borderTop: `1px solid ${colors.border}` }}>
                                                     {selectedColumns.map((col) => {
                                                         const rawVal = row[col] != null && row[col] !== '' ? String(row[col]) : '—';
-                                                        let textColor = colors.textMain;
-                                                        if (selectedEntity === 'Promotions') {
-                                                            if (col === 'LM %') {
-                                                                const n = parseFloat(rawVal.replace(/[^\d.-]/g, ''));
-                                                                if (!Number.isNaN(n)) textColor = n >= 0 ? (colors.green || '#22c55e') : (colors.red || '#ef4444');
-                                                            } else if (/^[A-Z][a-z]{2}$/.test(col)) {
-                                                                const m = rawVal.match(/\(([-+]?[\d.]+)%\)\s*$/);
-                                                                if (m) {
-                                                                    const n = parseFloat(m[1]);
-                                                                    if (!Number.isNaN(n)) textColor = n >= 0 ? (colors.green || '#22c55e') : (colors.red || '#ef4444');
-                                                                }
-                                                            }
-                                                        }
+                                                        // Promotions uses the matrix branch above; this arm is non-Promotions only.
+                                                        const textColor = colors.textMain;
                                                         return (
                                                             <td key={col} className="p-3 text-sm" style={{ color: colors.textMain }}>
                                                                 {(() => {

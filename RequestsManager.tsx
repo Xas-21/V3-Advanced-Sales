@@ -69,7 +69,8 @@ import { resolveUserAttributionId, createdByMatchesUser } from './userProfileMet
 import { requestOperationalDatesOverlapRange } from './operationalSegmentRevenue';
 import { refreshRequestsWithDefiniteToActual } from './requestStatusAutomation';
 import { requestMatchesAccount } from './accountProfileData';
-import { formatCurrencyAmount, resolveCurrencyCode, type CurrencyCode } from './currency';
+import { type CurrencyCode } from './currency';
+import { useCurrencyFormatters } from './useCurrencyFormatters';
 import { contrastOn } from './dashboardHub/analyticsKit';
 import { deleteFileLocal, mediaUrl, uploadFileLocal } from './localUpload';
 import { collectRequestFormViolations } from './formConfigurations';
@@ -398,9 +399,7 @@ export default function RequestsManager({
         [colors.bg]
     );
     const gridRoomsRowText = gridRoomsThemeDark ? '#f8fafc' : colors.textMain;
-    const selectedCurrency = resolveCurrencyCode(currency);
-    const formatMoney = (amountSar: number, maxFractionDigits = 2) =>
-        formatCurrencyAmount(amountSar, selectedCurrency, { maximumFractionDigits: maxFractionDigits });
+    const { selectedCurrency, formatCurrencyAmount: formatMoney } = useCurrencyFormatters(currency);
     const requestLogUser =
         currentUser?.name || currentUser?.username || currentUser?.email || 'User';
     const canDeletePayments =
@@ -578,14 +577,15 @@ export default function RequestsManager({
         const next = autoPromotionForDraft(accForm, requestType || 'accommodation');
         if (String(accForm?.promotionId || '') === next) return;
         setAccForm((prev: any) => ({ ...prev, promotionId: next }));
-    }, [canLinkRequestPromotions, accForm.segment, accForm.accountId, accForm.checkIn, accForm.checkOut, accForm.requestDate, accForm.eventStart, accForm.eventEnd, requestType, autoPromotionForDraft]);
+    }, [canLinkRequestPromotions, accForm.segment, accForm.accountId, accForm.checkIn, accForm.checkOut, requestType, autoPromotionForDraft]);
 
     useEffect(() => {
         if (!canLinkRequestPromotions) return;
         const next = autoPromotionForDraft(evtForm, 'event');
         if (String(evtForm?.promotionId || '') === next) return;
         setEvtForm((prev: any) => ({ ...prev, promotionId: next }));
-    }, [canLinkRequestPromotions, evtForm.segment, evtForm.accountId, evtForm.requestDate, evtForm.eventStart, evtForm.eventEnd, autoPromotionForDraft]);
+        // Event window comes from agenda (+ requestDate fallback), not eventStart/eventEnd.
+    }, [canLinkRequestPromotions, evtForm.segment, evtForm.accountId, evtForm.requestDate, evtForm.agenda, autoPromotionForDraft]);
 
     const primaryPropertyRoomType = useMemo(() => propertyRoomNames[0] || '', [propertyRoomNames]);
 
@@ -2805,11 +2805,10 @@ export default function RequestsManager({
             const fullPayPromotion = paymentsMeetOrExceedTotal(newPaid, total) && canAutoDefiniteFromStatus(st);
             const bumpToDefinite = !fullPayPromotion && newPaid > 0 && canAutoDefiniteFromStatus(st);
             const requestTypeLabel =
-                accForm.requestType ||
-                (requestType === 'event_rooms'
+                requestType === 'event_rooms'
                     ? 'Event with Rooms'
                     : String(requestType || 'accommodation').charAt(0).toUpperCase() +
-                      String(requestType || 'accommodation').slice(1));
+                      String(requestType || 'accommodation').slice(1);
             const actualProbe = {
                 ...accForm,
                 payments: mergedPayments,

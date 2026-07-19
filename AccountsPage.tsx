@@ -345,8 +345,8 @@ export default function AccountsPage({
             });
         }
         const byContactName = (
-            a: { account: any; contact: any },
-            b: { account: any; contact: any }
+            a: { key: string; account: any; contact: any },
+            b: { key: string; account: any; contact: any }
         ) =>
             compareAccountNames(contactDisplayName(a.contact), contactDisplayName(b.contact)) ||
             compareAccountNames(a.account?.name, b.account?.name) ||

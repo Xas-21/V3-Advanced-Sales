@@ -58,8 +58,8 @@ export function normalizeAccountRatePeriod(raw: any): AccountRatePeriod | null {
     const accountId = String(raw.accountId || '').trim();
     const propertyId = String(raw.propertyId || '').trim();
     if (!id || !accountId) return null;
-    const segments = Array.isArray(raw.segments)
-        ? [...new Set(raw.segments.map((s: unknown) => String(s ?? '').trim()).filter(Boolean))]
+    const segmentList = Array.isArray(raw.segments)
+        ? raw.segments.map((s: unknown) => String(s ?? '').trim()).filter((s: string) => s.length > 0)
         : [];
     return {
         id,
@@ -67,7 +67,7 @@ export function normalizeAccountRatePeriod(raw: any): AccountRatePeriod | null {
         accountId,
         startDate: ymd(raw.startDate),
         endDate: ymd(raw.endDate),
-        segments,
+        segments: [...new Set(segmentList)] as string[],
         rows: normalizeAccountRateRows(raw.rows),
         updatedAt: raw.updatedAt ? String(raw.updatedAt) : undefined,
     };

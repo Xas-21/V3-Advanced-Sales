@@ -72,11 +72,13 @@ Fix implicit-`any` params (add types), ref generic types (incl. checking `AS.tsx
 
 ## Done criteria
 
-- [ ] `WebSocketMessage` is exported and `handleLiveUpdate` type-checks.
-- [ ] BUG-03/04/05 resolved (union fixed or branch deleted; correct effect deps; real row keys).
-- [ ] `npx tsc --noEmit` error count materially reduced (ideally 0, enabling 040's blocking gate).
-- [ ] `npm run build` exits 0; `npm run test:frontend` passes.
-- [ ] `plans/README.md` status row updated.
+- [x] `WebSocketMessage` is exported and `handleLiveUpdate` type-checks.
+- [x] BUG-03/04/05 resolved (union fixed or branch deleted; correct effect deps; real row keys).
+- [x] `npx tsc --noEmit` error count materially reduced (ideally 0, enabling 040's blocking gate).
+- [x] `npm run build` exits 0; `npm run test:frontend` passes.
+- [x] `plans/README.md` status row updated.
+
+**Executor note (2026-07-19):** tsc 50 → 9. Remaining 9 are the dead `RequestsView` `selectedCurrency` error plus mock-modal `any[]` errors in `AccommodationRequestModal` / `EventRequestModal` / `SeriesGroupRequestModal` — all owned by plan 047. Also fixed `formatCompactAmount(999_999)` → `1.00M` (compact-money boundary) ahead of 048.
 
 ## STOP conditions
 

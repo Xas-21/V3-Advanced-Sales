@@ -230,7 +230,7 @@ export default function CrmCallReportView({
                             <Tooltip
                                 cursor={{ fill: `${colors.primary}18` }}
                                 {...chartTooltipTheme(colors)}
-                                formatter={(value: number, _name: string, props: any) => {
+                                formatter={(value) => {
                                     const count = Number(value) || 0;
                                     const pct =
                                         totalRecords > 0

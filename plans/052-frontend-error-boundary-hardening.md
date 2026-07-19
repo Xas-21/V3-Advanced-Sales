@@ -62,10 +62,17 @@ Extract the boundary into a small reusable `ErrorBoundary` component accepting a
 
 ## Done criteria
 
-- [ ] Production build never renders `error.stack` to users (DEV-only).
-- [ ] A reusable error boundary wraps at least the heavy lazy routes (Contracts / RequestsManager / DashboardHub).
-- [ ] `npm run build` exits 0; `npm run test:frontend` passes; `npx tsc --noEmit` no new errors.
-- [ ] `plans/README.md` status row updated.
+- [x] Production build never renders `error.stack` to users (DEV-only).
+- [x] A reusable error boundary wraps at least the heavy lazy routes (Contracts / RequestsManager / DashboardHub).
+- [x] `npm run build` exits 0; `npm run test:frontend` passes; `npx tsc --noEmit` no new errors.
+- [x] `plans/README.md` status row updated.
+
+## Executor notes
+
+- Extracted reusable `ErrorBoundary` (`variant: root | section`, `showDetails` defaults to `import.meta.env.DEV`).
+- Root in `main.tsx` keeps Reload / Reset cached page behavior; production shows neither message nor stack.
+- Section boundaries wrap lazy `Contracts`, `RequestsManager`, and `DashboardHubShell` render sites inside `AS.tsx` Suspense.
+- Vitest: `ErrorBoundary.test.tsx` (red on missing module → green).
 
 ## STOP conditions
 

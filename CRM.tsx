@@ -21,7 +21,8 @@ import {
     canMergeAccountsAndAssignOwner,
 } from './userPermissions';
 import { formatSarCompact } from './formatSar';
-import { formatCurrencyAmount, resolveCurrencyCode, type CurrencyCode } from './currency';
+import { type CurrencyCode } from './currency';
+import { useCurrencyFormatters } from './useCurrencyFormatters';
 import {
     flattenCrmLeads,
     filterRequestsForAccount,
@@ -272,9 +273,10 @@ export default function CRM({
     onAfterRequestsMutate,
 }: CRMProps) {
     const colors = theme.colors;
-    const selectedCurrency = resolveCurrencyCode(currency);
+    // Keep default maxFractionDigits=0 (many call sites omit the second arg; hook default is 2).
+    const { selectedCurrency, formatCurrencyAmount } = useCurrencyFormatters(currency);
     const formatMoney = (amountSar: number, maxFractionDigits = 0) =>
-        formatCurrencyAmount(amountSar, selectedCurrency, { maximumFractionDigits: maxFractionDigits });
+        formatCurrencyAmount(amountSar, maxFractionDigits);
     const crmReadOnly = !canMutateOperational(currentUser);
     const canDelSalesCalls = canDeleteSalesCalls(currentUser);
     const canEditSalesCallsPerm = canEditSalesCalls(currentUser);
@@ -798,24 +800,25 @@ export default function CRM({
         return Number.isFinite(n) ? n : 0;
     };
 
-    const crmLeadsForCreatorOnly = useMemo(() => {
+    const crmLeadsForCreatorOnly = useMemo((): CrmPipelineBuckets => {
         const fid = String(createdByUserFilterId || '').trim();
-        if (!fid) return crmLeadsForView;
+        if (!fid) return crmLeadsForView as CrmPipelineBuckets;
         const userRow = (crmFilterUsers || []).find((u) => String(u.id) === fid);
-        if (!userRow) return crmLeadsForView;
+        if (!userRow) return crmLeadsForView as CrmPipelineBuckets;
         const filterUser = { id: userRow.id, name: userRow.name };
-        const out: Record<string, any[]> = { ...crmLeadsForView };
+        const out = { ...crmLeadsForView } as CrmPipelineBuckets;
         (Object.keys(out) as string[]).forEach((k) => {
-            out[k] = (out[k] || []).filter((l: any) => crmLeadAttributedToUser(l, filterUser));
+            const key = k as keyof CrmPipelineBuckets;
+            out[key] = (out[key] || []).filter((l: any) => crmLeadAttributedToUser(l, filterUser));
         });
         return out;
     }, [crmLeadsForView, createdByUserFilterId, crmFilterUsers]);
 
-    const crmLeadsForCreatorAllTime = useMemo(() => {
+    const crmLeadsForCreatorAllTime = useMemo((): CrmPipelineBuckets => {
         const fid = String(createdByUserFilterId || '').trim();
-        if (!fid) return pipeline;
+        if (!fid) return pipeline as CrmPipelineBuckets;
         const userRow = (crmFilterUsers || []).find((u) => String(u.id) === fid);
-        if (!userRow) return pipeline;
+        if (!userRow) return pipeline as CrmPipelineBuckets;
         const filterUser = { id: userRow.id, name: userRow.name };
         const out = { ...pipeline } as CrmPipelineBuckets;
         PIPELINE_STAGE_KEYS.forEach((k) => {
