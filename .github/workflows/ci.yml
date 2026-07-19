@@ -48,6 +48,8 @@ jobs:
     env:
       DATABASE_URL: postgresql://as_owner:ci_throwaway_password@localhost:5432/as-postgres
       SESSION_SECRET: ci-throwaway-session-secret-not-for-prod
+      # Match test_api_full.login CORS preflight expectation (default in that test).
+      CORS_ORIGINS: https://app.as-saas.com
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -55,6 +57,21 @@ jobs:
           python-version: '3.11'
       - name: Install backend deps
         run: pip install -r backend/requirements.txt
+      # Fresh CI Postgres has no tables. Local Docker already has schema from
+      # prior migrates/restores — CI must apply SQL first or every test fails
+      # with UndefinedTable (users/properties).
+      - name: Apply relational schema
+        env:
+          PGPASSWORD: ci_throwaway_password
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+          psql -h localhost -U as_owner -d as-postgres -v ON_ERROR_STOP=1 \
+            -f backend/migrations/001_normalized_schema.sql
+          psql -h localhost -U as_owner -d as-postgres -v ON_ERROR_STOP=1 \
+            -f migrations/004_tenant_columns.sql
+          psql -h localhost -U as_owner -d as-postgres -v ON_ERROR_STOP=1 \
+            -f migrations/005_sessions_reconcile.sql
       - name: Pytest
         working-directory: backend
         run: python -m pytest tests -q
