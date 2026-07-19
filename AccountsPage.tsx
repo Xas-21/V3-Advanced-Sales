@@ -886,19 +886,6 @@ export default function AccountsPage({
         return (
             <>
                 <div className="h-full flex flex-col overflow-hidden">
-                    <div
-                        className="shrink-0 flex flex-wrap items-center justify-end gap-2 px-4 py-2 border-b"
-                        style={{ backgroundColor: colors.card, borderColor: colors.border }}
-                    >
-                        <button
-                            type="button"
-                            onClick={() => setBillingAccount(profileAccountRow)}
-                            className="px-3 py-2 rounded border hover:bg-white/5 flex items-center gap-2 text-sm font-bold"
-                            style={{ borderColor: colors.border, color: colors.textMain }}
-                        >
-                            Billing
-                        </button>
-                    </div>
                     <div className="flex-1 min-h-0 overflow-hidden">
                         <CRMProfileView
                             lead={profileLead}
@@ -913,6 +900,7 @@ export default function AccountsPage({
                             currentUser={currentUser}
                             onOpenRequest={onOpenRequest}
                             onViewAccountRequests={() => setProfileRequestsListOpen(true)}
+                            onOpenBilling={() => setBillingAccount(profileAccountRow)}
                             onEditAccount={
                                 profileReadOnly
                                     ? undefined
@@ -1033,6 +1021,35 @@ export default function AccountsPage({
                         theme={theme}
                         canEdit={canMutateOperational(currentUser)}
                         onClose={() => setBillingAccount(null)}
+                        onSettleClRequests={async (requestIds) => {
+                            const idSet = new Set(requestIds.map(String));
+                            const updates: any[] = [];
+                            for (const req of sharedRequests) {
+                                if (!idSet.has(String(req?.id || ''))) continue;
+                                const payload = {
+                                    ...req,
+                                    _update: true,
+                                    paymentStatus: 'Paid',
+                                    collectLater: false,
+                                };
+                                const res = await fetch(apiUrl('/api/requests'), {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    credentials: 'include',
+                                    body: JSON.stringify(payload),
+                                });
+                                if (res.ok) updates.push(payload);
+                            }
+                            if (updates.length) {
+                                setSharedRequests((prev) =>
+                                    prev.map((r) => {
+                                        const hit = updates.find((u) => String(u.id) === String(r.id));
+                                        return hit || r;
+                                    })
+                                );
+                                onAfterRequestsMutate?.();
+                            }
+                        }}
                     />
                 )}
             </>

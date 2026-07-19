@@ -70,8 +70,10 @@ Add to `package.json` scripts:
 
 Run `npx tsc --noEmit`. Because there are ~50 pre-existing errors, do **not** block the whole build on a clean pass immediately. Choose the least-risky baseline that still creates a gate:
 
-- **Preferred**: fix the small, safe errors (implicit-any params, the non-exported `WebSocketMessage` type import at `AS.tsx:82`, missing `key` typing) and remove/guard the dead `RequestsView` `selectedCurrency` crash, then aim for zero errors and gate on `tsc --noEmit` == 0.
-- **If zero-error is too large for one pass** (STOP-and-report if the remaining errors are >~15 after safe fixes): keep `typecheck` reporting-only in `build`, but make CI (Step 4) run `tsc --noEmit` as a **required, non-blocking-annotated** step and record the current error count as a ratchet in this plan's report so it can only go down. State clearly which mode you chose.
+- **Preferred**: fix the small, safe errors … aim for zero errors and gate on `tsc --noEmit` == 0.
+- **If zero-error is too large for one pass** … ratchet mode.
+
+**Outcome (2026-07-20):** Typecheck is **blocking at 0 errors** in CI. Lint is **blocking** with `--max-warnings 2319` (brownfield warn ratchet; fails if warnings increase). Backend pytest remains `continue-on-error` until schema drift on fresh CI DBs is fixed.
 
 **Verify**: `npm run typecheck` runs and prints the current error count.
 

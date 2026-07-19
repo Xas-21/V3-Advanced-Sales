@@ -36,7 +36,7 @@ def _table_ready() -> bool:
 @pytest.fixture
 def comments_fixtures():
     if not _table_ready():
-        pytest.skip("crm_card_comments table missing — run migrations/012_crm_card_comments.py")
+        pytest.skip("crm_card_comments table missing — run migrations/013_crm_card_comments.py")
 
     home_pid = _any_property_id()
     uid = f"U-cc-{uuid.uuid4().hex[:10]}"

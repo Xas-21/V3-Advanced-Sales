@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { computeBalance, requestOwed, outstandingTotal, applicableFromBalance, type LedgerEntry } from './accountBalance';
+import {
+  computeBalance,
+  requestOwed,
+  outstandingTotal,
+  applicableFromBalance,
+  requestHasOpenCl,
+  isClPaymentMethod,
+  clampSplitAmount,
+  type LedgerEntry,
+} from './accountBalance';
 
 const e = (over: Partial<LedgerEntry>): LedgerEntry =>
   ({ id: Math.random().toString(36), accountId: 'A1', type: 'deposit', amount: 0, ...over } as LedgerEntry);
@@ -23,5 +32,24 @@ describe('accountBalance', () => {
     expect(applicableFromBalance(20000, 30000)).toBe(20000); // balance limited
     expect(applicableFromBalance(50000, 30000)).toBe(30000); // request limited
     expect(applicableFromBalance(-5000, 30000)).toBe(0);     // no positive balance
+  });
+
+  it('requestHasOpenCl clears when account deposit zeros outstanding', () => {
+    const entries: LedgerEntry[] = [
+      e({ type: 'cl_charge', amount: -25000, requestId: 'R2' }),
+    ];
+    expect(requestHasOpenCl(entries, 'R2', 25000)).toBe(true);
+    entries.push(e({ type: 'deposit', amount: 25000 }));
+    expect(requestHasOpenCl(entries, 'R2', 25000)).toBe(false);
+    expect(isClPaymentMethod('CL')).toBe(true);
+    expect(isClPaymentMethod('Cash')).toBe(false);
+  });
+
+  it('clampSplitAmount requires a strict remainder on the original entry', () => {
+    expect(clampSplitAmount(-30000, 10000)).toBe(10000);
+    expect(clampSplitAmount(50000, 20000)).toBe(20000);
+    expect(clampSplitAmount(-30000, 30000)).toBe(0); // cannot take whole
+    expect(clampSplitAmount(-30000, 0)).toBe(0);
+    expect(clampSplitAmount(-30000, 40000)).toBe(0);
   });
 });

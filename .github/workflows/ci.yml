@@ -1,6 +1,7 @@
 # Plan 040 verification gate.
-# Typecheck is ratchet mode (continue-on-error): baseline 50 errors as of 2026-07-19.
-# Flip to blocking once `npm run typecheck` reaches zero.
+# Typecheck: blocking (zero errors required).
+# Lint: blocking ratchet at --max-warnings 2319 (brownfield warn baseline; fail if count rises).
+# Backend pytest: still reporting-only until fresh-CI schema drift is resolved.
 name: CI
 
 on:
@@ -18,13 +19,9 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci
-      - name: Typecheck (ratchet — reporting only; baseline 50 tsc errors)
-        continue-on-error: true
+      - name: Typecheck
         run: npm run typecheck
-      # Lint script keeps --max-warnings 0; brownfield still has thousands of
-      # warn-level findings. continue-on-error until the lint ratchet hits zero.
-      - name: Lint (ratchet — reporting only until warning count is zero)
-        continue-on-error: true
+      - name: Lint (warn ratchet — max-warnings 2319)
         run: npm run lint
       - run: npm run test:frontend
       - run: npm run build
@@ -72,7 +69,7 @@ jobs:
             -f migrations/004_tenant_columns.sql
           psql -h localhost -U as_owner -d as-postgres -v ON_ERROR_STOP=1 \
             -f migrations/005_sessions_reconcile.sql
-      # Ratchet (like frontend typecheck/lint): the suite assumes a fully
+      # Ratchet (like frontend lint): the suite assumes a fully
       # migrated DB, and the repo has schema drift between 001_normalized_schema.sql
       # (typed tables) and utils.py's legacy payload tables, which a fresh CI DB
       # exposes as `column "payload" does not exist`. Runs + reports, but does not

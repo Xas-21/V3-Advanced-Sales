@@ -51,3 +51,24 @@ export function outstandingTotal(entries: LedgerEntry[]): number {
 export function applicableFromBalance(balance: number, requestDue: number): number {
   return Math.max(0, Math.min(num(balance), num(requestDue)));
 }
+
+export function isClPaymentMethod(method: unknown): boolean {
+  return String(method || '').trim().toUpperCase() === 'CL';
+}
+
+/** Request still has an open Collect-Later charge on the ledger. */
+export function requestHasOpenCl(entries: LedgerEntry[], requestId: string, requestTotal: number): boolean {
+  return requestOwed(entries, requestId, requestTotal) > 0.0001;
+}
+
+/**
+ * Amount that can be split off an allocation (or allocated from a deposit) onto
+ * another request. Must be strictly between 0 and the entry's absolute amount
+ * so the original row keeps a remainder.
+ */
+export function clampSplitAmount(entryAmount: number, splitAmount: number): number {
+  const full = Math.abs(num(entryAmount));
+  const s = num(splitAmount);
+  if (!(full > 0) || !(s > 0) || !(s < full)) return 0;
+  return s;
+}

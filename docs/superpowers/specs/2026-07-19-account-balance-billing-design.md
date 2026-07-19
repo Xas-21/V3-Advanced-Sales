@@ -1,7 +1,7 @@
 # Account Balance & Billing — Design Spec
 
 **Date:** 2026-07-19
-**Status:** Approved (design), pending implementation plan
+**Status:** Implemented (Billing on CRMProfileView; deposit allocate + split; Balance/CL on requests)
 **Author:** Brainstormed with user via superpowers:brainstorming
 
 ## 1. Problem / Goal

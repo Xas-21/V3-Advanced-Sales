@@ -51,7 +51,7 @@
 - Consumes: `_get_pool()`, `init_database()`, `storage_mode()`
 - Produces: table `crm_card_comments` with columns matching the spec
 
-- [ ] **Step 1: Add ensure helper in `backend/utils.py`**
+- [x] **Step 1: Add ensure helper in `backend/utils.py`**
 
 Near `_ensure_feed_tables` / before `init_database`, add:
 
@@ -92,7 +92,7 @@ In `init_database()`, after `_ensure_feed_tables()` (or nearby), add:
         _ensure_crm_card_comments_table()
 ```
 
-- [ ] **Step 2: Add migration script `backend/migrations/012_crm_card_comments.py`**
+- [x] **Step 2: Add migration script `backend/migrations/012_crm_card_comments.py`**
 
 Mirror `011_account_rates.py` style:
 
@@ -150,7 +150,7 @@ with pool.connection() as c:
 print(f"\nCRM_CARD_COMMENTS: {applied} applied/verified, {skipped} skipped")
 ```
 
-- [ ] **Step 3: Apply schema locally**
+- [x] **Step 3: Apply schema locally**
 
 Run (host or container, match how you usually hit Postgres):
 
@@ -161,7 +161,7 @@ python migrations/012_crm_card_comments.py
 
 Expected: `CRM_CARD_COMMENTS: 2 applied/verified, 0 skipped` (or OK lines).
 
-- [ ] **Step 4: Optional commit checkpoint**
+- [x] **Step 4: Optional commit checkpoint**
 
 ```bash
 git add backend/utils.py backend/migrations/012_crm_card_comments.py
@@ -184,7 +184,7 @@ git commit -m "feat(crm): add crm_card_comments table ensure and migration"
   - `POST /api/crm/card-comments` JSON `{propertyId,targetType,targetId,body}` → created item; 400 if empty/over 500/at cap 5
   - `DELETE /api/crm/card-comments/{id}?propertyId=` → `{ok:true}`; any auth user with property access
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 Create `backend/tests/test_crm_card_comments.py` (pattern from `test_account_rates.py`):
 
@@ -406,7 +406,7 @@ def test_reject_empty_and_too_long(comments_fixtures):
     ).status_code == 400
 ```
 
-- [ ] **Step 2: Run tests — expect FAIL**
+- [x] **Step 2: Run tests — expect FAIL**
 
 ```bash
 cd backend
@@ -415,7 +415,7 @@ python -m pytest tests/test_crm_card_comments.py -v
 
 Expected: FAIL (router missing / 404).
 
-- [ ] **Step 3: Implement router `backend/routers/crm_card_comments.py`**
+- [x] **Step 3: Implement router `backend/routers/crm_card_comments.py`**
 
 ```python
 """CRM kanban card sticky comments (request vs account targets)."""
@@ -584,7 +584,7 @@ def delete_card_comment(
     return {"ok": True}
 ```
 
-- [ ] **Step 4: Register router in `backend/main.py`**
+- [x] **Step 4: Register router in `backend/main.py`**
 
 Update import line (~73) to include `crm_card_comments`:
 
@@ -598,7 +598,7 @@ Near other auth-required routers (~204):
 app.include_router(crm_card_comments.router, dependencies=_auth_required)
 ```
 
-- [ ] **Step 5: Run tests — expect PASS**
+- [x] **Step 5: Run tests — expect PASS**
 
 ```bash
 cd backend
@@ -607,7 +607,7 @@ python -m pytest tests/test_crm_card_comments.py -v
 
 Expected: all tests PASS.
 
-- [ ] **Step 6: Optional commit checkpoint**
+- [x] **Step 6: Optional commit checkpoint**
 
 ```bash
 git add backend/routers/crm_card_comments.py backend/main.py backend/tests/test_crm_card_comments.py
@@ -629,7 +629,7 @@ git commit -m "feat(crm): add card-comments API with 5-comment cap"
   - `export type CrmCardComment = { id: string; targetType: CrmCardCommentTargetType; targetId: string; body: string; authorUserId: string; authorName: string; createdAt: string }`
   - `export function visibleCardComments(commentsNewestFirst: CrmCardComment[], expanded: boolean, recentLimit = 2): CrmCardComment[]`
 
-- [ ] **Step 1: Write failing test `crmCardComments.test.ts`**
+- [x] **Step 1: Write failing test `crmCardComments.test.ts`**
 
 ```typescript
 import { describe, expect, it } from 'vitest';
@@ -664,7 +664,7 @@ describe('visibleCardComments', () => {
 });
 ```
 
-- [ ] **Step 2: Run test — expect FAIL**
+- [x] **Step 2: Run test — expect FAIL**
 
 ```bash
 npx vitest run crmCardComments.test.ts
@@ -672,7 +672,7 @@ npx vitest run crmCardComments.test.ts
 
 Expected: FAIL (module missing).
 
-- [ ] **Step 3: Implement `crmCardComments.ts`**
+- [x] **Step 3: Implement `crmCardComments.ts`**
 
 ```typescript
 export type CrmCardCommentTargetType = 'request' | 'account';
@@ -702,7 +702,7 @@ export const CRM_CARD_COMMENT_MAX = 5;
 export const CRM_CARD_COMMENT_BODY_MAX = 500;
 ```
 
-- [ ] **Step 4: Run test — expect PASS**
+- [x] **Step 4: Run test — expect PASS**
 
 ```bash
 npx vitest run crmCardComments.test.ts
@@ -710,7 +710,7 @@ npx vitest run crmCardComments.test.ts
 
 Expected: PASS.
 
-- [ ] **Step 5: Optional commit checkpoint**
+- [x] **Step 5: Optional commit checkpoint**
 
 ```bash
 git add crmCardComments.ts crmCardComments.test.ts
@@ -728,7 +728,7 @@ git commit -m "feat(crm): add card comment collapse helper"
 - Consumes: `apiUrl` from `backendApi.ts`, helpers/constants from `crmCardComments.ts`, Lucide `Plus`/`Trash2`, theme `colors` object (same shape CRM already passes via `theme.colors`)
 - Produces: `<CrmCardComments propertyId targetType targetId colors />`
 
-- [ ] **Step 1: Implement `CrmCardComments.tsx`**
+- [x] **Step 1: Implement `CrmCardComments.tsx`**
 
 ```tsx
 import React, { useEffect, useState } from 'react';
@@ -962,7 +962,7 @@ export default function CrmCardComments({
 }
 ```
 
-- [ ] **Step 2: Smoke-check TypeScript**
+- [x] **Step 2: Smoke-check TypeScript**
 
 ```bash
 npx tsc --noEmit --pretty false 2>&1 | Select-String -Pattern "CrmCardComments|crmCardComments" | Select-Object -First 20
@@ -970,7 +970,7 @@ npx tsc --noEmit --pretty false 2>&1 | Select-String -Pattern "CrmCardComments|c
 
 Expected: no errors mentioning these files (project may have unrelated tsc noise).
 
-- [ ] **Step 3: Optional commit checkpoint**
+- [x] **Step 3: Optional commit checkpoint**
 
 ```bash
 git add CrmCardComments.tsx
@@ -988,7 +988,7 @@ git commit -m "feat(crm): add CrmCardComments inline UI component"
 - Consumes: `CrmCardComments`, `activeProperty?.id`, `crmReadOnly`, `req.id` (request view), `lead.accountId` (account view)
 - Produces: comments block under request-card “Created by” row (~3337) and under account-view card footer (~3475)
 
-- [ ] **Step 1: Import component**
+- [x] **Step 1: Import component**
 
 Near other imports at top of `CRM.tsx`:
 
@@ -996,7 +996,7 @@ Near other imports at top of `CRM.tsx`:
 import CrmCardComments from './CrmCardComments';
 ```
 
-- [ ] **Step 2: Request-view card — after the “Created by” block (inside the bordered footer `div` that ends ~3338), before closing `</div>` of that footer**
+- [x] **Step 2: Request-view card — after the “Created by” block (inside the bordered footer `div` that ends ~3338), before closing `</div>` of that footer**
 
 Insert:
 
@@ -1028,7 +1028,7 @@ Exact target: after line with `{details?.creatorName || '—'}` block closes, af
                                                 </div>
 ```
 
-- [ ] **Step 3: Account-view card — after the Date / accountManager footer (~3468–3475), before card closing `</div>` (~3476)**
+- [x] **Step 3: Account-view card — after the Date / accountManager footer (~3468–3475), before card closing `</div>` (~3476)**
 
 ```tsx
                                                 <CrmCardComments
@@ -1042,7 +1042,7 @@ Exact target: after line with `{details?.creatorName || '—'}` block closes, af
 
 If `lead.accountId` is empty, component returns `null` (no UI).
 
-- [ ] **Step 4: Manual verification**
+- [x] **Step 4: Manual verification**
 
 1. `docker compose up -d` (or local API + `npm run dev`).
 2. CRM → **Request** view → open a card → `+` → type → OK → see author + time + trash.
@@ -1051,7 +1051,7 @@ If `lead.accountId` is empty, component returns `null` (no UI).
 5. Switch to **Account** view → comments on an account card are independent (do not show request comments).
 6. Second user (or same) can trash another user’s comment.
 
-- [ ] **Step 5: Optional commit checkpoint**
+- [x] **Step 5: Optional commit checkpoint**
 
 ```bash
 git add CRM.tsx
@@ -1064,7 +1064,7 @@ git commit -m "feat(crm): show inline card comments on request and account kanba
 
 **Files:** graph artifacts under `graphify-out/` (generated)
 
-- [ ] **Step 1: Update knowledge graph**
+- [x] **Step 1: Update knowledge graph**
 
 ```bash
 graphify update .
@@ -1072,7 +1072,7 @@ graphify update .
 
 Expected: completes without error.
 
-- [ ] **Step 2: Optional commit** — only if the user wants graphify-out committed (often gitignored or noisy; skip unless asked).
+- [x] **Step 2: Optional commit** — only if the user wants graphify-out committed (often gitignored or noisy; skip unless asked).
 
 ---
 

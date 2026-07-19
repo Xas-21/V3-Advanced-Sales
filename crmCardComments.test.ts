@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { visibleCardComments, type CrmCardComment } from './crmCardComments';
+import {
+    isCrmCardInteractiveDragTarget,
+    visibleCardComments,
+    type CrmCardComment,
+} from './crmCardComments';
 
 function c(id: string, body: string): CrmCardComment {
     return {
@@ -12,6 +16,13 @@ function c(id: string, body: string): CrmCardComment {
         createdAt: `2026-07-19T0${id}:00:00Z`,
     };
 }
+
+describe('isCrmCardInteractiveDragTarget', () => {
+    it('rejects non-elements', () => {
+        expect(isCrmCardInteractiveDragTarget(null)).toBe(false);
+        expect(isCrmCardInteractiveDragTarget({} as EventTarget)).toBe(false);
+    });
+});
 
 describe('visibleCardComments', () => {
     const five = [c('5', 'n5'), c('4', 'n4'), c('3', 'n3'), c('2', 'n2'), c('1', 'n1')];

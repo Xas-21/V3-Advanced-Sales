@@ -1,16 +1,16 @@
 # Graph Report - V3-Advanced-Sales  (2026-07-19)
 
 ## Corpus Check
-- 431 files · ~651,836 words
+- 431 files · ~630,199 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 5743 nodes · 9190 edges · 420 communities (398 shown, 22 thin omitted)
-- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 274 edges (avg confidence: 0.78)
+- 5825 nodes · 9373 edges · 418 communities (395 shown, 23 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 319 edges (avg confidence: 0.78)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `90c3a4c4`
+- Built from commit: `f2af8c5e`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -247,13 +247,17 @@
 - GSAP Plugins
 - GSAP Plugins
 - GSAP Plugins
+- @fontsource-variable/geist
 - GSAP Plugins
 - GSAP Plugins
-- GSAP Plugins
-- GSAP Plugins
+- shadcn
 - gsap.utils
+- badge.tsx
 - gsap.utils
-- gsap.utils
+- jspdf-autotable
+- radix-ui
+- react-router-dom
+- recharts
 - gsap.utils
 - gsap.utils
 - Per-component notes
@@ -335,12 +339,10 @@
 - Separator.Root → Separator
 - (new) Fieldset.Root and Fieldset.Legend
 - (new) Fieldset.Root and Fieldset.Legend
-- agreementStatus
 - overlays.md
 - overlays.md
 - clsx
 - dompurify
-- lucide-react
 - @fontsource-variable/geist
 - lucide-react
 - Plan 035: Admin password-reset hardening + migration rotation
@@ -349,14 +351,12 @@
 - propertyOccupancyTypes.ts
 - Plan 014: Messenger taste redesign + GSAP (keep all features)
 - Plan 013: Hub chrome foundation (tabs, kit, shadcn, GSAP enter)
-- 008_write_authz_test.py
 - Plan 012: Paginate Accounts (and Contacts) list like Requests
 - Plan 014: Redesign Hub Requests tab (hierarchy + de-dupe charts)
 - /new-plan
 - mammoth
 - Plan 013: Fix Messenger message text contrast on dark themes
 - Plan 022: Redesign Hub Activities tab (fix Active Users + naming)
-- test_chat_batch_ef.py
 - Plan 015: Redesign Hub Revenue Mix (collection-first, de-dupe vs Requests)
 - Plan 016: Redesign Hub Rooms tab (range honesty, gauges, Table)
 - Plan 017: Redesign Hub MICE tab (inventory vs demand)
@@ -377,22 +377,20 @@
 - Plan 007: Gate Settings users/properties fetch until admin needs them
 - Plan 008: Resolve account form schema once for incomplete checks
 - Advisor plans index
-- business_card_scan.py
 - richText.tsx
 - scripts
 - package.json
-- recharts
 
 ## God Nodes (most connected - your core abstractions)
-1. `AdvancedSalesDashboard()` - 102 edges
-2. `_get_pool()` - 86 edges
+1. `AdvancedSalesDashboard()` - 103 edges
+2. `_get_pool()` - 88 edges
 3. `RequestsManager()` - 69 edges
 4. `apiUrl()` - 65 edges
 5. `CRM()` - 61 edges
 6. `AccountsPage()` - 46 edges
-7. `cn()` - 43 edges
-8. `require_user()` - 42 edges
-9. `Settings()` - 39 edges
+7. `require_user()` - 43 edges
+8. `cn()` - 43 edges
+9. `Settings()` - 40 edges
 10. `CORE DIRECTIVE: IMAGE-FIRST WEBSITE DESIGN TO CODE` - 39 edges
 
 ## Surprising Connections (you probably didn't know these)
@@ -410,23 +408,23 @@
 ## Import Cycles
 - None detected.
 
-## Communities (420 total, 22 thin omitted)
+## Communities (418 total, 23 thin omitted)
 
 ### Community 0 - "CRM.tsx / AccountsPage.tsx"
 Cohesion: 0.08
-Nodes (38): applyFormOverrideToSchema(), clone(), getDefaultFormSchema(), getResolvedFormSchemaFromStores(), loadPropertyFormOverrides(), mirrorFormConfigurationsToLocalStorage(), persistFormConfigurationsForProperty(), storageKey() (+30 more)
+Nodes (44): checkPasswordPolicy(), ALERT_TYPE_REGISTRY, AlertKindRowSettings, DEADLINE_ACCENT_OPTIONS, DEADLINE_ALERT_KINDS, DEADLINE_OFFSET_OPTIONS, DeadlineAlertAccent, DeadlineAlertKind (+36 more)
 
 ### Community 1 - "AS.tsx / parseYmd()"
-Cohesion: 0.04
-Nodes (88): dismissStorageKey(), isDismissedForDate(), loadDismissMap(), localDateKey(), saveDismissMap(), accountPerformanceData, AccountsPage, AddAccountModal (+80 more)
+Cohesion: 0.03
+Nodes (92): dismissStorageKey(), isDismissedForDate(), loadDismissMap(), localDateKey(), saveDismissMap(), accountPerformanceData, AccountsPage, AddAccountModal (+84 more)
 
 ### Community 2 - "crmCallReportUtils.ts / crmActivitiesUtils.ts"
-Cohesion: 0.07
-Nodes (67): CallDetailsModal(), CallDetailsModalProps, kindLabel(), accountHasCallHistory(), buildAccountCallTimeline(), CallTimelineEntry, CRM_QUARTER_MONTH_BLOCKS, CrmSalesPeriod (+59 more)
+Cohesion: 0.08
+Nodes (62): flattenCrmLeads(), CallDetailsModal(), CallDetailsModalProps, kindLabel(), accountHasCallHistory(), buildAccountCallTimeline(), CallTimelineEntry, CRM_QUARTER_MONTH_BLOCKS (+54 more)
 
 ### Community 3 - "contractsStore.ts / Contracts.tsx"
 Cohesion: 0.13
-Nodes (43): Contracts(), ContractsProps, isCompanyNameVariable(), isDateLikeVariable(), isEndDateVariable(), isStartDateVariable(), isTodayVariable(), normalizeVarKey() (+35 more)
+Nodes (42): Contracts(), ContractsProps, isCompanyNameVariable(), isDateLikeVariable(), isEndDateVariable(), isStartDateVariable(), isTodayVariable(), normalizeVarKey() (+34 more)
 
 ### Community 4 - "Settings.tsx / userProfileMetrics.ts"
 Cohesion: 0.04
@@ -438,11 +436,11 @@ Nodes (48): Arrow / Item / Group / Label / CheckboxItem / RadioGroup / RadioItem
 
 ### Community 6 - "_get_pool() / utils.py"
 Cohesion: 0.08
-Nodes (62): get_crm_state(), list_accounts(), _list_doc(), list_requests(), health(), on_startup(), _account_name_sort_key(), check_database_health() (+54 more)
+Nodes (68): get_account(), get_crm_state(), _list_doc(), list_requests(), health(), on_startup(), Schema ensure is idempotent and adds Batch E/F columns., test_ensure_chat_tables_columns() (+60 more)
 
 ### Community 7 - "auth_db.py / security.py"
-Cohesion: 0.05
-Nodes (39): authenticate(), bump_session_version_and_revoke(), change_password(), create_session(), get_password_hash(), get_user_by_id(), get_user_by_username(), AS authentication + authorization + tenant isolation against the relational DB. (+31 more)
+Cohesion: 0.04
+Nodes (44): authenticate(), bump_session_version_and_revoke(), change_password(), create_session(), get_password_hash(), get_user_by_id(), get_user_by_username(), AS authentication + authorization + tenant isolation against the relational DB. (+36 more)
 
 ### Community 8 - "requestAlertEngine.ts / propertyAlertSettings.ts"
 Cohesion: 0.23
@@ -465,12 +463,12 @@ Cohesion: 0.07
 Nodes (31): _delete_doc(), delete_flat(), _get_doc(), get_flat(), list_flat(), upsert_flat(), delete_account_rate(), get_account_rates() (+23 more)
 
 ### Community 13 - "RequestsManager.tsx / RequestsManager()"
-Cohesion: 0.08
-Nodes (68): requestMatchesAccount(), EventsView(), addCalendarDaysIso(), calculateAccFinancialsForRequest(), calculateEventAgendaDays(), deriveBeoPaymentView(), deriveRequestMealLabelFromRooms(), escapeHtml() (+60 more)
+Cohesion: 0.22
+Nodes (13): buildCoreRow(), buildSegMaps(), computeMiceChartRevenueInMonth(), computeRoomsChartMetricsInMonth(), countInSegment(), filterTypeMice(), miceMetrics(), rawAccountTypeFromRequest() (+5 more)
 
 ### Community 14 - "formConfigurations.ts / AddAccountModal.tsx"
-Cohesion: 0.11
-Nodes (35): findPotentialDuplicateAccounts(), samePropertyAccount(), accountToFormState(), AddAccountModal(), AddAccountModalProps, defaultFormState(), emptyContactRow(), AddSalesCallModal() (+27 more)
+Cohesion: 0.13
+Nodes (27): applyFormOverrideToSchema(), clone(), collectAccountFormViolations(), collectContactFormViolations(), collectNewPropertyFormViolations(), collectNewUserFormViolations(), collectRequestFormViolations(), collectSalesCallFormViolations() (+19 more)
 
 ### Community 15 - "reportsVsLastYear.ts"
 Cohesion: 0.05
@@ -486,23 +484,23 @@ Nodes (48): require_user(), add_participants(), _admin_count(), _assert_particip
 
 ### Community 18 - "feed.py / dependencies.py"
 Cohesion: 0.09
-Nodes (40): is_admin(), add_comment(), _broadcast_feed(), _clean_attachments(), _clean_meta(), CommentCreate, create_post(), _default_property_id() (+32 more)
+Nodes (39): add_comment(), _broadcast_feed(), _clean_attachments(), _clean_meta(), CommentCreate, create_post(), _default_property_id(), delete_comment() (+31 more)
 
 ### Community 19 - "test_api_full.py / hash_password()"
-Cohesion: 0.08
-Nodes (3): Full API smoke + CRUD coverage using FastAPI TestClient (no tunnel, no live serv, Assigning property must not invalidate sessions (no password POST / no session b, test_patch_user_property_id_preserves_session_version()
+Cohesion: 0.07
+Nodes (5): ensure_test_property(), Full API smoke + CRUD coverage using FastAPI TestClient (no tunnel, no live serv, Assigning property must not invalidate sessions (no password POST / no session b, Guarantee the PROP_ID property row exists so FK-dependent inserts (users,     r, test_patch_user_property_id_preserves_session_version()
 
 ### Community 20 - "propertyMealsPackages.ts / resolveMealPlansForProperty()"
 Cohesion: 0.05
 Nodes (33): 1. Correctness / Bugs, 2. Security, 3. Performance, 4. Test Coverage, 5. Tech Debt & Architecture, 6. Dependencies & Migrations, 7. DX & Tooling, 8. Docs (+25 more)
 
 ### Community 21 - "propertyOccupancyTypes.ts / calculateNights()"
-Cohesion: 0.15
-Nodes (39): addProratedRequestFinancialsToDashboardBuckets(), asNumberReport(), buildReportSegmentsForRequest(), calculateNights(), chartStatusKeyFromRequest(), computeRequestRevenueBreakdownNoTax(), DashboardFinancialBucket, DashboardRoomsChartBucketGranularity (+31 more)
+Cohesion: 0.26
+Nodes (11): countRequestNights(), countRequestRooms(), formatYmd(), getPipelineLinkedRequestDisplay(), getRequestCardDeadlines(), getRequestCreatorName(), getRequestKanbanCardDetails(), PipelineLinkedRequestDisplay (+3 more)
 
 ### Community 22 - "CRMProfileView.tsx / accountProfileData.ts"
-Cohesion: 0.10
-Nodes (29): asciiSafeForExport(), asNumber(), buildCoreRow(), buildSegMaps(), calculateNights(), calculateRoomBlockForReport(), computeRoomsChartMetricsInMonth(), countInSegment() (+21 more)
+Cohesion: 0.14
+Nodes (20): asciiSafeForExport(), calculateNights(), calculateRoomBlockForReport(), collectRequestsTouchingMonth(), csvEscape(), defaultVsLyBuildOptions, escHtml(), exportVsLyMatrixCsv() (+12 more)
 
 ### Community 23 - "Reports.tsx / Reports()"
 Cohesion: 0.04
@@ -513,12 +511,12 @@ Cohesion: 0.04
 Nodes (44): Base UI only props worth knowing (checkbox), Base UI only props worth knowing (radio-group), Base UI only props worth knowing (select), Base UI only props worth knowing (slider), Base UI only props worth knowing (switch), checkbox, Checkbox.Indicator → Checkbox.Indicator, Checkbox.Root → Checkbox.Root (+36 more)
 
 ### Community 25 - "resolveCurrencyCode() / formatCurrencyAmount()"
-Cohesion: 0.07
-Nodes (54): normalizePathname(), parseAppPath(), viewToPath(), AdvancedSalesDashboard(), APP_SHELL_VIEW_IDS, crmLocalStorageKey(), getActivePropertyStorageKey(), getCurrentYearRange() (+46 more)
+Cohesion: 0.08
+Nodes (50): normalizePathname(), parseAppPath(), viewToPath(), AdvancedSalesDashboard(), APP_SHELL_VIEW_IDS, isDashboardExcludedRequest(), normalizeComparePath(), normalizeStatus() (+42 more)
 
 ### Community 26 - "apiUrl() / backendApi.ts"
-Cohesion: 0.11
-Nodes (54): requestTouchesOperationalDateRange(), AccountProfilePerformanceChart, isPerfChartTab(), PERF_TAB_TO_ACCOUNT, UserPerformanceChartTabKey, UserPerformanceDashboard(), UserPerformanceDashboardProps, accountAttributedToUser() (+46 more)
+Cohesion: 0.05
+Nodes (110): buildAccountProfileChartData(), buildDashboardAxis(), DashboardAxisGranularity, DashboardAxisPoint, getDashboardAxisKey(), getMonthKey(), isDashboardExcludedRequest(), isEventsCateringEligibleRequest() (+102 more)
 
 ### Community 27 - "001_normalized_schema.sql / requests"
 Cohesion: 0.15
@@ -546,15 +544,15 @@ Nodes (21): aliases, components, hooks, lib, ui, utils, iconLibrary, menuAccent 
 
 ### Community 33 - "DashboardHubRequestsPage.tsx / DashboardHubRequestsPage()"
 Cohesion: 0.07
-Nodes (29): class-variance-authority, clsx, docxtemplater, dompurify, @fontsource-variable/geist, jspdf-autotable, lucide-react, mammoth (+21 more)
+Nodes (29): class-variance-authority, clsx, docxtemplater, dompurify, @fontsource-variable/geist, @gsap/react, lucide-react, mammoth (+21 more)
 
 ### Community 34 - "DashboardHubSalesPerformancePage.tsx / DashboardHubSalesPerformancePa..."
-Cohesion: 0.14
-Nodes (35): buildMirrorSalesCallFromPipelineCard(), cardPeriodMonth(), clearPipelineLinkForDeletedRequest(), clonePipeline(), CrmStatePayload, defaultCrmState(), defaultPipelineBuckets(), filterPipelineForProperty() (+27 more)
+Cohesion: 0.12
+Nodes (38): buildMirrorSalesCallFromPipelineCard(), cardPeriodMonth(), clearPipelineLinkForDeletedRequest(), clonePipeline(), CrmStatePayload, crmStateToLegacyLeads(), defaultCrmState(), defaultPipelineBuckets() (+30 more)
 
 ### Community 35 - "auth.py / login()"
-Cohesion: 0.14
-Nodes (19): can_access_property(), Tenant isolation: a non-admin may only access assigned properties., Validate the requested property belongs to the user's tenant scope.      Retur, require_property_access(), auth_me(), change_password(), ChangePasswordRequest, _check_rate_limit() (+11 more)
+Cohesion: 0.11
+Nodes (21): auth_me(), change_password(), ChangePasswordRequest, _check_rate_limit(), _client_ip(), login(), LoginRequest, logout() (+13 more)
 
 ### Community 36 - "buildGrandHotelCombinedRevenueRow() / parseYmd()"
 Cohesion: 0.07
@@ -570,19 +568,19 @@ Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development,
 
 ### Community 39 - "chartVsYearCompare.ts / chartTabSupportsVs()"
 Cohesion: 0.12
-Nodes (23): CrmSalesPeriod, Card(), KPICard(), MiniStatCard(), StatusBadge(), buildDemoAccounts(), buildDemoPipeline(), buildDemoRequests() (+15 more)
+Nodes (22): CrmSalesPeriod, Card(), KPICard(), MiniStatCard(), StatusBadge(), buildDemoAccounts(), buildDemoRequests(), buildDemoSalesCalls() (+14 more)
 
 ### Community 40 - "DashboardHubAccountsPage.tsx / DashboardHubAccountsPage()"
 Cohesion: 0.05
 Nodes (43): 1. Logo Cover, 1. Monogram + Meaning, 2 × 3 REFERENCE-STYLE LAYOUT, 2. Logo Construction, 2. Product Action, 3. Digital Application, 3. Metaphor Fusion, 4. Brand Essence (+35 more)
 
 ### Community 41 - "DashboardHubPromotionsPage.tsx / DashboardHubPromotionsPage()"
-Cohesion: 0.17
-Nodes (27): _as_date(), _as_datetime(), _as_decimal(), _as_int(), _assert_upsert_write_access(), _assert_write_access(), _cascade_account_rename_to_requests(), _child_typed() (+19 more)
+Cohesion: 0.18
+Nodes (24): _as_date(), _as_datetime(), _as_decimal(), _as_int(), _cascade_account_rename_to_requests(), _child_typed(), _extract_account_rates(), _extract_financials() (+16 more)
 
 ### Community 42 - "DashboardHubRevenueMixPage.tsx / DashboardHubRevenueMixPage()"
-Cohesion: 0.14
-Nodes (20): get_current_user(), get_current_user_ctx(), Any, Server-side auth dependencies: session resolution, permission + tenant enforceme, Prefer middleware-set context; fall back to resolve_session for rare paths witho, require_admin(), set_current_user(), _user_from_ctx_or_session() (+12 more)
+Cohesion: 0.17
+Nodes (12): auth_context_and_security_headers(), _configure_logging(), _database_host(), get_request_id(), global_exception_handler(), _JsonFormatter, on_shutdown(), Exception (+4 more)
 
 ### Community 43 - "accountProfileData.ts"
 Cohesion: 0.13
@@ -597,20 +595,20 @@ Cohesion: 0.13
 Nodes (14): ConnectionManager, Any, WebSocket, User ids with at least one live WebSocket subscribed to this property., Tell property subscribers who is online right now (active browser sessions)., Broadcast a change event to all subscribed clients.                  Args:, Send a message to specific users (all their open tabs/devices)., Schedule a per-user broadcast from sync / threadpool code. (+6 more)
 
 ### Community 46 - "DashboardHubShell.tsx / dashboardHubTabs.ts"
-Cohesion: 0.18
-Nodes (23): DEFAULT_MEAL_PLANS, dispatchChanged(), EVENT_PACKAGE_TIMING_OPTIONS, eventPackagesFromArray(), eventPackagesKey(), getTimingSlotsForTimingId(), isTimingId(), LEGACY_EVENT_PACKAGE_TO_TIMING (+15 more)
+Cohesion: 0.15
+Nodes (26): DEFAULT_MEAL_PLANS, dispatchChanged(), EVENT_PACKAGE_TIMING_OPTIONS, EventPackageEntry, eventPackagesFromArray(), eventPackagesKey(), EventPackageTimingId, getTimingSlotsForTimingId() (+18 more)
 
 ### Community 47 - "002_migrate.py / migrate()"
 Cohesion: 0.23
 Nodes (11): conn(), d(), migrate(), Guarantee an 'id' field exists on a child object; deterministic per (anchor,inde, Map empty string / None -> None for DATE columns., Map empty string / None -> None for TIMESTAMP columns., Idempotent re-run safety: clear only the NEW relational tables (legacy untouched, reset() (+3 more)
 
 ### Community 48 - "cors_middleware.py / _normalize_origin()"
-Cohesion: 0.26
-Nodes (10): build_cors_settings(), _expand_www_variants(), _normalize_origin(), ProductionCORSMiddleware, CORS middleware with Render-friendly origin fallbacks., Browser Origin headers never include a path or trailing slash., Allow both apex and www for real custom domains only.      IP addresses (e.g., Accept configured origins/regex plus any https://*.onrender.com host. (+2 more)
+Cohesion: 0.17
+Nodes (12): build_cors_settings(), _expand_www_variants(), _normalize_origin(), ProductionCORSMiddleware, CORS middleware with Render-friendly origin fallbacks., Browser Origin headers never include a path or trailing slash., Allow both apex and www for real custom domains only.      IP addresses (e.g., Accept configured origins/regex plus any https://*.onrender.com host. (+4 more)
 
 ### Community 49 - "DashboardHubActivitiesPage.tsx / DashboardHubActivitiesPage()"
-Cohesion: 0.18
-Nodes (21): accountToLead(), contactDisplayName(), leadToAccount(), mergeAccountIntoCrmLead(), resolveAccountOwnerName(), withContactName(), AccountMergeApplyInput, applyAccountMergeInMemory() (+13 more)
+Cohesion: 0.23
+Nodes (15): AccountMergeApplyInput, applyAccountMergeInMemory(), contactIdentityKey(), isMeaninglessContact(), mergeAccountRecords(), mergeContactLists(), mergeContactPair(), mergeScalar() (+7 more)
 
 ### Community 50 - "DashboardHubMicePage.tsx / DashboardHubMicePage()"
 Cohesion: 0.13
@@ -621,16 +619,16 @@ Cohesion: 0.10
 Nodes (16): DashboardHubComingSoonProps, DashboardHubAccountsPage, DashboardHubActivitiesPage, DashboardHubAgreementsPage, DashboardHubCrmPage, DashboardHubFeedPage, DashboardHubMicePage, DashboardHubPromotionsPage (+8 more)
 
 ### Community 53 - "uploads.py / _resolve_cloudinary_config()"
-Cohesion: 0.26
-Nodes (14): delete_local_file(), _ext_of(), get_local_file(), _guess_media_type(), Path, UploadFile, Upload endpoints: local disk storage on the Docker volume (as-uploads-data)., Serve a previously uploaded file (auth required; cookie sent by <img>/<a>). (+6 more)
+Cohesion: 0.12
+Nodes (17): delete_local_file(), _ext_of(), get_local_file(), _guess_media_type(), Path, UploadFile, Upload endpoints: local disk storage on the Docker volume (as-uploads-data)., Serve a previously uploaded file (auth required; cookie sent by <img>/<a>). (+9 more)
 
 ### Community 55 - "shouldPromoteDefiniteToActual"
 Cohesion: 0.05
 Nodes (43): 1. Logo Cover, 1. Monogram + Meaning, 2 × 3 REFERENCE-STYLE LAYOUT, 2. Logo Construction, 2. Product Action, 3. Digital Application, 3. Metaphor Fusion, 4. Brand Essence (+35 more)
 
 ### Community 56 - "MessengerWidget.tsx"
-Cohesion: 0.08
-Nodes (37): AccountLinkedRequestsModal(), AccountLinkedRequestsModalProps, filterRequestsForAccount(), filterSalesCallsForAccount(), AccountsPageProps, ConfirmDialog(), ConfirmDialogProps, CRM() (+29 more)
+Cohesion: 0.09
+Nodes (34): accountToLead(), leadToAccount(), mergeAccountIntoCrmLead(), resolveAccountOwnerName(), withContactName(), filterSalesCallsForAccount(), ConfirmDialog(), ConfirmDialogProps (+26 more)
 
 ### Community 57 - "compilerOptions / tsconfig.node.json"
 Cohesion: 0.22
@@ -645,28 +643,28 @@ Cohesion: 0.50
 Nodes (4): BaseModel, Sends subscription inquiry email when SMTP_* env vars are set.     Otherwise re, subscribe(), SubscribePayload
 
 ### Community 61 - "contactDisplayName"
-Cohesion: 0.17
-Nodes (16): APP_VIEW_PATHS, HUB_TAB_IDS, isHubTabId(), ParsedAppPath, PATH_TO_VIEW, contrastOn(), DashboardHubTabPage(), DashboardHubTabBar() (+8 more)
+Cohesion: 0.14
+Nodes (22): ReportSegment, segmentLineTotalExTax(), csvEscape(), defaultMonthRange(), formatSar(), initialSavedReports, isEventOrEventRoomsType(), lineAmountsExTaxToWithTax() (+14 more)
 
 ### Community 62 - "DashboardHubComingSoon.tsx / DashboardHubComingSoonProps"
 Cohesion: 0.05
-Nodes (72): AttachmentGallery(), attachmentKind(), Avatar(), colorsFallbackDim(), DashboardHubFeedPage(), FeedAttachment, FeedCard(), FeedComment (+64 more)
+Nodes (68): AttachmentGallery(), attachmentKind(), Avatar(), colorsFallbackDim(), DashboardHubFeedPage(), FeedAttachment, FeedCard(), FeedComment (+60 more)
 
 ### Community 63 - "websocket-client.ts / WebSocketMessage"
 Cohesion: 0.23
-Nodes (20): bucketYmdForRequest(), buildGrandHotelCombinedRevenueRow(), collectRequestsTouchingMonth(), computeMiceChartRevenueInMonth(), computeRequestRevenueBreakdownNoTax(), dateAtYmd(), filterTypeMice(), getEventPaxInMonth() (+12 more)
+Nodes (16): ACCOUNT_TYPE_LABEL_SYNONYMS, accountTypesKey(), DEFAULT_PROPERTY_ACCOUNT_TYPES, DEFAULT_PROPERTY_SEGMENTS, loadAccountTypesForProperty(), loadSegmentsForProperty(), matchRawToPropertyLabel(), normalizeTaxonomyStringList() (+8 more)
 
 ### Community 124 - "Plan 026: Messenger group info panel (member list + wire add/remove)"
 Cohesion: 0.15
 Nodes (12): Commands, Current state, Done criteria, Plan 026: Messenger group info panel (member list + wire add/remove), Scope, Status, Step 1: Group info sheet, Step 2: Wire existing APIs (+4 more)
 
 ### Community 125 - "propertyPaymentMethods.ts"
-Cohesion: 0.19
-Nodes (13): CardExtractResponse, deleteAccountDuplicateQueueItem(), extractBusinessCard(), listAccountDuplicateQueue(), upsertAccountDuplicateQueueItem(), API_ORIGIN, apiUrl(), LandingPage() (+5 more)
+Cohesion: 0.07
+Nodes (70): contactDisplayName(), requestMatchesAccount(), EventsView(), totalMiceRequestAttendeeDays(), totalMiceRequestPax(), addCalendarDaysIso(), calculateAccFinancialsForRequest(), calculateEventAgendaDays() (+62 more)
 
 ### Community 126 - "propertyAlertSettings.ts"
-Cohesion: 0.18
-Nodes (16): AlertKindRowSettings, DEADLINE_ACCENT_OPTIONS, DEADLINE_OFFSET_OPTIONS, DeadlineAlertAccent, DeadlineAlertRuleSettings, DEFAULT_DEADLINE_ALERT_RULES, DEFAULT_ROW, mergeDeadlineRule() (+8 more)
+Cohesion: 0.22
+Nodes (8): AccountLinkedRequestsModal(), AccountLinkedRequestsModalProps, filterRequestsForAccount(), AccountsPageProps, CurrencyCode, ReportsProps, RequestsManagerProps, SettingsProps
 
 ### Community 127 - "Advanced Sales & Tour Management System (V3)"
 Cohesion: 0.15
@@ -677,16 +675,16 @@ Cohesion: 0.15
 Nodes (12): Commands, Current state, Done criteria, Plan 027: Messenger group profile (name, avatar, description), Scope, Status, Step 1: Schema, Step 2: PATCH API (+4 more)
 
 ### Community 129 - "GSAP Plugins"
-Cohesion: 0.23
-Nodes (16): ACCOUNT_TYPE_LABEL_SYNONYMS, accountTypesKey(), DEFAULT_PROPERTY_ACCOUNT_TYPES, DEFAULT_PROPERTY_SEGMENTS, loadAccountTypesForProperty(), loadSegmentsForProperty(), matchRawToPropertyLabel(), normalizeTaxonomyStringList() (+8 more)
+Cohesion: 0.14
+Nodes (22): _assert_upsert_write_access(), _assert_write_access(), _broadcast_change(), delete_request(), get_public_feedback_by_token(), Broadcast a data mutation event to WebSocket clients.          Args:         eve, Enforce tenant isolation on writes/deletes, symmetric with read scoping.      Us, Explicit public opt-in: load feedback form by publicToken without auth.      Doe (+14 more)
 
 ### Community 130 - "PROJECT_MAP — Advanced Sales (AS) System, V3"
 Cohesion: 0.15
 Nodes (12): [ARCHITECTURE], Backend structure, Data access pattern, [DATA INVENTORY] (2026-07-12 live), Frontend structure (top-level), Key DB design decisions, [ORPHANS & PENDING], PROJECT_MAP — Advanced Sales (AS) System, V3 (+4 more)
 
 ### Community 131 - "CRMProfileView.tsx"
-Cohesion: 0.23
-Nodes (14): buildAccountProfileChartData(), buildDashboardAxis(), DashboardAxisGranularity, DashboardAxisPoint, getDashboardAxisKey(), getMonthKey(), isDashboardExcludedRequest(), isEventsCateringEligibleRequest() (+6 more)
+Cohesion: 0.40
+Nodes (9): UploadFile, scan_extract_business_card(), _enrich_company_from_web(), _extract_text_from_responses_payload(), _extract_with_openai(), _normalize_openai_contact(), parse_business_card_image(), Any (+1 more)
 
 ### Community 132 - "6) Functional Requirements"
 Cohesion: 0.17
@@ -837,8 +835,8 @@ Cohesion: 0.10
 Nodes (19): Code Quality, Color and Surfaces, Component Patterns, Content, Design Audit, Fix Priority, How This Works, Iconography (+11 more)
 
 ### Community 169 - "buildVsLyMatrix"
-Cohesion: 0.16
-Nodes (25): accountNameSortKey(), addAccountToContactIndex(), buildSystemDuplicateItems(), compareAccountNames(), isScanDuplicateQueueItemStale(), isScannedContactOnAccount(), normalizeAccountNameKey(), pushSystemDuplicatePair() (+17 more)
+Cohesion: 0.14
+Nodes (29): accountNameSortKey(), addAccountToContactIndex(), buildSystemDuplicateItems(), compareAccountNames(), findPotentialDuplicateAccounts(), isScanDuplicateQueueItemStale(), isScannedContactOnAccount(), normalizeAccountNameKey() (+21 more)
 
 ### Community 170 - "Analysis & Synthesis Instructions"
 Cohesion: 0.11
@@ -861,8 +859,8 @@ Cohesion: 0.12
 Nodes (16): 1. Skill Meta, 2.1 Swiss Industrial Print, 2.2 Tactical Telemetry & CRT Terminal, 2. Visual Archetypes, 3.1 Macro-Typography (Structural Headers), 3.2 Micro-Typography (Data & Telemetry), 3.3 Textural Contrast (Artistic Disruption), 3. Typographic Architecture (+8 more)
 
 ### Community 175 - "CORE DIRECTIVE: AWWWARDS-LEVEL IMAGE ART DIRECTION"
-Cohesion: 0.12
-Nodes (16): 10. SECTION RHYTHM RULE, 12. DENSITY & SPACING DISCIPLINE, 14. IMAGE / MEDIA DIRECTION, 16. MULTI-IMAGE CONSISTENCY RULE, 17. CLARITY CHECK, 19. RESPONSE BEHAVIOR, 1. ACTIVE BASELINE CONFIGURATION, 21. FINAL GOAL (+8 more)
+Cohesion: 0.14
+Nodes (14): 10. SECTION RHYTHM RULE, 12. DENSITY & SPACING DISCIPLINE, 14. IMAGE / MEDIA DIRECTION, 16. MULTI-IMAGE CONSISTENCY RULE, 17. CLARITY CHECK, 19. RESPONSE BEHAVIOR, 1. ACTIVE BASELINE CONFIGURATION, 21. FINAL GOAL (+6 more)
 
 ### Community 176 - "SKILL: Industrial Brutalism & Tactical Telemetry UI"
 Cohesion: 0.12
@@ -873,8 +871,8 @@ Cohesion: 0.12
 Nodes (15): Commands you will need, Current state, Done criteria, Maintenance notes, Plan 046: Fix the real correctness bugs surfaced by typecheck, Scope, Status, Step 1 (DEBT-02): Export `WebSocketMessage` (+7 more)
 
 ### Community 178 - "GSAP Plugins"
-Cohesion: 0.19
-Nodes (13): react, react, ChartConfig, ChartContainer(), ChartContext, ChartContextProps, ChartLegendContent(), ChartTooltipContent() (+5 more)
+Cohesion: 0.25
+Nodes (18): buildFullVsLyMatrix(), buildGrandHotelCombinedRevenueRow(), buildOtherRevenueRow(), buildSegmentCountRows(), buildSegmentRevenueRows(), buildVsLyMatrix(), filterTypeRooms(), fmtCyOtbVsLyPct() (+10 more)
 
 ### Community 179 - "tasteskill: Anti-Slop Frontend Skill"
 Cohesion: 0.18
@@ -1201,8 +1199,8 @@ Cohesion: 0.13
 Nodes (14): Commands you will need, Current state, Done criteria, Maintenance notes, Plan 049: Decompose the `AS.tsx` god-file, Scope, Status, Step 0: Prerequisites (+6 more)
 
 ### Community 260 - "GSAP Plugins"
-Cohesion: 0.27
-Nodes (15): buildFullVsLyMatrix(), buildOtherRevenueRow(), buildSegmentCountRows(), buildSegmentRevenueRows(), buildVsLyMatrix(), filterTypeRooms(), fmtCyOtbVsLyPct(), fmtMoney() (+7 more)
+Cohesion: 0.09
+Nodes (41): AccountProfileChartRow, getDefaultAccountPerformanceRange(), AccountRequestStats, buildAccountTimeline(), computeAccountMetrics(), filterInquiryToTentativeRequests(), filterOpenBookingRequests(), filterOpenOpportunityLeads() (+33 more)
 
 ### Community 261 - "GSAP Plugins"
 Cohesion: 0.14
@@ -1237,60 +1235,68 @@ Cohesion: 0.15
 Nodes (12): Commands you will need, Current state, Done criteria, Maintenance notes, Plan 054: Cross-platform test/dev scripts + complete `.env.example`, Scope, Status, Step 1 (DX-02): Make backend scripts cross-platform (+4 more)
 
 ### Community 269 - "GSAP Plugins"
-Cohesion: 0.27
-Nodes (11): calculateNights(), countRequestNights(), countRequestRooms(), formatYmd(), getPipelineLinkedRequestDisplay(), getRequestCardDeadlines(), getRequestCreatorName(), getRequestKanbanCardDetails() (+3 more)
+Cohesion: 0.20
+Nodes (12): delete_account(), list_accounts(), AccountSyncBody, AccountUpsertBody, delete_account_endpoint(), get_account_endpoint(), list_accounts_endpoint(), BaseModel (+4 more)
 
 ### Community 270 - "GSAP Plugins"
 Cohesion: 0.18
 Nodes (9): Insert/update a row carrying a `payload jsonb` + typed scalar columns.      `typ, _upsert_doc(), upsert_payload_only(), delete_contract_template(), list_contract_templates(), upsert_contract_template(), delete_cxl_reason(), list_cxl_reasons() (+1 more)
 
 ### Community 271 - "GSAP Plugins"
-Cohesion: 0.22
-Nodes (9): auth_context_and_security_headers(), _database_host(), global_exception_handler(), on_shutdown(), permission_error_handler(), Exception, Request, close_database() (+1 more)
+Cohesion: 0.19
+Nodes (13): react, react, ChartConfig, ChartContainer(), ChartContext, ChartContextProps, ChartLegendContent(), ChartTooltipContent() (+5 more)
 
 ### Community 272 - "GSAP Plugins"
-Cohesion: 0.24
-Nodes (9): get_request(), _load_request_children_maps(), Prefetch all request children in O(tables) queries. Returns maps keyed by reques, Single-row hydrate (kept for any callers); uses the same batched child loader., _request_dict_from_row(), _row_to_request_dict(), _any_property_id(), list_requests batches child loads (plan 001). (+1 more)
+Cohesion: 0.22
+Nodes (10): get_request(), _load_request_children_maps(), Prefetch all request children in O(tables) queries. Returns maps keyed by reques, Single-row hydrate (kept for any callers); uses the same batched child loader., _request_dict_from_row(), _row_to_request_dict(), _any_property_id(), batch_req_id() (+2 more)
 
 ### Community 273 - "GSAP Plugins"
-Cohesion: 0.31
-Nodes (9): Flat list tenant isolation (plan 005): non-admins must not read other properties, Plan 034: IDOR — overwrite foreign row by sending an allowed propertyId., Admins (unscoped) may still manage rows across properties., _session_cookie(), test_admin_can_upsert_foreign_property_task(), test_scoped_user_can_create_task_on_home_property(), test_scoped_user_cannot_list_foreign_property_tasks(), test_scoped_user_cannot_upsert_foreign_task_with_home_property() (+1 more)
+Cohesion: 0.08
+Nodes (41): setup(), hash_password(), _any_property_id(), rates_fixtures(), Account rate periods API (plan 037): CRUD + accountId filter + tenant write guar, _session_cookie(), _table_ready(), test_account_rates_crud_and_filter() (+33 more)
 
 ### Community 274 - "GSAP Plugins"
-Cohesion: 0.33
-Nodes (9): getRequestDateWindow(), LinkedAccountRow, newPromotionDraft(), normalize(), overlaps(), PromotionRow, PromotionsPage(), requestRevenue() (+1 more)
+Cohesion: 0.16
+Nodes (24): MainChart(), convertCurrencyToSar(), convertSarToCurrency(), CURRENCY_OPTIONS, formatCurrencyAmount(), getCurrencySymbol(), resolveCurrencyCode(), SAR_PER_CURRENCY (+16 more)
 
 ### Community 275 - "GSAP Plugins"
 Cohesion: 0.53
 Nodes (8): upsert_crm_state(), _default_pipeline(), get_crm_state(), _migrate_block(), _normalize_leads(), _normalize_pipeline(), recover_crm_state(), save_crm_state()
 
 ### Community 276 - "GSAP Plugins"
-Cohesion: 0.42
-Nodes (8): DEFAULT_PAYMENT_METHODS, defaultPaymentMethodForProperty(), dispatchChanged(), normalizePaymentMethods(), postPropertyPatch(), resolvePaymentMethodsForProperty(), savePaymentMethodsForProperty(), storageKey()
+Cohesion: 0.14
+Nodes (21): CardExtractResponse, deleteAccountDuplicateQueueItem(), extractBusinessCard(), listAccountDuplicateQueue(), upsertAccountDuplicateQueueItem(), API_ORIGIN, apiUrl(), LandingPage() (+13 more)
 
 ### Community 277 - "GSAP Plugins"
-Cohesion: 0.25
-Nodes (7): _broadcast_change(), delete_request(), Broadcast a data mutation event to WebSocket clients.          Args:         eve, create_request(), list_requests(), remove_request(), batch_req_id()
+Cohesion: 0.33
+Nodes (6): create_request(), list_requests(), BaseModel, Minimal identity + list/bool fields; extras kept for payload jsonb., remove_request(), RequestCreateBody
 
 ### Community 278 - "GSAP Plugins"
-Cohesion: 0.39
-Nodes (7): _any_property_id(), rates_fixtures(), Account rate periods API (plan 037): CRUD + accountId filter + tenant write guar, _session_cookie(), _table_ready(), test_account_rates_crud_and_filter(), test_scoped_user_cannot_upsert_foreign_account_rate()
+Cohesion: 0.10
+Nodes (28): can_access_property(), is_admin(), Tenant isolation: a non-admin may only access assigned properties., get_current_user(), get_current_user_ctx(), Any, Server-side auth dependencies: session resolution, permission + tenant enforceme, Prefer middleware-set context; fall back to resolve_session for rare paths witho (+20 more)
 
 ### Community 279 - "GSAP Plugins"
 Cohesion: 0.48
 Nodes (5): normalizeRequestAlerts(), RequestAlert, requestHasAlerts(), RequestAlertsModal(), RequestAlertsModalProps
 
 ### Community 280 - "GSAP Plugins"
-Cohesion: 0.40
-Nodes (3): Messenger group management + prefs smoke tests (Batch E/F)., Schema ensure is idempotent and adds Batch E/F columns., test_ensure_chat_tables_columns()
+Cohesion: 0.43
+Nodes (5): currentAssigned(), nextUserPropertyAccess(), PropLike, userCanAccessProperty(), UserLike
 
 ### Community 281 - "GSAP Plugins"
+Cohesion: 0.17
+Nodes (16): APP_VIEW_PATHS, HUB_TAB_IDS, isHubTabId(), ParsedAppPath, PATH_TO_VIEW, contrastOn(), DashboardHubTabPage(), DashboardHubTabBar() (+8 more)
+
+### Community 284 - "@fontsource-variable/geist"
+Cohesion: 0.28
+Nodes (13): asNumber(), bucketYmdForRequest(), computeRequestRevenueBreakdownNoTax(), countNightsInStayWindow(), dateAtYmd(), forEachStayNight(), getEventPaxInMonth(), getEventRevInMonth() (+5 more)
+
+### Community 285 - "GSAP Plugins"
+Cohesion: 0.33
+Nodes (11): accountToFormState(), AddAccountModal(), AddAccountModalProps, defaultFormState(), emptyContactRow(), AddSalesCallModal(), AddSalesCallModalProps, FormConfigurationPropertySource (+3 more)
+
+### Community 286 - "GSAP Plugins"
 Cohesion: 0.50
 Nodes (4): 1.A Dial Inference (design read → dial values), 1.B Use-Case Presets, 1.C How the Dials Drive Output, 1. THE THREE DIALS (Core Configuration)
-
-### Community 282 - "GSAP Plugins"
-Cohesion: 0.50
-Nodes (4): get_account(), _load_users_cache(), _row_to_account_dict(), get_account_endpoint()
 
 ### Community 290 - "gsap.utils"
 Cohesion: 0.07
@@ -1620,10 +1626,6 @@ Nodes (4): Base UI only props worth knowing (form-wide), CSS variables, Data att
 Cohesion: 0.50
 Nodes (4): Base UI only props worth knowing (form-wide), CSS variables, Data attributes, (new) Fieldset.Root and Fieldset.Legend
 
-### Community 721 - "agreementStatus"
-Cohesion: 0.08
-Nodes (47): AccountProfileChartRow, getDefaultAccountPerformanceRange(), AccountRequestStats, buildAccountTimeline(), computeAccountMetrics(), filterInquiryToTentativeRequests(), filterOpenBookingRequests(), filterOpenOpportunityLeads() (+39 more)
-
 ### Community 724 - "clsx"
 Cohesion: 0.14
 Nodes (13): Commands, Current state, Done criteria, Plan 029: Messenger mute, pin, and search, Scope, Status, Step 1: Schema + prefs API, Step 2: List ordering + mute UX (+5 more)
@@ -1631,10 +1633,6 @@ Nodes (13): Commands, Current state, Done criteria, Plan 029: Messenger mute, pi
 ### Community 725 - "dompurify"
 Cohesion: 0.14
 Nodes (13): Commands, Current state, Done criteria, Plan 030: Messenger read receipts (and delivery cues), Scope, Status, Step 1: API payload, Step 2: WS broadcast on mark_read (+5 more)
-
-### Community 726 - "lucide-react"
-Cohesion: 0.12
-Nodes (26): flattenCrmLeads(), convertCurrencyToSar(), inDateRangeYMD(), ReportSegment, requestOperationalDatesOverlapRange(), segmentLineTotalExTax(), csvEscape(), defaultMonthRange() (+18 more)
 
 ### Community 727 - "@fontsource-variable/geist"
 Cohesion: 0.14
@@ -1668,10 +1666,6 @@ Nodes (19): Commands, Current feature inventory (MUST preserve), Design read (ta
 Cohesion: 0.10
 Nodes (19): Commands you will need, Current state, Done criteria, Git workflow, Maintenance notes, Plan 015: Hub chrome foundation (tabs, kit, shadcn, GSAP enter), Scope, Status (+11 more)
 
-### Community 735 - "008_write_authz_test.py"
-Cohesion: 0.18
-Nodes (17): setup(), hash_password(), admin_pw_fixtures(), _any_property_id(), Plan 035: admin password-only update hardens + revokes sessions., Mirrors Settings edit-user modal: full row fields + password (8-char policy)., _session_cookie(), test_admin_empty_update_returns_400() (+9 more)
-
 ### Community 736 - "Plan 012: Paginate Accounts (and Contacts) list like Requests"
 Cohesion: 0.12
 Nodes (16): Commands, Current state — Accounts, Current state — Requests (exemplar), Done criteria, Maintenance, Page-size choices (product), Plan 012: Paginate Accounts (and Contacts) list like Requests, Scope (+8 more)
@@ -1695,10 +1689,6 @@ Nodes (15): Commands, Current state, Done criteria, Maintenance notes, Plan 013:
 ### Community 741 - "Plan 022: Redesign Hub Activities tab (fix Active Users + naming)"
 Cohesion: 0.12
 Nodes (15): Commands, Current state, Done criteria, Maintenance notes, Plan 024: Redesign Hub Activities tab (fix Active Users + naming), Scope, Status, Step 1: Fix Active Users bug (+7 more)
-
-### Community 742 - "test_chat_batch_ef.py"
-Cohesion: 0.43
-Nodes (5): check(), _ck(), h(), Self-contained end-to-end test for write-path tenant isolation (IDOR), CRM/acco, run()
 
 ### Community 743 - "Plan 015: Redesign Hub Revenue Mix (collection-first, de-dupe vs Requests)"
 Cohesion: 0.13
@@ -1780,37 +1770,33 @@ Nodes (11): Commands, Current state, Done criteria, Plan 008: Resolve account fo
 Cohesion: 0.06
 Nodes (32): Advisor plans index, Audit coverage note, Batch A — API / Docker / lazy load (DONE), Batch B — Accounts + Settings profile lag (NEW), Batch B — considered and rejected (Ponytail), Batch C — considered and rejected (Ponytail), Batch C — Messenger readability + redesign (NEW), Batch D — considered and rejected (Ponytail) (+24 more)
 
-### Community 764 - "business_card_scan.py"
-Cohesion: 0.20
-Nodes (14): delete_account(), delete_account_endpoint(), list_accounts_endpoint(), UploadFile, scan_extract_business_card(), sync_accounts(), upsert_account_endpoint(), _enrich_company_from_web() (+6 more)
-
 ### Community 771 - "scripts"
-Cohesion: 0.14
-Nodes (14): scripts, build, db:import:postgres, dev, dev:api, dev:api:win, lint, preview (+6 more)
+Cohesion: 0.12
+Nodes (16): scripts, build, db:import:postgres, db:import:postgres:win, dev, dev:api, dev:api:win, lint (+8 more)
 
 ### Community 776 - "package.json"
 Cohesion: 0.40
 Nodes (4): name, private, type, version
 
 ## Knowledge Gaps
-- **3130 isolated node(s):** `LandingPage`, `LandingPageTasteMotionPreview`, `RequestFeedbackPublicPage`, `CRM`, `Contracts` (+3125 more)
+- **3132 isolated node(s):** `LandingPage`, `LandingPageTasteMotionPreview`, `RequestFeedbackPublicPage`, `CRM`, `Contracts` (+3127 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **22 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **23 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `apiUrl()` connect `propertyPaymentMethods.ts` to `CRM.tsx / AccountsPage.tsx`, `AS.tsx / parseYmd()`, `GSAP Plugins`, `contractsStore.ts / Contracts.tsx`, `requestAlertEngine.ts / propertyAlertSettings.ts`, `RequestsManager.tsx / RequestsManager()`, `formConfigurations.ts / AddAccountModal.tsx`, `GSAP Plugins`, `GSAP Plugins`, `resolveCurrencyCode() / formatCurrencyAmount()`, `AdvancedSalesDashboard() / alertDismissals.ts`, `buildVsLyMatrix`, `accountProfileData.ts`, `DashboardHubShell.tsx / dashboardHubTabs.ts`, `DashboardHubActivitiesPage.tsx / DashboardHubActivitiesPage()`, `MessengerWidget.tsx`, `DashboardHubComingSoon.tsx / DashboardHubComingSoonProps`, `lucide-react`, `propertyOccupancyTypes.ts`, `propertyAlertSettings.ts`?**
-  _High betweenness centrality (0.010) - this node is a cross-community bridge._
-- **Why does `CRM()` connect `MessengerWidget.tsx` to `CRM.tsx / AccountsPage.tsx`, `crmCallReportUtils.ts / crmActivitiesUtils.ts`, `contractsStore.ts / Contracts.tsx`, `DashboardHubSalesPerformancePage.tsx / DashboardHubSalesPerformancePa...`, `CRMProfileView.tsx`, `requestAlertEngine.ts / propertyAlertSettings.ts`, `buildVsLyMatrix`, `GSAP Plugins`, `RequestsManager.tsx / RequestsManager()`, `formConfigurations.ts / AddAccountModal.tsx`, `DashboardHubActivitiesPage.tsx / DashboardHubActivitiesPage()`, `agreementStatus`, `GSAP Plugins`, `propertyOccupancyTypes.ts / calculateNights()`, `resolveCurrencyCode() / formatCurrencyAmount()`, `apiUrl() / backendApi.ts`, `propertyPaymentMethods.ts`, `GSAP Plugins`?**
+- **Why does `apiUrl()` connect `GSAP Plugins` to `CRM.tsx / AccountsPage.tsx`, `AS.tsx / parseYmd()`, `contractsStore.ts / Contracts.tsx`, `requestAlertEngine.ts / propertyAlertSettings.ts`, `buildVsLyMatrix`, `accountProfileData.ts`, `formConfigurations.ts / AddAccountModal.tsx`, `DashboardHubShell.tsx / dashboardHubTabs.ts`, `DashboardHubActivitiesPage.tsx / DashboardHubActivitiesPage()`, `GSAP Plugins`, `contactDisplayName`, `DashboardHubComingSoon.tsx / DashboardHubComingSoonProps`, `MessengerWidget.tsx`, `resolveCurrencyCode() / formatCurrencyAmount()`, `propertyOccupancyTypes.ts`, `propertyPaymentMethods.ts`, `AdvancedSalesDashboard() / alertDismissals.ts`, `websocket-client.ts / WebSocketMessage`?**
   _High betweenness centrality (0.009) - this node is a cross-community bridge._
-- **Why does `dependencies` connect `DashboardHubRequestsPage.tsx / DashboardHubRequestsPage()` to `gsap.utils`, `gsap.utils`, `contractsStore.ts / Contracts.tsx`, `package.json`, `recharts`, `GSAP Plugins`, `GSAP Plugins`, `GSAP Plugins`, `GSAP Plugins`?**
-  _High betweenness centrality (0.007) - this node is a cross-community bridge._
+- **Why does `CRM()` connect `MessengerWidget.tsx` to `CRM.tsx / AccountsPage.tsx`, `crmCallReportUtils.ts / crmActivitiesUtils.ts`, `contractsStore.ts / Contracts.tsx`, `GSAP Plugins`, `requestAlertEngine.ts / propertyAlertSettings.ts`, `formConfigurations.ts / AddAccountModal.tsx`, `GSAP Plugins`, `GSAP Plugins`, `GSAP Plugins`, `propertyOccupancyTypes.ts / calculateNights()`, `resolveCurrencyCode() / formatCurrencyAmount()`, `apiUrl() / backendApi.ts`, `GSAP Plugins`, `DashboardHubSalesPerformancePage.tsx / DashboardHubSalesPerformancePa...`, `CRMProfileView.tsx`, `buildVsLyMatrix`, `DashboardHubActivitiesPage.tsx / DashboardHubActivitiesPage()`, `propertyPaymentMethods.ts`, `propertyAlertSettings.ts`?**
+  _High betweenness centrality (0.009) - this node is a cross-community bridge._
+- **Why does `dependencies` connect `DashboardHubRequestsPage.tsx / DashboardHubRequestsPage()` to `jspdf-autotable`, `radix-ui`, `package.json`, `react-router-dom`, `recharts`, `GSAP Plugins`, `MessengerWidget.tsx`, `GSAP Plugins`?**
+  _High betweenness centrality (0.009) - this node is a cross-community bridge._
 - **Are the 4 inferred relationships involving `AdvancedSalesDashboard()` (e.g. with `defaultChartVsYear()` and `clearPipelineLinkForDeletedRequest()`) actually correct?**
   _`AdvancedSalesDashboard()` has 4 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 59 inferred relationships involving `_get_pool()` (e.g. with `bump_session_version_and_revoke()` and `change_password()`) actually correct?**
-  _`_get_pool()` has 59 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 61 inferred relationships involving `_get_pool()` (e.g. with `bump_session_version_and_revoke()` and `change_password()`) actually correct?**
+  _`_get_pool()` has 61 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 3 inferred relationships involving `RequestsManager()` (e.g. with `ymd()` and `num()`) actually correct?**
   _`RequestsManager()` has 3 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `LandingPage`, `LandingPageTasteMotionPreview`, `RequestFeedbackPublicPage` to the rest of the system?**
-  _3130 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _3132 weakly-connected nodes found - possible documentation gaps or missing edges._

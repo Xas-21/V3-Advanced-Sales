@@ -38,7 +38,7 @@
   - `DELETE /api/account-ledger/{id}?propertyId=<pid>` → `{message}`.
 - Consumes: existing `list_flat`, `upsert_flat`, `delete_flat`, `get_flat`, `_FLAT_WITH_PID`, `_EXTRACTORS`, `_as_decimal`, `_gen_id` from `data_access.py`.
 
-- [ ] **Step 1: Create the migration** (mirrors `backend/migrations/011_account_rates.py`)
+- [x] **Step 1: Create the migration** (mirrors `backend/migrations/011_account_rates.py`)
 
 Create `backend/migrations/012_account_ledger.py`:
 
@@ -94,13 +94,13 @@ with pool.connection() as c:
 print(f"\nACCOUNT_LEDGER: {applied} applied/verified, {skipped} skipped")
 ```
 
-- [ ] **Step 2: Run the migration**
+- [x] **Step 2: Run the migration**
 
 Run: `docker compose exec as-backend python /app/migrations/012_account_ledger.py`
 (If not using Docker: `cd backend; python migrations/012_account_ledger.py`)
 Expected: prints `ACCOUNT_LEDGER: 3 applied/verified, 0 skipped` (or SKIP lines on re-run).
 
-- [ ] **Step 3: Register the collection in `data_access.py`**
+- [x] **Step 3: Register the collection in `data_access.py`**
 
 In `_FLAT_WITH_PID` (around L89), add `"account_ledger",` to the set.
 
@@ -137,7 +137,7 @@ Register it in `_EXTRACTORS` (around L370):
     "account_ledger": _extract_account_ledger,
 ```
 
-- [ ] **Step 4: Add `save_ledger_entry` + `transfer_allocation` to `data_access.py`**
+- [x] **Step 4: Add `save_ledger_entry` + `transfer_allocation` to `data_access.py`**
 
 Add after `delete_flat` (around L420). `save_ledger_entry` normalizes the payload
 amount sign to match the typed column, then reuses `upsert_flat`:
@@ -157,7 +157,7 @@ def transfer_allocation(entry_id: str, to_request_id: str) -> dict:
     return save_ledger_entry(existing)
 ```
 
-- [ ] **Step 5: Create the router** (mirrors `backend/routers/account_rates.py`)
+- [x] **Step 5: Create the router** (mirrors `backend/routers/account_rates.py`)
 
 Create `backend/routers/account_ledger.py`:
 
@@ -198,7 +198,7 @@ def delete_ledger(id: str, propertyId: Optional[str] = None):
     return {"message": "Deleted successfully"}
 ```
 
-- [ ] **Step 6: Register the router in `backend/main.py`**
+- [x] **Step 6: Register the router in `backend/main.py`**
 
 After the `account_rates` line (L210) add:
 
@@ -209,7 +209,7 @@ app.include_router(account_ledger.router, dependencies=_auth_required)
 
 (Match how `account_rates` is imported — add `account_ledger` to the same `from routers import (...)` block, then the `include_router` call beside L210.)
 
-- [ ] **Step 7: Write the failing test**
+- [x] **Step 7: Write the failing test**
 
 Create `backend/tests/test_account_ledger.py` (model auth/fixtures on `test_account_rates.py`; reuse its `_any_property_id`, user-creation, and login helpers verbatim, changing table/URL names):
 
@@ -271,12 +271,12 @@ def test_transfer_repoints_request(ledger_fixtures):
     assert float(moved["amount"]) == -30000.0
 ```
 
-- [ ] **Step 8: Run tests to verify they pass**
+- [x] **Step 8: Run tests to verify they pass**
 
 Run: `npm run test:backend` (or `cd backend; python -m pytest tests/test_account_ledger.py -v`)
 Expected: PASS (or SKIP if no DB configured locally — then verify against the Docker DB).
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add backend/migrations/012_account_ledger.py backend/data_access.py backend/routers/account_ledger.py backend/main.py backend/tests/test_account_ledger.py
@@ -307,7 +307,7 @@ git commit -m "feat(backend): account_ledger collection + API"
   - `deleteLedgerEntry(entryId: string, propertyId?: string): Promise<void>`
 - Consumes: `apiUrl` from `backendApi.ts`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `accountBalance.test.ts`:
 
@@ -341,12 +341,12 @@ describe('accountBalance', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npm run test:frontend -- accountBalance`
 Expected: FAIL — `Cannot find module './accountBalance'`.
 
-- [ ] **Step 3: Write `accountBalance.ts`**
+- [x] **Step 3: Write `accountBalance.ts`**
 
 ```ts
 /** Pure account-balance math. Balance = SUM(entry.amount). Currency ignored. */
@@ -400,12 +400,12 @@ export function applicableFromBalance(balance: number, requestDue: number): numb
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npm run test:frontend -- accountBalance`
 Expected: PASS (both tests).
 
-- [ ] **Step 5: Write the ledger API client `accountLedgerApi.ts`**
+- [x] **Step 5: Write the ledger API client `accountLedgerApi.ts`**
 
 ```ts
 import { apiUrl } from './backendApi';
@@ -457,7 +457,7 @@ Note: match the existing fetch/credentials convention in `backendApi.ts` consume
 (check whether other calls pass `credentials: 'include'`; if the codebase uses a
 shared wrapper, use that instead of raw `fetch`).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add accountBalance.ts accountBalance.test.ts accountLedgerApi.ts
@@ -475,7 +475,7 @@ git commit -m "feat(frontend): account balance helpers + ledger API client"
 - Consumes: `fetchLedger`, `postLedgerEntry` (Task 2); `computeBalance`, `applicableFromBalance` (Task 2); existing `sumPaymentAmounts`, `calculateAccFinancialsForRequest`, `updateRequest`, `requestLogUser`, `activeProperty`, `accForm.accountId`/`selectedRequest.accountId`.
 - Produces: writes both a `request_payment` (method `'Balance'`) and a ledger entry; sets a CL marker on the request (`paymentStatus: 'CL'` or a `collectLater: true` flag + badge).
 
-- [ ] **Step 1: Add ledger state + fetch the linked account balance when the modal opens**
+- [x] **Step 1: Add ledger state + fetch the linked account balance when the modal opens**
 
 Near the payment modal state (~L764), add:
 
@@ -508,7 +508,7 @@ const accountBalance = useMemo(() => {
 
 Add `import { computeBalance, applicableFromBalance } from './accountBalance';` to the top imports.
 
-- [ ] **Step 2: Add the payment-source selector to the modal body**
+- [x] **Step 2: Add the payment-source selector to the modal body**
 
 In `paymentModal` (~L5381, above the Method/Amount grid), insert a three-way segmented control:
 
@@ -551,7 +551,7 @@ In `paymentModal` (~L5381, above the Method/Amount grid), insert a three-way seg
 
 Show the Method dropdown only when `paymentSource === 'method'`, and the manual amount field when `paymentSource === 'method' || (paymentSource === 'balance' && balanceMode === 'partial')`.
 
-- [ ] **Step 3: Branch the confirm handler for Balance / CL**
+- [x] **Step 3: Branch the confirm handler for Balance / CL**
 
 At the very top of the confirm `onClick` (~L5418), before the existing `paymentModalSource` branches, compute the effective amount + method and post the ledger entry. Keep the existing per-source payment-append logic (it already recomputes `paymentStatus`/status), just feed it the right amount/method:
 
@@ -606,7 +606,7 @@ Replace the existing `const amt = Number(newPayment.amount || 0);` line with the
 computed `amt` above, and swap `newPayment.method` → `postingMethod` in the three
 payment-row builders and the log messages.
 
-- [ ] **Step 4: Reset the new state when the modal closes**
+- [x] **Step 4: Reset the new state when the modal closes**
 
 Wherever `setNewPayment(emptyNewPayment())` runs on close (~L5535, L5613, L5725), also add:
 
@@ -614,22 +614,22 @@ Wherever `setNewPayment(emptyNewPayment())` runs on close (~L5535, L5613, L5725)
 setPaymentSource('method'); setBalanceMode('full');
 ```
 
-- [ ] **Step 5: Add the CL badge on the request**
+- [x] **Step 5: Add the CL badge on the request**
 
 Find where `paymentStatus` badges render (RequestsManager list/detail, e.g. ~L3801 and ~L4884 use `fin.paymentStatus`). Add a CL case so a request with `paymentStatus === 'CL'` (or `collectLater`) shows a red **"CL · Collect Later"** pill using `colors.red`.
 
-- [ ] **Step 6: Verify build + types**
+- [x] **Step 6: Verify build + types**
 
 Run: `npm run build`
 Expected: type-checks and builds with no errors referencing the modal changes.
 
-- [ ] **Step 7: Manual smoke (documented, not automated)**
+- [x] **Step 7: Manual smoke (documented, not automated)**
 
 With `docker compose up -d`: create an account, add a deposit via Billing (Task 4)
 or POST `/api/account-ledger`; open a linked request's Add Deposit → **Balance** shows the
 balance, **CL** is always available, Balance is blocked with the exact message when balance ≤ 0.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add RequestsManager.tsx
@@ -649,7 +649,7 @@ git commit -m "feat(requests): Balance & CL payment sources in Add Deposit modal
 - Consumes: `fetchLedger`, `postLedgerEntry`, `transferAllocation`, `deleteLedgerEntry` (Task 2); `computeBalance`, `outstandingTotal`, `requestOwed` (Task 2); `filterRequestsForAccount`; the account object + `sharedRequests` already available in `AccountsPage`.
 - Produces: a self-contained modal component `AccountBillingPanel({ account, linkedRequests, propertyId, currency, theme, canEdit, onClose })`.
 
-- [ ] **Step 1: Create `AccountBillingPanel.tsx`**
+- [x] **Step 1: Create `AccountBillingPanel.tsx`**
 
 Build a modal (same overlay/animation classes as `AccountLinkedRequestsModal.tsx`) with:
 1. **Balance header** — `computeBalance(entries)`; green when `>= 0` (label "Prepaid credit"), red when `< 0` (label "Outstanding to collect"), using `formatCompactCurrency`.
@@ -660,7 +660,7 @@ Build a modal (same overlay/animation classes as `AccountLinkedRequestsModal.tsx
 
 Fetch entries in a `useEffect` on mount via `fetchLedger(account.id, propertyId)`; keep a local `entries` state and refetch after each mutation. Gate all write buttons behind `canEdit`.
 
-- [ ] **Step 2: Wire the Billing button in `AccountsPage.tsx`**
+- [x] **Step 2: Wire the Billing button in `AccountsPage.tsx`**
 
 Add `import AccountBillingPanel from './AccountBillingPanel';` and a state
 `const [billingAccount, setBillingAccount] = useState<any | null>(null);`.
@@ -683,24 +683,24 @@ add a **Billing** button: `onClick={() => setBillingAccount(account)}`. Render:
 
 (Use whichever permission already guards Add Deposit; `canMutateOperational` is imported in `AccountsPage.tsx` L43. Confirm `filterRequestsForAccount`'s exact signature — it's imported L21 — and pass args accordingly.)
 
-- [ ] **Step 3: Verify build + types**
+- [x] **Step 3: Verify build + types**
 
 Run: `npm run build`
 Expected: clean build; `AccountBillingPanel` type-checks.
 
-- [ ] **Step 4: Run the full frontend test suite**
+- [x] **Step 4: Run the full frontend test suite**
 
 Run: `npm run test:frontend`
 Expected: PASS, including `accountBalance.test.ts`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add AccountBillingPanel.tsx AccountsPage.tsx
 git commit -m "feat(accounts): Billing panel with balance, owed, history, transfer"
 ```
 
-- [ ] **Step 6: Update the graph**
+- [x] **Step 6: Update the graph**
 
 Run: `graphify update .`
 (AST-only, keeps `graphify-out/graph.json` current after new files.)

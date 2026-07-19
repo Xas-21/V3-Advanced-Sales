@@ -299,7 +299,7 @@ Planned at commit `90c3a4c`, 2026-07-19 via `/improve` (full audit: security + c
 
 | Plan | Priority | Status |
 |------|----------|--------|
-| 040-verification-gate-typecheck-lint-ci | P0 | DONE (ratchet: 50 tsc errors; lint warn-ratchet) |
+| 040-verification-gate-typecheck-lint-ci | P0 | DONE (typecheck blocking @ 0 errors; lint blocking warn-ratchet max 2319; pytest still continue-on-error) |
 | 038-user-get-tenant-scope | P0 | DONE |
 | 039-purge-committed-pii-and-secrets | P0 | DONE (untracked in 68c59c1; history scrub + password rotate still operator) |
 | 041-characterization-tests-money-booking | P1 | DONE (currency/vsLY/compact; contractsStore STOP — no pure total math) |
@@ -343,7 +343,7 @@ Do Batch I (038–041) first. Then, roughly by leverage:
 | 046-correctness-fixes-type-contracts | BUG-03, BUG-04, BUG-05, DEBT-02, BUG-07 | P2 | M | DONE |
 | 047-dead-code-unused-modal-cleanup | BUG-01, BUG-06 | P2 | M | DONE |
 | 048-currency-formatter-dedup-hook | DEBT-03 | P2 | M | DONE |
-| 049-as-tsx-decomposition | DEBT-01 | P2 | L | DONE |
+| 049-as-tsx-decomposition | DEBT-01 | P2 | L | DONE (views extracted; shell + WS stay in AS.tsx; date helpers → dashboardShellDates.ts; ~5.2k) |
 | 050-nginx-container-hardening | PROD-04, PROD-08 | P1 | S–M | DONE |
 | 051-backend-observability-pinned-deps | PROD-05, PROD-06 | P2 | M | DONE |
 | 052-frontend-error-boundary-hardening | PROD-07 | P1 | S–M | DONE |

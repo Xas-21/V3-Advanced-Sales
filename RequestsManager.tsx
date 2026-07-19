@@ -74,7 +74,13 @@ import { useCurrencyFormatters } from './useCurrencyFormatters';
 import { contrastOn } from './dashboardHub/analyticsKit';
 import { deleteFileLocal, mediaUrl, uploadFileLocal } from './localUpload';
 import { collectRequestFormViolations } from './formConfigurations';
-import { computeBalance, applicableFromBalance, type LedgerEntry, type LedgerType } from './accountBalance';
+import {
+    computeBalance,
+    applicableFromBalance,
+    isClPaymentMethod,
+    type LedgerEntry,
+    type LedgerType,
+} from './accountBalance';
 import {
     clearNewRequestDraft,
     readNewRequestDraft,
@@ -2214,6 +2220,8 @@ export default function RequestsManager({
                 rooms: savedRooms,
                 mealPlan: mealPlanForPayload || String(formData.mealPlan ?? '').trim() || '—',
                 id: isUpdate ? String(formData.id || '').trim() : generateRequestId(),
+                // Backend collision guard: existing ids need an explicit update flag (or matching createdAt).
+                ...(isUpdate ? { _update: true } : {}),
                 requestName: formData.requestName || 'Unnamed Request',
                 account: formData.accountName || formData.leadId || formData.account || 'Unknown Account',
                 accountId: resolvedAccountId,
@@ -2257,6 +2265,7 @@ export default function RequestsManager({
                 fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify(body),
                 });
 
@@ -2341,11 +2350,13 @@ export default function RequestsManager({
                 return;
             }
 
-            const payload = { ...existing, ...partialData };
+            // `_update: true` is required — without it, mismatched createdAt strings yield HTTP 409.
+            const payload = { ...existing, ...partialData, _update: true };
             
             const res = await fetch(apiUrl('/api/requests'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify(payload)
             });
             if (res.ok) {
@@ -2353,7 +2364,17 @@ export default function RequestsManager({
                 onRequestSaved?.(payload);
                 onAfterRequestsMutate?.();
             } else {
-                showSystemNotice('Update failed', 'Failed to update. Status: ' + res.status);
+                let detail = '';
+                try {
+                    const errBody = await res.json();
+                    detail = typeof errBody?.detail === 'string' ? errBody.detail : '';
+                } catch {
+                    /* ignore */
+                }
+                showSystemNotice(
+                    'Update failed',
+                    detail || `Failed to update. Status: ${res.status}`
+                );
             }
         } catch (err) {
             console.error("Error updating request:", err);
@@ -3910,7 +3931,7 @@ export default function RequestsManager({
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                 <div className="p-4 sm:p-5 rounded-xl bg-black/10 border border-white/5 min-w-0">
                                     <p className="text-[10px] font-bold uppercase opacity-40 mb-1">Paid Amount</p>
-                                    <p className="text-lg sm:text-xl lg:text-2xl font-mono font-bold leading-snug break-words" style={{ color: colors.green }}>{formatMoney(fin.paidAmount)}</p>
+                                    <p className="text-lg sm:text-xl lg:text-2xl font-mono font-bold leading-snug break-words" style={{ color: (accForm.collectLater || accForm.paymentStatus === 'CL') ? colors.red : colors.green }}>{formatMoney(fin.paidAmount)}</p>
                                 </div>
                                 <div className="p-4 sm:p-5 rounded-xl bg-black/10 border border-white/5 min-w-0">
                                     <p className="text-[10px] font-bold uppercase opacity-40 mb-1">Remaining Balance</p>
@@ -3948,7 +3969,7 @@ export default function RequestsManager({
                             </div>
                             <div className="p-4 rounded-xl bg-black/10 border border-white/5">
                                 <p className="text-[10px] font-bold uppercase opacity-40 mb-1">Paid Amount</p>
-                                <p className="text-2xl font-mono font-bold" style={{ color: colors.green }}>{formatMoney(fin.paidAmount)}</p>
+                                <p className="text-2xl font-mono font-bold" style={{ color: (accForm.collectLater || accForm.paymentStatus === 'CL') ? colors.red : colors.green }}>{formatMoney(fin.paidAmount)}</p>
                             </div>
                         </div>
                     )}
@@ -4074,9 +4095,17 @@ export default function RequestsManager({
                                         accForm.payments.map((p, idx) => (
                                             <tr key={p.id ?? `pay-${idx}`} className="border-t border-white/5 hover:bg-white/5 transition-colors">
                                                 <td className="px-4 py-3 opacity-60">{p.date}</td>
-                                                <td className="px-4 py-3 font-bold">{p.method}</td>
+                                                <td className="px-4 py-3 font-bold" style={{ color: isClPaymentMethod(p.method) ? colors.red : undefined }}>{p.method}</td>
                                                 <td className="px-4 py-3 opacity-60">{p.note || '-'}</td>
-                                                <td className={`px-4 py-3 text-right font-mono font-bold ${p.amount < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                                                <td
+                                                    className="px-4 py-3 text-right font-mono font-bold"
+                                                    style={{
+                                                        color:
+                                                            p.amount < 0 || isClPaymentMethod(p.method)
+                                                                ? colors.red
+                                                                : colors.green,
+                                                    }}
+                                                >
                                                     {formatMoney(p.amount, 0)}
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
@@ -5007,7 +5036,7 @@ export default function RequestsManager({
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                             <div className="p-4 sm:p-5 rounded-xl bg-black/10 border border-white/5 min-w-0">
                                                 <p className="text-[10px] font-bold uppercase opacity-40 mb-1">Paid Amount</p>
-                                                <p className="text-lg sm:text-xl lg:text-2xl font-mono font-bold leading-snug break-words" style={{ color: colors.green }}>{formatMoney(fin.paidAmount)}</p>
+                                                <p className="text-lg sm:text-xl lg:text-2xl font-mono font-bold leading-snug break-words" style={{ color: (request.collectLater || request.paymentStatus === 'CL') ? colors.red : colors.green }}>{formatMoney(fin.paidAmount)}</p>
                                             </div>
                                             <div className="p-4 sm:p-5 rounded-xl bg-black/10 border border-white/5 min-w-0">
                                                 <p className="text-[10px] font-bold uppercase opacity-40 mb-1">Remaining Balance</p>
@@ -5045,7 +5074,7 @@ export default function RequestsManager({
                                         </div>
                                         <div className="p-4 rounded-xl bg-black/10 border border-white/5">
                                             <p className="text-[10px] font-bold uppercase opacity-40 mb-1">Paid Amount</p>
-                                            <p className="text-2xl font-mono font-bold" style={{ color: colors.green }}>{formatMoney(fin.paidAmount)}</p>
+                                            <p className="text-2xl font-mono font-bold" style={{ color: (request.collectLater || request.paymentStatus === 'CL') ? colors.red : colors.green }}>{formatMoney(fin.paidAmount)}</p>
                                         </div>
                                     </div>
                                 )}
@@ -5173,9 +5202,17 @@ export default function RequestsManager({
                                                     (request.payments || []).map((p: any, idx: number) => (
                                                         <tr key={p.id ?? `pay-${idx}`} className="border-t border-white/5 hover:bg-white/5 transition-colors">
                                                             <td className="px-4 py-3 opacity-60">{p.date}</td>
-                                                            <td className="px-4 py-3 font-bold">{p.method}</td>
+                                                            <td className="px-4 py-3 font-bold" style={{ color: isClPaymentMethod(p.method) ? colors.red : undefined }}>{p.method}</td>
                                                             <td className="px-4 py-3 opacity-60">{p.note || '-'}</td>
-                                                            <td className={`px-4 py-3 text-right font-mono font-bold ${p.amount < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                                                            <td
+                                                                className="px-4 py-3 text-right font-mono font-bold"
+                                                                style={{
+                                                                    color:
+                                                                        p.amount < 0 || isClPaymentMethod(p.method)
+                                                                            ? colors.red
+                                                                            : colors.green,
+                                                                }}
+                                                            >
                                                                 {formatMoney(p.amount, 0)}
                                                             </td>
                                                             <td className="px-4 py-3 text-center">
@@ -5456,7 +5493,7 @@ export default function RequestsManager({
                                 onClick={() => {
                                     if (src === 'balance' && accountBalance <= 0) {
                                         alert(
-                                            'Please choose a valid payment method, or CL if payment will be after the service.'
+                                            'No prepaid balance on this account. Use Method for a normal payment, or CL to collect later.'
                                         );
                                         return;
                                     }
@@ -5532,7 +5569,7 @@ export default function RequestsManager({
                     )}
                     <div>
                         <label className="text-xs font-black uppercase opacity-40 mb-2 block" style={{ color: colors.textMain }}>Note (Optional)</label>
-                        <textarea value={newPayment.note} onChange={e => setNewPayment({ ...newPayment, note: e.target.value })}
+                        <textarea value={newPayment.note ?? ''} onChange={e => setNewPayment({ ...newPayment, note: e.target.value })}
                             className="w-full px-4 py-3 rounded-xl border bg-black/20 outline-none h-20 resize-none text-sm"
                             placeholder="Reference number, details..." style={{ borderColor: colors.border, color: colors.textMain }} />
                     </div>
@@ -5563,6 +5600,13 @@ export default function RequestsManager({
                                       : activeOptionsMenu !== null
                                         ? requests[activeOptionsMenu]
                                         : null;
+                            if (
+                                (paymentSource === 'balance' || paymentSource === 'cl') &&
+                                !String(acctId || '').trim()
+                            ) {
+                                alert('Link an account to this request before using Balance or CL.');
+                                return;
+                            }
                             const requestTotal =
                                 paymentModalSource === 'form'
                                     ? Number(
@@ -5577,28 +5621,65 @@ export default function RequestsManager({
                             const alreadyPaid = sumPaymentAmounts(reqForAmt?.payments || []);
                             const requestDue = Math.max(0, requestTotal - alreadyPaid);
 
-                            let effectiveAmt = Number(newPayment.amount || 0);
-                            let effectiveMethod = newPayment.method;
                             let clFlag = false;
-                            const ledgerPosts: { type: LedgerType; amount: number }[] = [];
+                            const ledgerPosts: { type: LedgerType; amount: number; method: string }[] = [];
+                            const extraPayments: any[] = [];
+                            let logAmt = 0;
+                            let logMethod = String(newPayment.method || 'Cash');
 
                             if (paymentSource === 'balance') {
-                                effectiveMethod = 'Balance';
-                                effectiveAmt =
+                                const effectiveAmt =
                                     balanceMode === 'full'
                                         ? applicableFromBalance(accountBalance, requestDue)
                                         : applicableFromBalance(accountBalance, Number(newPayment.amount || 0));
-                                if (effectiveAmt > 0) ledgerPosts.push({ type: 'allocation', amount: effectiveAmt });
+                                if (effectiveAmt > 0) {
+                                    ledgerPosts.push({ type: 'allocation', amount: effectiveAmt, method: 'Balance' });
+                                    extraPayments.push({
+                                        ...newPayment,
+                                        method: 'Balance',
+                                        id: Date.now(),
+                                        amount: effectiveAmt,
+                                    });
+                                    logAmt = effectiveAmt;
+                                    logMethod = 'Balance';
+                                }
                             } else if (paymentSource === 'cl') {
-                                // CL: the part covered by prepaid credit is paid now (allocation);
-                                // the uncovered remainder is charged (cl_charge) and collected later.
+                                // Covered prepaid → Balance payment + allocation; remainder → CL payment + cl_charge.
                                 const covered = applicableFromBalance(accountBalance, requestDue);
                                 const uncovered = Math.max(0, requestDue - covered);
-                                effectiveMethod = 'Balance';
-                                effectiveAmt = covered; // only the covered part counts as paid on the request
-                                if (covered > 0) ledgerPosts.push({ type: 'allocation', amount: covered });
-                                if (uncovered > 0) ledgerPosts.push({ type: 'cl_charge', amount: uncovered });
-                                clFlag = uncovered > 0; // only "collect later" when something remains owed
+                                if (covered > 0) {
+                                    ledgerPosts.push({ type: 'allocation', amount: covered, method: 'Balance' });
+                                    extraPayments.push({
+                                        ...newPayment,
+                                        method: 'Balance',
+                                        id: Date.now(),
+                                        amount: covered,
+                                    });
+                                }
+                                if (uncovered > 0) {
+                                    ledgerPosts.push({ type: 'cl_charge', amount: uncovered, method: 'CL' });
+                                    extraPayments.push({
+                                        ...newPayment,
+                                        method: 'CL',
+                                        id: Date.now() + 1,
+                                        amount: uncovered,
+                                        note: newPayment.note || 'Collect later',
+                                    });
+                                    clFlag = true;
+                                }
+                                logAmt = covered + uncovered;
+                                logMethod = clFlag ? (covered > 0 ? 'Balance+CL' : 'CL') : 'Balance';
+                            } else {
+                                const effectiveAmt = Number(newPayment.amount || 0);
+                                if (effectiveAmt > 0) {
+                                    extraPayments.push({
+                                        ...newPayment,
+                                        id: Date.now(),
+                                        amount: effectiveAmt,
+                                    });
+                                    logAmt = effectiveAmt;
+                                    logMethod = String(newPayment.method || 'Cash');
+                                }
                             }
 
                             if (acctId && ledgerPosts.length > 0) {
@@ -5610,7 +5691,7 @@ export default function RequestsManager({
                                         accountId: acctId,
                                         propertyId: String(activeProperty?.id || ''),
                                         requestId: String(reqForAmt?.id || ''),
-                                        method: effectiveMethod,
+                                        method: p.method,
                                         note: newPayment.note || '',
                                         date: newPayment.date,
                                         user: requestLogUser,
@@ -5618,20 +5699,13 @@ export default function RequestsManager({
                                 }
                             }
 
-                            const amt = effectiveAmt;
-                            const postingMethod = effectiveMethod;
-                            const appendPayment = amt > 0;
-                            const paymentRow = {
-                                ...newPayment,
-                                method: postingMethod,
-                                id: Date.now(),
-                                amount: amt,
-                            };
+                            const amt = logAmt;
+                            const postingMethod = logMethod;
 
                             if (paymentModalSource === 'form') {
                                 setAccForm((prev: any) => {
                                     const st = String(prev.status || '').trim();
-                                    const newPayments = appendPayment ? [...(prev.payments || []), paymentRow] : [...(prev.payments || [])];
+                                    const newPayments = [...(prev.payments || []), ...extraPayments];
                                     const paidSum = sumPaymentAmounts(newPayments);
                                     const finAfter = calculateAccFinancialsForRequest(
                                         { ...prev, payments: newPayments },
@@ -5694,8 +5768,16 @@ export default function RequestsManager({
                                     return {
                                         ...prev,
                                         payments: newPayments,
+                                        paidAmount: paidSum.toFixed(2),
                                         status: nextStatus,
-                                        ...(clFlag ? { paymentStatus: 'CL', collectLater: true } : {}),
+                                        paymentStatus: clFlag
+                                            ? 'CL'
+                                            : paymentsMeetOrExceedTotal(paidSum, total)
+                                              ? 'Paid'
+                                              : paidSum > 0
+                                                ? 'Deposit'
+                                                : finAfter.paymentStatus,
+                                        ...(clFlag ? { collectLater: true } : {}),
                                         logs: [
                                             ...(prev.logs || []),
                                             ...autoLog,
@@ -5709,7 +5791,7 @@ export default function RequestsManager({
                                 });
                             } else if (paymentModalSource === 'detail' && selectedRequest) {
                                 const req = selectedRequest;
-                                const newPayments = appendPayment ? [...(req.payments || []), paymentRow] : [...(req.payments || [])];
+                                const newPayments = [...(req.payments || []), ...extraPayments];
                                 const paidSum = sumPaymentAmounts(newPayments);
                                 const totalCost = parseFloat(String(req.totalCost ?? '0').replace(/,/g, '')) || 0;
                                 let paymentStatus = 'Unpaid';
@@ -5752,7 +5834,7 @@ export default function RequestsManager({
                             } else {
                                 const req = activeOptionsMenu !== null ? requests[activeOptionsMenu] : null;
                                 if (req) {
-                                    const newPayments = appendPayment ? [...(req.payments || []), paymentRow] : [...(req.payments || [])];
+                                    const newPayments = [...(req.payments || []), ...extraPayments];
                                     const paidSum = sumPaymentAmounts(newPayments);
                                     const totalCost = parseFloat(String(req.totalCost ?? '0').replace(/,/g, '')) || 0;
                                     let paymentStatus = 'Unpaid';
@@ -7650,10 +7732,13 @@ export default function RequestsManager({
                                         const tCost = fin?.grandTotalWithTax || (rawTotal > 0 ? rawTotal : fallbackEventTotal);
                                         const pAmt = fin?.paidAmount ?? parseFloat(request.paidAmount?.toString().replace(/,/g, '') || '0');
                                         const percentage = tCost > 0 ? Math.round((pAmt / tCost) * 100) : 0;
+                                        const clOpen = !!(request.collectLater || request.paymentStatus === 'CL');
+                                        const paidColor = clOpen ? colors.red : percentage >= 100 ? colors.green : colors.textMain;
+                                        const barColor = clOpen ? colors.red : percentage >= 100 ? colors.green : colors.primary;
                                         return (
                                             <>
                                                 <div className="flex justify-between items-end">
-                                                    <span className={`${compact ? 'text-[10px]' : 'text-xs'} font-bold`} style={{ color: colors.textMain }}>{formatMoney(pAmt, 0)}</span>
+                                                    <span className={`${compact ? 'text-[10px]' : 'text-xs'} font-bold`} style={{ color: paidColor }}>{formatMoney(pAmt, 0)}</span>
                                                     <span className={`${compact ? 'text-[8px]' : 'text-[9px]'} opacity-40 font-bold`} style={{ color: colors.textMain }}>{percentage}%</span>
                                                 </div>
                                                 <div className={`${compact ? 'h-0.5' : 'h-1'} w-full rounded-full bg-white/5 overflow-hidden`}>
@@ -7661,7 +7746,7 @@ export default function RequestsManager({
                                                         className="h-full transition-all duration-500"
                                                         style={{
                                                             width: `${Math.min(percentage, 100)}%`,
-                                                            backgroundColor: percentage >= 100 ? colors.green : colors.primary
+                                                            backgroundColor: barColor
                                                         }}
                                                     ></div>
                                                 </div>

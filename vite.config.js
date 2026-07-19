@@ -2,12 +2,15 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { spaHtmlFallback } from './spaHtmlFallback.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // https://vitejs.dev/config/
 export default defineConfig({
     plugins: [
+        // Before react(): Windows case-insensitive FS maps /crm → CRM.tsx on refresh.
+        spaHtmlFallback(),
         react({
             include: '**/*.{jsx,tsx}',
         }),

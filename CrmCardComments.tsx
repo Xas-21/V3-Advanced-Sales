@@ -98,7 +98,13 @@ export default function CrmCardComments({
             });
             if (!res.ok) {
                 const detail = await res.json().catch(() => ({}));
-                throw new Error(detail?.detail || 'Save failed');
+                const raw = detail?.detail;
+                const msg = Array.isArray(raw)
+                    ? raw.map((d: any) => d?.msg || String(d)).join('; ')
+                    : typeof raw === 'string'
+                      ? raw
+                      : 'Save failed';
+                throw new Error(msg);
             }
             const created = (await res.json()) as CrmCardComment;
             setComments((prev) => [created, ...prev]);
@@ -130,12 +136,31 @@ export default function CrmCardComments({
         }
     }
 
+    /** Parent kanban cards are HTML5-draggable; that swallows clicks on OK/input. */
+    function pauseParentCardDrag(e: React.SyntheticEvent) {
+        e.stopPropagation();
+        const card = (e.currentTarget as HTMLElement).closest('[draggable="true"]') as HTMLElement | null;
+        if (!card) return;
+        card.setAttribute('draggable', 'false');
+        const restore = () => {
+            card.setAttribute('draggable', 'true');
+            window.removeEventListener('pointerup', restore);
+            window.removeEventListener('pointercancel', restore);
+            window.removeEventListener('dragend', restore);
+        };
+        window.addEventListener('pointerup', restore);
+        window.addEventListener('pointercancel', restore);
+        window.addEventListener('dragend', restore);
+    }
+
     return (
         <div
+            data-crm-no-drag
             className="mt-2 pt-2 border-t space-y-1.5"
             style={{ borderColor: colors.border }}
             onClick={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
+            onMouseDown={pauseParentCardDrag}
+            onPointerDown={pauseParentCardDrag}
         >
             {visible.map((c) => (
                 <div key={c.id} className="flex items-start gap-1.5 text-[10px]">
@@ -199,9 +224,18 @@ export default function CrmCardComments({
                         className="px-1.5 py-1 rounded text-[10px] font-bold border"
                         style={{ borderColor: colors.border, color: colors.primary }}
                         disabled={busy || !draft.trim()}
-                        onClick={() => void saveComment()}
+                        onMouseDown={(e) => {
+                            // Save on mousedown so kanban drag never steals the gesture.
+                            e.preventDefault();
+                            e.stopPropagation();
+                            void saveComment();
+                        }}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }}
                     >
-                        OK
+                        {busy ? '…' : 'OK'}
                     </button>
                 </div>
             ) : canAdd ? (
@@ -220,7 +254,7 @@ export default function CrmCardComments({
             ) : null}
 
             {error ? (
-                <p className="text-[10px]" style={{ color: colors.primary }}>
+                <p className="text-[10px] font-medium" style={{ color: '#dc2626' }}>
                     {error}
                 </p>
             ) : null}

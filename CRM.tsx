@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useLayoutEffect, useCallba
 import {
     Users, Phone, Mail, MapPin, Tag, TrendingUp, DollarSign,
     Calendar, MessageSquare, FileText, MoreVertical, MoreHorizontal, X, ArrowRight, Moon, Bed,
-    CheckCircle2, Clock, XCircle, Star, Building, User, Plus,
+    CheckCircle2, Clock, XCircle, Star, Building, User, Plus, GripVertical,
     Edit, Trash2, Filter, Search, ChevronDown, ChevronLeft, ChevronRight, List, Kanban, Save,
     PhoneCall, Send, Eye, BarChart3, Award, Check, UserCircle
 } from 'lucide-react';
@@ -3247,19 +3247,31 @@ export default function CRM({
                                             return (
                                                 <div
                                                     key={req.id}
-                                                    draggable={!crmReadOnly}
-                                                    onDragStart={(e) => {
-                                                        e.dataTransfer.setData('text/plain', String(req.id));
-                                                    }}
-                                                    className={`p-4 rounded-lg border hover:shadow-xl hover:scale-[1.02] hover:-translate-y-1 transition-all group animate-in fade-in slide-in-from-bottom-2 duration-300 relative ${crmReadOnly ? '' : 'cursor-grab active:cursor-grabbing'}`}
+                                                    className="p-4 rounded-lg border hover:shadow-xl hover:scale-[1.02] hover:-translate-y-1 transition-all group animate-in fade-in slide-in-from-bottom-2 duration-300 relative"
                                                     style={{ backgroundColor: colors.bg, borderColor: colors.border }}
                                                 >
                                                     <div className="flex justify-between items-start gap-2 mb-2">
-                                                        <div className="min-w-0 flex-1">
-                                                            <h4 className="font-bold text-sm mb-1 truncate" style={{ color: colors.textMain }}>
-                                                                {details?.requestName || String(req?.requestName || 'Request')}
-                                                            </h4>
-                                                            <p className="text-xs truncate" style={{ color: colors.textMuted }}>{accountName}</p>
+                                                        <div className="min-w-0 flex-1 flex items-start gap-1">
+                                                            {!crmReadOnly ? (
+                                                                <span
+                                                                    draggable
+                                                                    title="Drag to change stage"
+                                                                    className="shrink-0 mt-0.5 p-0.5 rounded cursor-grab active:cursor-grabbing opacity-50 hover:opacity-100"
+                                                                    style={{ color: colors.textMuted }}
+                                                                    onDragStart={(e) => {
+                                                                        e.dataTransfer.setData('text/plain', String(req.id));
+                                                                        e.dataTransfer.effectAllowed = 'move';
+                                                                    }}
+                                                                >
+                                                                    <GripVertical size={14} />
+                                                                </span>
+                                                            ) : null}
+                                                            <div className="min-w-0 flex-1">
+                                                                <h4 className="font-bold text-sm mb-1 truncate" style={{ color: colors.textMain }}>
+                                                                    {details?.requestName || String(req?.requestName || 'Request')}
+                                                                </h4>
+                                                                <p className="text-xs truncate" style={{ color: colors.textMuted }}>{accountName}</p>
+                                                            </div>
                                                         </div>
                                                         {!crmReadOnly ? (
                                                             <button
@@ -3353,21 +3365,6 @@ export default function CRM({
                                     ) : (
                                         crmLeadsForDisplay[stage.id as keyof typeof crmLeadsForDisplay]?.map((lead: any) => (
                                             <div key={lead.id}
-                                                draggable={!crmReadOnly}
-                                                onDragStart={() => {
-                                                    if (crmReadOnly) return;
-                                                    ignoreNextPipelineCardClickIdRef.current = String(lead.id);
-                                                    setDraggedLead({ ...lead, stage: stage.id });
-                                                }}
-                                                onDragEnd={() => {
-                                                    setDraggedLead(null);
-                                                    const id = String(lead.id);
-                                                    window.setTimeout(() => {
-                                                        if (ignoreNextPipelineCardClickIdRef.current === id) {
-                                                            ignoreNextPipelineCardClickIdRef.current = null;
-                                                        }
-                                                    }, 280);
-                                                }}
                                                 onClick={() => {
                                                     if (ignoreNextPipelineCardClickIdRef.current === String(lead.id)) {
                                                         ignoreNextPipelineCardClickIdRef.current = null;
@@ -3379,9 +3376,37 @@ export default function CRM({
                                                 style={{ backgroundColor: colors.bg, borderColor: colors.border }}>
 
                                                 <div className="flex justify-between items-start gap-2 mb-2">
-                                                    <div className="min-w-0 flex-1">
-                                                        <h4 className="font-bold text-sm mb-1" style={{ color: colors.textMain }}>{lead.company}</h4>
-                                                        <p className="text-xs" style={{ color: colors.textMuted }}>{lead.contact} • {lead.position}</p>
+                                                    <div className="min-w-0 flex-1 flex items-start gap-1">
+                                                        {!crmReadOnly ? (
+                                                            <span
+                                                                draggable
+                                                                title="Drag to change stage"
+                                                                className="shrink-0 mt-0.5 p-0.5 rounded cursor-grab active:cursor-grabbing opacity-50 hover:opacity-100"
+                                                                style={{ color: colors.textMuted }}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                onDragStart={(e) => {
+                                                                    e.stopPropagation();
+                                                                    ignoreNextPipelineCardClickIdRef.current = String(lead.id);
+                                                                    setDraggedLead({ ...lead, stage: stage.id });
+                                                                    e.dataTransfer.effectAllowed = 'move';
+                                                                }}
+                                                                onDragEnd={() => {
+                                                                    setDraggedLead(null);
+                                                                    const id = String(lead.id);
+                                                                    window.setTimeout(() => {
+                                                                        if (ignoreNextPipelineCardClickIdRef.current === id) {
+                                                                            ignoreNextPipelineCardClickIdRef.current = null;
+                                                                        }
+                                                                    }, 280);
+                                                                }}
+                                                            >
+                                                                <GripVertical size={14} />
+                                                            </span>
+                                                        ) : null}
+                                                        <div className="min-w-0 flex-1">
+                                                            <h4 className="font-bold text-sm mb-1" style={{ color: colors.textMain }}>{lead.company}</h4>
+                                                            <p className="text-xs" style={{ color: colors.textMuted }}>{lead.contact} • {lead.position}</p>
+                                                        </div>
                                                     </div>
                                                     <div className="shrink-0 relative" data-crm-list-menu onClick={(e) => e.stopPropagation()}>
                                                         <button

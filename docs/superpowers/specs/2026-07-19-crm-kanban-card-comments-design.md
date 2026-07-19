@@ -1,7 +1,7 @@
 # CRM Kanban Card Comments — Design Spec
 
 **Date:** 2026-07-19  
-**Status:** Approved (design), pending implementation plan  
+**Status:** Implemented (merged to main; migration 013)  
 **Author:** Brainstormed with user via superpowers:brainstorming
 
 ## 1. Problem / Goal

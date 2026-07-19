@@ -1,6 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { X } from 'lucide-react';
-import { computeBalance, requestOwed, type LedgerEntry } from './accountBalance';
+import {
+    clampSplitAmount,
+    computeBalance,
+    requestHasOpenCl,
+    requestOwed,
+    type LedgerEntry,
+} from './accountBalance';
 import {
     deleteLedgerEntry,
     fetchLedger,
@@ -19,6 +25,8 @@ export type AccountBillingPanelProps = {
     theme: any;
     canEdit: boolean;
     onClose: () => void;
+    /** When a deposit clears CL debt for linked requests, mark them Paid (green). */
+    onSettleClRequests?: (requestIds: string[]) => void | Promise<void>;
 };
 
 function requestTotal(req: any): number {
@@ -47,6 +55,7 @@ export default function AccountBillingPanel({
     theme,
     canEdit,
     onClose,
+    onSettleClRequests,
 }: AccountBillingPanelProps) {
     const colors = theme.colors;
     const accountId = String(account?.id || '').trim();
@@ -66,6 +75,11 @@ export default function AccountBillingPanel({
     const [depositMethod, setDepositMethod] = useState('');
     const [depositNote, setDepositNote] = useState('');
     const [depositDate, setDepositDate] = useState(todayIso);
+    /** Spec §5.2 — optional immediate allocation to a linked request. */
+    const [depositAllocateRequestId, setDepositAllocateRequestId] = useState('');
+
+    /** Split UI: entry id → { amount, toRequestId } draft. */
+    const [splitDrafts, setSplitDrafts] = useState<Record<string, { amount: string; toRequestId: string }>>({});
 
     useEffect(() => {
         setDepositMethod((prev) => prev || paymentMethods[0] || 'Cash');
@@ -105,6 +119,24 @@ export default function AccountBillingPanel({
         });
     }, [entries]);
 
+    const settleClearedClRequests = async (nextEntries: LedgerEntry[]) => {
+        if (!onSettleClRequests) return;
+        const ids = (linkedRequests || [])
+            .filter((req) => {
+                const rid = String(req?.id || '');
+                if (!rid) return false;
+                const stillOpenUi = !!(req.collectLater || req.paymentStatus === 'CL');
+                if (!stillOpenUi) return false;
+                const hasClCharge = nextEntries.some(
+                    (e) => String(e.requestId || '') === rid && e.type === 'cl_charge'
+                );
+                if (!hasClCharge) return false;
+                return !requestHasOpenCl(nextEntries, rid, requestTotal(req));
+            })
+            .map((req) => String(req.id));
+        if (ids.length) await onSettleClRequests(ids);
+    };
+
     const addDeposit = async () => {
         if (!canEdit || !accountId) return;
         const amount = Number(depositAmount);
@@ -112,6 +144,7 @@ export default function AccountBillingPanel({
             setError('Enter a deposit amount greater than zero.');
             return;
         }
+        const allocateTo = String(depositAllocateRequestId || '').trim();
         setBusy(true);
         setError('');
         try {
@@ -124,10 +157,25 @@ export default function AccountBillingPanel({
                 note: depositNote || undefined,
                 date: depositDate || todayIso(),
             });
+            if (allocateTo) {
+                await postLedgerEntry({
+                    type: 'allocation',
+                    amount,
+                    accountId,
+                    propertyId: propertyId || undefined,
+                    requestId: allocateTo,
+                    method: 'Balance',
+                    note: depositNote ? `Allocated from deposit: ${depositNote}` : 'Allocated from deposit',
+                    date: depositDate || todayIso(),
+                });
+            }
             setDepositAmount('');
             setDepositNote('');
             setDepositDate(todayIso());
-            await reload();
+            setDepositAllocateRequestId('');
+            const next = await fetchLedger(accountId, propertyId || undefined);
+            setEntries(Array.isArray(next) ? next : []);
+            await settleClearedClRequests(Array.isArray(next) ? next : []);
         } catch {
             setError('Deposit failed.');
         } finally {
@@ -158,6 +206,77 @@ export default function AccountBillingPanel({
             await reload();
         } catch {
             setError('Transfer failed.');
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    /** Spec §5.5 — split an allocation (or unallocated deposit) across requests. */
+    const splitEntry = async (entry: LedgerEntry) => {
+        if (!canEdit || !accountId) return;
+        const draft = splitDrafts[entry.id] || { amount: '', toRequestId: '' };
+        const toRequestId = String(draft.toRequestId || '').trim();
+        const splitAmt = clampSplitAmount(entry.amount, Number(draft.amount));
+        if (!toRequestId) {
+            setError('Select a request to split onto.');
+            return;
+        }
+        if (!(splitAmt > 0)) {
+            setError('Split amount must be greater than 0 and less than the entry amount.');
+            return;
+        }
+        if (entry.requestId && String(entry.requestId) === toRequestId) {
+            setError('Pick a different request than the current one.');
+            return;
+        }
+        setBusy(true);
+        setError('');
+        try {
+            const fullAbs = Math.abs(Number(entry.amount) || 0);
+            const remainder = fullAbs - splitAmt;
+            if (entry.type === 'deposit' && !entry.requestId) {
+                // Allocate part of free credit; leave deposit row as-is.
+                await postLedgerEntry({
+                    type: 'allocation',
+                    amount: splitAmt,
+                    accountId,
+                    propertyId: propertyId || undefined,
+                    requestId: toRequestId,
+                    method: 'Balance',
+                    note: 'Split from deposit',
+                    date: entry.date || todayIso(),
+                });
+            } else if (entry.type === 'allocation' || entry.type === 'cl_charge') {
+                // Reduce original + post new allocation for the split portion.
+                await postLedgerEntry({
+                    ...entry,
+                    amount: remainder,
+                    accountId,
+                    propertyId: propertyId || entry.propertyId || undefined,
+                });
+                await postLedgerEntry({
+                    type: 'allocation',
+                    amount: splitAmt,
+                    accountId,
+                    propertyId: propertyId || undefined,
+                    requestId: toRequestId,
+                    method: entry.method || 'Balance',
+                    note: entry.note ? `Split: ${entry.note}` : 'Split allocation',
+                    date: entry.date || todayIso(),
+                });
+            } else {
+                setError('Only deposits and allocations can be split.');
+                setBusy(false);
+                return;
+            }
+            setSplitDrafts((prev) => {
+                const next = { ...prev };
+                delete next[entry.id];
+                return next;
+            });
+            await reload();
+        } catch {
+            setError('Split failed.');
         } finally {
             setBusy(false);
         }
@@ -286,6 +405,24 @@ export default function AccountBillingPanel({
                                         style={inputStyle}
                                     />
                                 </label>
+                                <label className="block text-xs space-y-1 sm:col-span-2">
+                                    <span style={{ color: colors.textMuted }}>
+                                        Allocate to request (optional)
+                                    </span>
+                                    <select
+                                        value={depositAllocateRequestId}
+                                        onChange={(e) => setDepositAllocateRequestId(e.target.value)}
+                                        className="w-full px-3 py-2 rounded-lg border text-sm"
+                                        style={inputStyle}
+                                    >
+                                        <option value="">Leave as free credit</option>
+                                        {(linkedRequests || []).map((req) => (
+                                            <option key={String(req.id)} value={String(req.id)}>
+                                                {requestLabel(req)}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
                             </div>
                             <button
                                 type="button"
@@ -362,6 +499,13 @@ export default function AccountBillingPanel({
                                     const amt = Number(entry.amount) || 0;
                                     const canTransfer =
                                         canEdit && (entry.type === 'allocation' || entry.type === 'cl_charge');
+                                    const canSplit =
+                                        canEdit &&
+                                        Math.abs(amt) > 0 &&
+                                        (entry.type === 'allocation' ||
+                                            entry.type === 'cl_charge' ||
+                                            (entry.type === 'deposit' && !entry.requestId));
+                                    const draft = splitDrafts[entry.id] || { amount: '', toRequestId: '' };
                                     return (
                                         <li
                                             key={entry.id}
@@ -434,6 +578,71 @@ export default function AccountBillingPanel({
                                                         ))}
                                                     </select>
                                                 </label>
+                                            ) : null}
+                                            {canSplit ? (
+                                                <div className="flex flex-wrap items-end gap-2 text-xs">
+                                                    <label className="space-y-1">
+                                                        <span style={{ color: colors.textMuted }}>Split amount</span>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="any"
+                                                            disabled={busy}
+                                                            value={draft.amount}
+                                                            onChange={(e) =>
+                                                                setSplitDrafts((prev) => ({
+                                                                    ...prev,
+                                                                    [entry.id]: {
+                                                                        ...draft,
+                                                                        amount: e.target.value,
+                                                                    },
+                                                                }))
+                                                            }
+                                                            className="block w-28 px-2 py-1 rounded border font-mono"
+                                                            style={inputStyle}
+                                                            placeholder="Part"
+                                                        />
+                                                    </label>
+                                                    <label className="space-y-1">
+                                                        <span style={{ color: colors.textMuted }}>Onto request</span>
+                                                        <select
+                                                            disabled={busy}
+                                                            value={draft.toRequestId}
+                                                            onChange={(e) =>
+                                                                setSplitDrafts((prev) => ({
+                                                                    ...prev,
+                                                                    [entry.id]: {
+                                                                        ...draft,
+                                                                        toRequestId: e.target.value,
+                                                                    },
+                                                                }))
+                                                            }
+                                                            className="block px-2 py-1 rounded border max-w-[16rem]"
+                                                            style={inputStyle}
+                                                        >
+                                                            <option value="">Select…</option>
+                                                            {(linkedRequests || [])
+                                                                .filter(
+                                                                    (req) =>
+                                                                        String(req.id) !== String(entry.requestId || '')
+                                                                )
+                                                                .map((req) => (
+                                                                    <option key={String(req.id)} value={String(req.id)}>
+                                                                        {requestLabel(req)}
+                                                                    </option>
+                                                                ))}
+                                                        </select>
+                                                    </label>
+                                                    <button
+                                                        type="button"
+                                                        disabled={busy}
+                                                        onClick={() => void splitEntry(entry)}
+                                                        className="px-2 py-1 rounded border font-bold disabled:opacity-50"
+                                                        style={{ borderColor: colors.border, color: colors.primary }}
+                                                    >
+                                                        Split
+                                                    </button>
+                                                </div>
                                             ) : null}
                                         </li>
                                     );

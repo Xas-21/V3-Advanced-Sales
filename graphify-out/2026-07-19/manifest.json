@@ -1,7 +1,7 @@
 {
   "AS.tsx": {
-    "mtime": 1784472365.5931592,
-    "ast_hash": "9dc30e5c6625a29700369e21139cd6f9",
+    "mtime": 1784491843.8825016,
+    "ast_hash": "f78f98ec472b59433f8dff257927cff9",
     "semantic_hash": ""
   },
   "AccommodationRequestModal.tsx": {
@@ -35,8 +35,8 @@
     "semantic_hash": "c133ac36c4c83294483b85535f956345"
   },
   "CRM.tsx": {
-    "mtime": 1784472364.5846086,
-    "ast_hash": "82e871ed4437767ae0423ea344d0ab44",
+    "mtime": 1784486170.5785663,
+    "ast_hash": "7ef0e79ae32ac3e006c41779e0cf5265",
     "semantic_hash": ""
   },
   "CRMProfileView.tsx": {
@@ -140,8 +140,8 @@
     "semantic_hash": "b18fce27eb31c736cabdb56f08af5468"
   },
   "Settings.tsx": {
-    "mtime": 1784472364.6224089,
-    "ast_hash": "06dd260621c1c8f3962a68e5854db2f5",
+    "mtime": 1784491832.4400487,
+    "ast_hash": "4d0669e2eb2ce113f6f4de5ef43161b6",
     "semantic_hash": ""
   },
   "UserPerformanceDashboard.tsx": {
@@ -260,8 +260,8 @@
     "semantic_hash": "85057e7558f4899efdf3ee88b2f3473f"
   },
   "backend/data_access.py": {
-    "mtime": 1784472364.4651475,
-    "ast_hash": "6d8cabae3ddfa9f96550351bd1a600a8",
+    "mtime": 1784486499.597425,
+    "ast_hash": "a9b594d400f492204a0b4a1d4824432f",
     "semantic_hash": ""
   },
   "backend/dependencies.py": {
@@ -270,13 +270,13 @@
     "semantic_hash": ""
   },
   "backend/main.py": {
-    "mtime": 1784472364.4767728,
-    "ast_hash": "c41dd0a3e7be03018e8f50d71aadb4e8",
+    "mtime": 1784486353.4548585,
+    "ast_hash": "fa8e504872aaa70bb641a5bc39747119",
     "semantic_hash": ""
   },
   "backend/migrations/001_normalized_schema.sql": {
-    "mtime": 1784472364.4231594,
-    "ast_hash": "7b57c87fc0001f96925837ed0b36fc75",
+    "mtime": 1784483471.255902,
+    "ast_hash": "b27f901dc387bc65621b1bf77192d195",
     "semantic_hash": ""
   },
   "backend/migrations/002_migrate.py": {
@@ -305,19 +305,19 @@
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "backend/routers/accounts.py": {
-    "mtime": 1784472364.5514026,
-    "ast_hash": "2e074287b8047455e41bf7df41d4eb40",
+    "mtime": 1784485039.5005894,
+    "ast_hash": "47a0aab35c5be7cda562bd81538cca11",
     "semantic_hash": ""
   },
   "backend/routers/auth.py": {
-    "mtime": 1783892591.0047748,
-    "ast_hash": "45b7f15773d1ce9beafb6d1371b99cd3",
-    "semantic_hash": "45b7f15773d1ce9beafb6d1371b99cd3"
+    "mtime": 1784485312.805687,
+    "ast_hash": "cf106c648252b9ae1f0f66a9aa3fb169",
+    "semantic_hash": ""
   },
   "backend/routers/contact.py": {
-    "mtime": 1783892591.0047748,
-    "ast_hash": "5f9a6c198cbbde0537d4888a3fe61f1b",
-    "semantic_hash": "5f9a6c198cbbde0537d4888a3fe61f1b"
+    "mtime": 1784484988.491909,
+    "ast_hash": "720b210435a4e6d19e7d8dd8a3f6427a",
+    "semantic_hash": ""
   },
   "backend/routers/contracts.py": {
     "mtime": 1783892591.0047748,
@@ -355,9 +355,9 @@
     "semantic_hash": "fc72c9b726c18ae76dd35deefc7628ba"
   },
   "backend/routers/reqs.py": {
-    "mtime": 1783892591.0067747,
-    "ast_hash": "6c6c6d4a13605852b18fe4e7d7752e9e",
-    "semantic_hash": "6c6c6d4a13605852b18fe4e7d7752e9e"
+    "mtime": 1784485063.3561926,
+    "ast_hash": "be62f82a3e175cceb8443da6bee7fb33",
+    "semantic_hash": ""
   },
   "backend/routers/rooms.py": {
     "mtime": 1783892591.0077763,
@@ -375,13 +375,13 @@
     "semantic_hash": "7cde9b9ad082e1dc367a5a966e962d2e"
   },
   "backend/routers/uploads.py": {
-    "mtime": 1784472364.4671583,
-    "ast_hash": "bbb92f0d84c089eb9efd581e8738aa6e",
+    "mtime": 1784485041.272497,
+    "ast_hash": "2a8bcb46a56946fa20522d8cf4d73629",
     "semantic_hash": ""
   },
   "backend/routers/users.py": {
-    "mtime": 1784472364.4671583,
-    "ast_hash": "053130356767eb9ec23ffdcfc7f56355",
+    "mtime": 1784481500.4068878,
+    "ast_hash": "665f1ef7ca706d2259fb6613c62a7dfa",
     "semantic_hash": ""
   },
   "backend/routers/venues.py": {
@@ -410,13 +410,13 @@
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "backend/tests/test_api_full.py": {
-    "mtime": 1784472364.4271898,
-    "ast_hash": "dbdb44815f9ae84fcf2d313ea3fb528d",
+    "mtime": 1784483715.0701368,
+    "ast_hash": "e176d223cf112164094e01c889028414",
     "semantic_hash": ""
   },
   "backend/utils.py": {
-    "mtime": 1784472364.431206,
-    "ast_hash": "4ad217be6ab39461ece58898d434f947",
+    "mtime": 1784486438.2004433,
+    "ast_hash": "92e5da03a6a1566dec53c5cf51bbcbf4",
     "semantic_hash": ""
   },
   "backend/websocket_manager.py": {
@@ -435,8 +435,8 @@
     "semantic_hash": "4815e5934689d1183561373a85c5e8f3"
   },
   "contractsStore.ts": {
-    "mtime": 1784472364.5534143,
-    "ast_hash": "d51086f1534347a1dfe622c610e66031",
+    "mtime": 1784486176.4911363,
+    "ast_hash": "eb939c01d0f976d5a99ef5a116ec9b8b",
     "semantic_hash": ""
   },
   "crmActivitiesUtils.ts": {
@@ -610,8 +610,8 @@
     "semantic_hash": "716e2ad588daaf52f67bf558373f59d1"
   },
   "package.json": {
-    "mtime": 1784479112.1669855,
-    "ast_hash": "c3b95869f4cfe3aec2673cd317a12dc0",
+    "mtime": 1784484937.8654377,
+    "ast_hash": "c89f7e884f836c5eeb7a3fa984735502",
     "semantic_hash": ""
   },
   "postcss.config.js": {
@@ -1025,8 +1025,8 @@
     "semantic_hash": ""
   },
   "backend/requirements.txt": {
-    "mtime": 1784472364.5514026,
-    "ast_hash": "63203bc00634c13a9fa177772b0b2864",
+    "mtime": 1784486209.9462643,
+    "ast_hash": "215bc1b2c97ad8788a6ed2043a14a976",
     "semantic_hash": ""
   },
   "backend/runtime.txt": {
@@ -1835,8 +1835,8 @@
     "semantic_hash": ""
   },
   "backend/tests/test_list_requests_batch.py": {
-    "mtime": 1784472364.6111555,
-    "ast_hash": "7075e038694bd951d02f57ba921d29dc",
+    "mtime": 1784486533.1831083,
+    "ast_hash": "24de4a922166f6e0329ed9458e0e8691",
     "semantic_hash": ""
   },
   "backend/tests/test_session_resolve_once.py": {
@@ -1975,8 +1975,8 @@
     "semantic_hash": ""
   },
   "plans/README.md": {
-    "mtime": 1784479416.205098,
-    "ast_hash": "5eaa17ca7c92d3eb09fa919c408737f0",
+    "mtime": 1784487655.4836128,
+    "ast_hash": "1c0228d443cbae4d6b4c578cd835125e",
     "semantic_hash": ""
   },
   "dashboardHub/hubMotion.ts": {
@@ -2055,8 +2055,8 @@
     "semantic_hash": ""
   },
   "docker-compose.prod.yml": {
-    "mtime": 1784472364.5966892,
-    "ast_hash": "7a834f533cbdf374838bff31fdc2b6b6",
+    "mtime": 1784484972.9668114,
+    "ast_hash": "2ec22676357af1bbfcd5b782d6dfaed9",
     "semantic_hash": ""
   },
   ".cursor/commands/implement-task.md": {
@@ -2175,8 +2175,8 @@
     "semantic_hash": ""
   },
   ".github/workflows/ci.yml": {
-    "mtime": 1784479383.6041505,
-    "ast_hash": "fbfdbaa0164b29e1e5667e59b9d8ab28",
+    "mtime": 1784484462.2669673,
+    "ast_hash": "573da7341cffcff0eccbb1322a491736",
     "semantic_hash": ""
   },
   "plans/038-user-get-tenant-scope.md": {
@@ -2257,6 +2257,51 @@
   "plans/054-dx-cross-platform-scripts-env-docs.md": {
     "mtime": 1784478137.214113,
     "ast_hash": "b95cdc35a0d609aae584774d5605670b",
+    "semantic_hash": ""
+  },
+  "backend/tests/test_get_user_tenant_scope.py": {
+    "mtime": 1784481498.1386132,
+    "ast_hash": "3dc762000acb564ade3ea48dbd700ac7",
+    "semantic_hash": ""
+  },
+  "backend/tests/test_login_rate_limit.py": {
+    "mtime": 1784484990.998583,
+    "ast_hash": "998e166abed31956f395720ad76ba81f",
+    "semantic_hash": ""
+  },
+  "backend/tests/test_upload_svg.py": {
+    "mtime": 1784485204.52201,
+    "ast_hash": "35e76e5a1a082f9182b949867431c08e",
+    "semantic_hash": ""
+  },
+  "currency.test.ts": {
+    "mtime": 1784485198.3582087,
+    "ast_hash": "363efda0af18c5e46a567fb3963b721f",
+    "semantic_hash": ""
+  },
+  "formatCompactCurrency.test.ts": {
+    "mtime": 1784485203.2898312,
+    "ast_hash": "3f185ec6eadbcb5e21f8f08a53282b7e",
+    "semantic_hash": ""
+  },
+  "reportsVsLastYear.test.ts": {
+    "mtime": 1784485800.69541,
+    "ast_hash": "d74a877d25e50d6beaef4033deb58ebf",
+    "semantic_hash": ""
+  },
+  "backend/tests/test_tenant_scope_fail_closed.py": {
+    "mtime": 1784486524.3357804,
+    "ast_hash": "f37a4428881f36bcb690c502f805aeb7",
+    "semantic_hash": ""
+  },
+  "userPropertyAccess.test.ts": {
+    "mtime": 1784491778.757737,
+    "ast_hash": "7877aaa5a108f378aff4efa48408568a",
+    "semantic_hash": ""
+  },
+  "userPropertyAccess.ts": {
+    "mtime": 1784491783.950791,
+    "ast_hash": "7b512d95233d7cbede46d121c66411ed",
     "semantic_hash": ""
   }
 }

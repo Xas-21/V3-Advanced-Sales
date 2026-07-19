@@ -46,6 +46,8 @@ export interface CRMProfileViewProps {
     currentUser?: any;
     onOpenRequest?: (requestId: string) => void;
     onViewAccountRequests?: () => void;
+    /** Open account Billing panel (balance / deposits / CL). */
+    onOpenBilling?: () => void;
     onEditAccount?: () => void;
     /** Property context for Rates (room types / segments / occupancy). */
     activeProperty?: any;
@@ -109,6 +111,7 @@ export default function CRMProfileView({
     currentUser,
     onOpenRequest,
     onViewAccountRequests,
+    onOpenBilling,
     onEditAccount,
     readOnly = false,
     canDeleteAccount = false,
@@ -629,6 +632,16 @@ export default function CRMProfileView({
                             style={{ borderColor: colors.border, color: colors.textMain }}
                         >
                             View Requests
+                        </button>
+                    ) : null}
+                    {onOpenBilling ? (
+                        <button
+                            type="button"
+                            onClick={onOpenBilling}
+                            className="px-3 py-2 rounded border hover:bg-white/5 flex items-center gap-2 text-sm font-bold"
+                            style={{ borderColor: colors.border, color: colors.textMain }}
+                        >
+                            Billing
                         </button>
                     ) : null}
                     {!readOnly && (
@@ -1251,6 +1264,16 @@ export default function CRMProfileView({
                                             style={{ color: colors.textMain }}
                                         >
                                             View Requests
+                                        </button>
+                                    ) : null}
+                                    {onOpenBilling ? (
+                                        <button
+                                            type="button"
+                                            onClick={onOpenBilling}
+                                            className="text-xs font-bold hover:opacity-70"
+                                            style={{ color: colors.textMain }}
+                                        >
+                                            Billing
                                         </button>
                                     ) : null}
                                 </div>

@@ -78,6 +78,10 @@ Extract the remaining self-contained views/charts one at a time (`EventsView`, `
 
 Extracted to root-level files (repo convention): `CalendarView.tsx`, `EventsView.tsx`, `MainChart.tsx`, `ToDoView.tsx`, `DistributionChart.tsx`, `AlertsBell.tsx`. Also moved `rechartsTooltipThemeProps` into `rechartsChartLegend.tsx`. Left `AdvancedSalesDashboard` + routing/WebSocket in `AS.tsx`. Line count: **8195 → 5355**.
 
+## Follow-up (2026-07-20)
+
+Extracted pure dashboard date/axis helpers to `dashboardShellDates.ts`. Line count: **~5352 → ~5257**. Shell/WebSocket remain in `AS.tsx` by design (plan Step 3 / STOP).
+
 ## STOP conditions
 
 - A component's dependency on enclosing scope is too tangled to pass as props without behavior risk — leave it inline, report it.

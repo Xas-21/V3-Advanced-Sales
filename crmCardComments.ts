@@ -10,6 +10,12 @@ export type CrmCardComment = {
     createdAt: string;
 };
 
+/** True when a kanban card HTML5 drag should be cancelled (comment UI / controls). */
+export function isCrmCardInteractiveDragTarget(target: EventTarget | null): boolean {
+    if (!target || typeof Element === 'undefined' || !(target instanceof Element)) return false;
+    return Boolean(target.closest('input, textarea, button, select, a, [data-crm-no-drag]'));
+}
+
 /** `commentsNewestFirst` must already be newest-first from the API. */
 export function visibleCardComments(
     commentsNewestFirst: CrmCardComment[],
