@@ -94,6 +94,7 @@ _FLAT_WITH_PID = {
     "tasks",
     "promotions",
     "account_rates",
+    "account_ledger",
 }
 # Tables keyed only by id (no property_id column). `properties` is itself the
 # tenant root; `contract_templates`/`cxl_reasons` are id-keyed payload-only.
@@ -367,6 +368,29 @@ def _extract_account_rates(p: dict) -> dict:
     }
 
 
+_LEDGER_POSITIVE = {"deposit", "collection"}
+_LEDGER_NEGATIVE = {"allocation", "cl_charge", "refund"}
+
+
+def _signed_ledger_amount(entry_type: str, amount) -> float:
+    v = float(_as_decimal(amount) or 0)
+    t = str(entry_type or "").strip()
+    if t in _LEDGER_POSITIVE:
+        return abs(v)
+    if t in _LEDGER_NEGATIVE:
+        return -abs(v)
+    return v  # adjustment: as-is
+
+
+def _extract_account_ledger(p: dict) -> dict:
+    return {
+        "account_id": str(p.get("accountId") or "").strip() or None,
+        "request_id": str(p.get("requestId") or "").strip() or None,
+        "entry_type": str(p.get("type") or "").strip() or None,
+        "amount": _signed_ledger_amount(p.get("type"), p.get("amount")),
+    }
+
+
 _EXTRACTORS = {
     "properties": _extract_properties,
     "rooms": _extract_rooms,
@@ -376,6 +400,7 @@ _EXTRACTORS = {
     "tasks": _extract_tasks,
     "promotions": _extract_promotions,
     "account_rates": _extract_account_rates,
+    "account_ledger": _extract_account_ledger,
 }
 
 
@@ -418,6 +443,20 @@ def delete_flat(table: str, row_id: str, property_id: Optional[str] = None):
     _assert_write_access(effective_pid)
     _delete_doc(table, row_id, property_id)
     _broadcast_change("deleted", table, {"id": row_id}, effective_pid)
+
+
+def save_ledger_entry(data: dict) -> dict:
+    item = {**(data if isinstance(data, dict) else {})}
+    item["amount"] = _signed_ledger_amount(item.get("type"), item.get("amount"))
+    return upsert_flat("account_ledger", item, id_prefix="LE")
+
+
+def transfer_allocation(entry_id: str, to_request_id: str) -> dict:
+    existing = get_flat("account_ledger", str(entry_id))
+    if not existing:
+        raise KeyError("ledger entry not found")
+    existing["requestId"] = str(to_request_id or "").strip() or None
+    return save_ledger_entry(existing)
 
 
 # contract_templates / cxl_reasons: id-keyed, payload-only -------------------- #
