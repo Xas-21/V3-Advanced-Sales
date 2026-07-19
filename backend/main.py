@@ -70,7 +70,7 @@ _configure_logging()
 logger = logging.getLogger(__name__)
 logger.info("Advanced Sales Backend: LOADING MAIN APP...")
 
-from routers import auth, users, properties, rooms, venues, taxes, financials, reqs, crm_state, contact, accounts, tasks, uploads, contracts, cxl_reasons, promotions, account_rates, feed, chat, presence
+from routers import auth, users, properties, rooms, venues, taxes, financials, reqs, crm_state, contact, accounts, tasks, uploads, contracts, cxl_reasons, promotions, account_rates, account_ledger, feed, chat, presence
 from routers import ws
 from utils import close_database, get_database_url, init_database, storage_mode, check_database_health
 
@@ -208,6 +208,7 @@ app.include_router(contracts.router, dependencies=_auth_required)
 app.include_router(cxl_reasons.router, dependencies=_auth_required)
 app.include_router(promotions.router, dependencies=_auth_required)
 app.include_router(account_rates.router, dependencies=_auth_required)
+app.include_router(account_ledger.router, dependencies=_auth_required)
 
 # Contact form stays public (marketing/subscribe). Uploads require auth so
 # anonymous callers cannot write to the shared uploads volume.
