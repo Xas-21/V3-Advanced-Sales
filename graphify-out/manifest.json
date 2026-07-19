@@ -380,8 +380,8 @@
     "semantic_hash": ""
   },
   "backend/routers/users.py": {
-    "mtime": 1784472364.4671583,
-    "ast_hash": "053130356767eb9ec23ffdcfc7f56355",
+    "mtime": 1784481500.4068878,
+    "ast_hash": "665f1ef7ca706d2259fb6613c62a7dfa",
     "semantic_hash": ""
   },
   "backend/routers/venues.py": {
@@ -1975,8 +1975,8 @@
     "semantic_hash": ""
   },
   "plans/README.md": {
-    "mtime": 1784479416.205098,
-    "ast_hash": "5eaa17ca7c92d3eb09fa919c408737f0",
+    "mtime": 1784481501.2061334,
+    "ast_hash": "4b6c7308f4381b89604dadd93248f9b3",
     "semantic_hash": ""
   },
   "dashboardHub/hubMotion.ts": {
@@ -2257,6 +2257,11 @@
   "plans/054-dx-cross-platform-scripts-env-docs.md": {
     "mtime": 1784478137.214113,
     "ast_hash": "b95cdc35a0d609aae584774d5605670b",
+    "semantic_hash": ""
+  },
+  "backend/tests/test_get_user_tenant_scope.py": {
+    "mtime": 1784481498.1386132,
+    "ast_hash": "3dc762000acb564ade3ea48dbd700ac7",
     "semantic_hash": ""
   }
 }

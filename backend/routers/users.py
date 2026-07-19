@@ -107,7 +107,7 @@ def get_users(
 
 @router.get("/{user_id}")
 def get_user(user_id: str, session_id: str | None = Cookie(default=None, alias=SESSION_COOKIE_NAME)):
-    require_user(session_id)
+    caller = require_user(session_id)
     pool = _get_pool()
     with pool.connection() as conn:
         with conn.cursor() as cur:
@@ -115,6 +115,12 @@ def get_user(user_id: str, session_id: str | None = Cookie(default=None, alias=S
             row = cur.fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="User not found")
+    if not is_admin(caller):
+        caller_ids = caller.get("property_ids") or ([caller["propertyId"]] if caller.get("propertyId") else [])
+        target = _row_to_client(row)
+        target_ids = target.get("property_ids") or []
+        if not set(caller_ids) & set(target_ids):
+            raise HTTPException(status_code=404, detail="User not found")
     return _row_to_client(row)
 
 

@@ -300,7 +300,7 @@ Planned at commit `90c3a4c`, 2026-07-19 via `/improve` (full audit: security + c
 | Plan | Priority | Status |
 |------|----------|--------|
 | 040-verification-gate-typecheck-lint-ci | P0 | DONE (ratchet: 50 tsc errors; lint warn-ratchet) |
-| 038-user-get-tenant-scope | P0 | TODO |
+| 038-user-get-tenant-scope | P0 | DONE |
 | 039-purge-committed-pii-and-secrets | P0 | TODO |
 | 041-characterization-tests-money-booking | P1 | TODO |
 

@@ -1,12 +1,12 @@
-# Graph Report - V3-Advanced-Sales  (2026-07-18)
+# Graph Report - V3-Advanced-Sales  (2026-07-19)
 
 ## Corpus Check
-- 813 files · ~1,250,507 words
+- 431 files · ~651,836 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 13093 nodes · 16155 edges · 776 communities (754 shown, 22 thin omitted)
-- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 274 edges (avg confidence: 0.78)
+- 5743 nodes · 9190 edges · 420 communities (398 shown, 22 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 274 edges (avg confidence: 0.78)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
@@ -256,164 +256,16 @@
 - gsap.utils
 - gsap.utils
 - gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
-- gsap.utils
 - Per-component notes
 - Per-component notes
 - Hub tabs — duplicated KPIs / charts audit
 - GSAP Core
 - GSAP Core
 - GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP Core
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
 - GSAP ScrollTrigger
 - Commands
 - GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
 - Commands
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
-- GSAP ScrollTrigger
 - GSAP ScrollTrigger
 - SKILL.md
 - Customization & Theming
@@ -421,222 +273,22 @@
 - Customization & Theming
 - GSAP with Vue, Svelte, and Other Frameworks
 - GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
+- Component Composition
+- Styling & Customization
 - GSAP with Vue, Svelte, and Other Frameworks
 - GSAP with React
 - Component Composition
 - Styling & Customization
 - GSAP with Vue, Svelte, and Other Frameworks
 - GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- Component Composition
-- Styling & Customization
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP with Vue, Svelte, and Other Frameworks
-- GSAP with React
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
 - GSAP Performance
 - GSAP Timeline
 - alert-dialog
 - Tools
 - GSAP Performance
 - GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
 - alert-dialog
 - Tools
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
-- GSAP Performance
-- GSAP Timeline
 - GSAP Performance
 - GSAP Timeline
 - toast
@@ -681,7 +333,6 @@
 - Progress.Indicator → Progress.Indicator
 - Separator.Root → Separator
 - Separator.Root → Separator
-- SKILL.md
 - (new) Fieldset.Root and Fieldset.Legend
 - (new) Fieldset.Root and Fieldset.Legend
 - agreementStatus
@@ -726,19 +377,11 @@
 - Plan 007: Gate Settings users/properties fetch until admin needs them
 - Plan 008: Resolve account form schema once for incomplete checks
 - Advisor plans index
-- tw-animate-css
 - business_card_scan.py
 - richText.tsx
-- SKILL.md
-- accountProfileChartData.ts
-- SKILL.md
-- contactDisplayName
-- buildVsLyMatrix
 - scripts
-- crmPipelineCardRequestDetails.ts
 - package.json
 - recharts
-- shadcn
 
 ## God Nodes (most connected - your core abstractions)
 1. `AdvancedSalesDashboard()` - 102 edges
@@ -761,29 +404,29 @@
   AS.tsx → PromotionsPage.tsx
 - `AdvancedSalesDashboard()` --indirect_call--> `defaultChartVsYear()`  [INFERRED]
   AS.tsx → chartVsYearCompare.ts
-- `AdvancedSalesDashboard()` --indirect_call--> `Settings()`  [INFERRED]
-  AS.tsx → Settings.tsx
+- `AdvancedSalesDashboard()` --indirect_call--> `clearPipelineLinkForDeletedRequest()`  [INFERRED]
+  AS.tsx → crmStateModel.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (776 total, 22 thin omitted)
+## Communities (420 total, 22 thin omitted)
 
 ### Community 0 - "CRM.tsx / AccountsPage.tsx"
-Cohesion: 0.04
-Nodes (107): checkPasswordPolicy(), ALERT_TYPE_REGISTRY, AlertKindRowSettings, DEADLINE_ACCENT_OPTIONS, DEADLINE_ALERT_KINDS, DEADLINE_OFFSET_OPTIONS, DeadlineAlertAccent, DeadlineAlertKind (+99 more)
+Cohesion: 0.08
+Nodes (38): applyFormOverrideToSchema(), clone(), getDefaultFormSchema(), getResolvedFormSchemaFromStores(), loadPropertyFormOverrides(), mirrorFormConfigurationsToLocalStorage(), persistFormConfigurationsForProperty(), storageKey() (+30 more)
 
 ### Community 1 - "AS.tsx / parseYmd()"
-Cohesion: 0.03
-Nodes (177): dismissStorageKey(), isDismissedForDate(), loadDismissMap(), localDateKey(), saveDismissMap(), APP_VIEW_PATHS, HUB_TAB_IDS, isHubTabId() (+169 more)
+Cohesion: 0.04
+Nodes (88): dismissStorageKey(), isDismissedForDate(), loadDismissMap(), localDateKey(), saveDismissMap(), accountPerformanceData, AccountsPage, AddAccountModal (+80 more)
 
 ### Community 2 - "crmCallReportUtils.ts / crmActivitiesUtils.ts"
-Cohesion: 0.09
-Nodes (59): flattenCrmLeads(), accountHasCallHistory(), buildAccountCallTimeline(), CRM_QUARTER_MONTH_BLOCKS, CrmSalesPeriod, dedupePipelineMirrorCalls(), formatCallDueDate(), formatTimelineDate() (+51 more)
+Cohesion: 0.07
+Nodes (67): CallDetailsModal(), CallDetailsModalProps, kindLabel(), accountHasCallHistory(), buildAccountCallTimeline(), CallTimelineEntry, CRM_QUARTER_MONTH_BLOCKS, CrmSalesPeriod (+59 more)
 
 ### Community 3 - "contractsStore.ts / Contracts.tsx"
-Cohesion: 0.12
-Nodes (46): Contracts(), ContractsProps, isCompanyNameVariable(), isDateLikeVariable(), isEndDateVariable(), isStartDateVariable(), isTodayVariable(), normalizeVarKey() (+38 more)
+Cohesion: 0.13
+Nodes (43): Contracts(), ContractsProps, isCompanyNameVariable(), isDateLikeVariable(), isEndDateVariable(), isStartDateVariable(), isTodayVariable(), normalizeVarKey() (+35 more)
 
 ### Community 4 - "Settings.tsx / userProfileMetrics.ts"
 Cohesion: 0.04
@@ -794,16 +437,16 @@ Cohesion: 0.04
 Nodes (48): Arrow / Item / Group / Label / CheckboxItem / RadioGroup / RadioItem / ItemIndicator / Separator / Sub / SubTrigger / SubContent, Arrow → Menu.Arrow, Base UI only, data attributes, CSS variables, Base UI only props worth knowing (Menu), Base UI only props worth knowing (NavigationMenu), CheckboxItem → Menu.CheckboxItem, Content → ContextMenu.Portal > Positioner > Popup, Content → Menu.Portal > Menu.Positioner > Menu.Popup (+40 more)
 
 ### Community 6 - "_get_pool() / utils.py"
-Cohesion: 0.07
-Nodes (68): get_account(), get_crm_state(), list_accounts(), _list_doc(), list_requests(), _load_users_cache(), _row_to_account_dict(), health() (+60 more)
+Cohesion: 0.08
+Nodes (62): get_crm_state(), list_accounts(), _list_doc(), list_requests(), health(), on_startup(), _account_name_sort_key(), check_database_health() (+54 more)
 
 ### Community 7 - "auth_db.py / security.py"
 Cohesion: 0.05
 Nodes (39): authenticate(), bump_session_version_and_revoke(), change_password(), create_session(), get_password_hash(), get_user_by_id(), get_user_by_username(), AS authentication + authorization + tenant isolation against the relational DB. (+31 more)
 
 ### Community 8 - "requestAlertEngine.ts / propertyAlertSettings.ts"
-Cohesion: 0.12
-Nodes (30): AccountRatePeriod, AccountRateRow, lookupAccountRoomRate(), normalizeAccountRatePeriod(), normalizeAccountRateRows(), normKey(), overlapsRateWindow(), periodSpanDays() (+22 more)
+Cohesion: 0.23
+Nodes (14): AccountRatePeriod, AccountRateRow, lookupAccountRoomRate(), normalizeAccountRatePeriod(), normalizeAccountRateRows(), normKey(), overlapsRateWindow(), periodSpanDays() (+6 more)
 
 ### Community 9 - "data_access.py / upsert_request()"
 Cohesion: 0.04
@@ -814,20 +457,20 @@ Cohesion: 0.04
 Nodes (46): accordion, Accordion.Content → Accordion.Panel, Accordion.Header → Accordion.Header, Accordion.Item → Accordion.Item, Accordion.Root → Accordion.Root, Accordion.Trigger → Accordion.Trigger, Base UI only props worth knowing, Base UI only props worth knowing (+38 more)
 
 ### Community 11 - "scripts / devDependencies"
-Cohesion: 0.09
-Nodes (23): autoprefixer, devDependencies, autoprefixer, postcss, tailwindcss, @types/node, @types/react, @types/react-dom (+15 more)
+Cohesion: 0.06
+Nodes (31): autoprefixer, @eslint/js, eslint-plugin-react-hooks, eslint-plugin-react-refresh, devDependencies, autoprefixer, @eslint/js, eslint-plugin-react-hooks (+23 more)
 
 ### Community 12 - "list_flat() / upsert_flat()"
-Cohesion: 0.04
-Nodes (90): _as_date(), _as_datetime(), _as_decimal(), _as_int(), _assert_upsert_write_access(), _assert_write_access(), _broadcast_change(), _cascade_account_rename_to_requests() (+82 more)
+Cohesion: 0.07
+Nodes (31): _delete_doc(), delete_flat(), _get_doc(), get_flat(), list_flat(), upsert_flat(), delete_account_rate(), get_account_rates() (+23 more)
 
 ### Community 13 - "RequestsManager.tsx / RequestsManager()"
-Cohesion: 0.05
-Nodes (102): EventsView(), addCalendarDaysIso(), calculateAccFinancialsForRequest(), calculateEventAgendaDays(), calculateNights(), deriveBeoPaymentView(), deriveRequestMealLabelFromRooms(), escapeHtml() (+94 more)
+Cohesion: 0.08
+Nodes (68): requestMatchesAccount(), EventsView(), addCalendarDaysIso(), calculateAccFinancialsForRequest(), calculateEventAgendaDays(), deriveBeoPaymentView(), deriveRequestMealLabelFromRooms(), escapeHtml() (+60 more)
 
 ### Community 14 - "formConfigurations.ts / AddAccountModal.tsx"
-Cohesion: 0.10
-Nodes (32): accountToFormState(), AddAccountModal(), AddAccountModalProps, defaultFormState(), emptyContactRow(), AddSalesCallModalProps, applyFormOverrideToSchema(), clone() (+24 more)
+Cohesion: 0.11
+Nodes (35): findPotentialDuplicateAccounts(), samePropertyAccount(), accountToFormState(), AddAccountModal(), AddAccountModalProps, defaultFormState(), emptyContactRow(), AddSalesCallModal() (+27 more)
 
 ### Community 15 - "reportsVsLastYear.ts"
 Cohesion: 0.05
@@ -855,11 +498,11 @@ Nodes (33): 1. Correctness / Bugs, 2. Security, 3. Performance, 4. Test Coverage
 
 ### Community 21 - "propertyOccupancyTypes.ts / calculateNights()"
 Cohesion: 0.15
-Nodes (40): addProratedRequestFinancialsToDashboardBuckets(), asNumberReport(), buildReportSegmentsForRequest(), calculateNights(), chartStatusKeyFromRequest(), computeRequestRevenueBreakdownNoTax(), DashboardFinancialBucket, DashboardRoomsChartBucketGranularity (+32 more)
+Nodes (39): addProratedRequestFinancialsToDashboardBuckets(), asNumberReport(), buildReportSegmentsForRequest(), calculateNights(), chartStatusKeyFromRequest(), computeRequestRevenueBreakdownNoTax(), DashboardFinancialBucket, DashboardRoomsChartBucketGranularity (+31 more)
 
 ### Community 22 - "CRMProfileView.tsx / accountProfileData.ts"
-Cohesion: 0.09
-Nodes (63): asciiSafeForExport(), asNumber(), bucketYmdForRequest(), buildCoreRow(), buildFullVsLyMatrix(), buildGrandHotelCombinedRevenueRow(), buildOtherRevenueRow(), buildSegMaps() (+55 more)
+Cohesion: 0.10
+Nodes (29): asciiSafeForExport(), asNumber(), buildCoreRow(), buildSegMaps(), calculateNights(), calculateRoomBlockForReport(), computeRoomsChartMetricsInMonth(), countInSegment() (+21 more)
 
 ### Community 23 - "Reports.tsx / Reports()"
 Cohesion: 0.04
@@ -870,8 +513,8 @@ Cohesion: 0.04
 Nodes (44): Base UI only props worth knowing (checkbox), Base UI only props worth knowing (radio-group), Base UI only props worth knowing (select), Base UI only props worth knowing (slider), Base UI only props worth knowing (switch), checkbox, Checkbox.Indicator → Checkbox.Indicator, Checkbox.Root → Checkbox.Root (+36 more)
 
 ### Community 25 - "resolveCurrencyCode() / formatCurrencyAmount()"
-Cohesion: 0.18
-Nodes (16): ChatTypingUser, ChatAvatar(), chatInitials(), formatMsgTime(), messageIsReadByPeer(), MessengerFab(), MessengerPopup(), prefersReducedMotion() (+8 more)
+Cohesion: 0.07
+Nodes (54): normalizePathname(), parseAppPath(), viewToPath(), AdvancedSalesDashboard(), APP_SHELL_VIEW_IDS, crmLocalStorageKey(), getActivePropertyStorageKey(), getCurrentYearRange() (+46 more)
 
 ### Community 26 - "apiUrl() / backendApi.ts"
 Cohesion: 0.11
@@ -882,32 +525,32 @@ Cohesion: 0.15
 Nodes (25): account_activities, account_contacts, account_rates, accounts, contract_templates, crm_state, cxl_reasons, financials (+17 more)
 
 ### Community 28 - "001_normalized_schema.sql / requests"
-Cohesion: 0.15
-Nodes (24): account_activities, account_contacts, accounts, contract_templates, crm_state, cxl_reasons, financials, promotions (+16 more)
+Cohesion: 0.14
+Nodes (25): account_activities, account_contacts, account_rates, accounts, contract_templates, crm_state, cxl_reasons, financials (+17 more)
 
 ### Community 29 - "compilerOptions / lib"
 Cohesion: 0.07
 Nodes (27): DOM, DOM.Iterable, ES2020, ./src/*, **/*.ts, **/*.tsx, compilerOptions, allowImportingTsExtensions (+19 more)
 
 ### Community 30 - "AdvancedSalesDashboard() / alertDismissals.ts"
-Cohesion: 0.07
-Nodes (107): Card(), contrastOn(), delta, EmptyState(), FilterChips(), fmtCompact(), fmtInt(), fmtMoney() (+99 more)
+Cohesion: 0.11
+Nodes (81): Card(), delta, EmptyState(), FilterChips(), fmtCompact(), fmtInt(), fmtMoney(), fmtPct() (+73 more)
 
 ### Community 31 - "crm_recovery.py / crm_state.py"
-Cohesion: 0.20
-Nodes (19): account_activities_to_sales_calls(), crm_item_count(), merge_recovery_block(), period_month_from_request(), Any, Rebuild CRM pipeline (and partial salesCalls) from requests + legacy snapshots., Convert legacy crm accountActivities map entries to salesCalls rows., One monthly pipeline card per account + period from operational request dates. (+11 more)
+Cohesion: 0.27
+Nodes (12): account_activities_to_sales_calls(), crm_item_count(), merge_recovery_block(), period_month_from_request(), Any, Rebuild CRM pipeline (and partial salesCalls) from requests + legacy snapshots., Convert legacy crm accountActivities map entries to salesCalls rows., One monthly pipeline card per account + period from operational request dates. (+4 more)
 
 ### Community 32 - "Settings"
 Cohesion: 0.09
 Nodes (21): aliases, components, hooks, lib, ui, utils, iconLibrary, menuAccent (+13 more)
 
 ### Community 33 - "DashboardHubRequestsPage.tsx / DashboardHubRequestsPage()"
-Cohesion: 0.09
-Nodes (23): class-variance-authority, docxtemplater, gsap, @gsap/react, jspdf-autotable, mammoth, dependencies, class-variance-authority (+15 more)
+Cohesion: 0.07
+Nodes (29): class-variance-authority, clsx, docxtemplater, dompurify, @fontsource-variable/geist, jspdf-autotable, lucide-react, mammoth (+21 more)
 
 ### Community 34 - "DashboardHubSalesPerformancePage.tsx / DashboardHubSalesPerformancePa..."
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.14
+Nodes (35): buildMirrorSalesCallFromPipelineCard(), cardPeriodMonth(), clearPipelineLinkForDeletedRequest(), clonePipeline(), CrmStatePayload, defaultCrmState(), defaultPipelineBuckets(), filterPipelineForProperty() (+27 more)
 
 ### Community 35 - "auth.py / login()"
 Cohesion: 0.14
@@ -918,8 +561,8 @@ Cohesion: 0.07
 Nodes (26): 10. Operations & quality, 11. Diagram: request lifecycle (simplified), 12. Glossary, 13. Disclaimer, 1. Executive summary, 2. System context (high level), 3.1 Frontend, 3.2 Backend (+18 more)
 
 ### Community 37 - "CRMProfileView.tsx"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.15
+Nodes (30): getDeadlineAlertRule(), isAlertKindActive(), SystemAlertKind, applyMessageTokens(), collectBeoStartDates(), collectCheckoutOrEndDates(), collectGisArrivalDates(), computeAllRequestAlerts() (+22 more)
 
 ### Community 38 - "DashboardHubRoomsPage.tsx / DashboardHubRoomsPage()"
 Cohesion: 0.05
@@ -934,16 +577,16 @@ Cohesion: 0.05
 Nodes (43): 1. Logo Cover, 1. Monogram + Meaning, 2 × 3 REFERENCE-STYLE LAYOUT, 2. Logo Construction, 2. Product Action, 3. Digital Application, 3. Metaphor Fusion, 4. Brand Essence (+35 more)
 
 ### Community 41 - "DashboardHubPromotionsPage.tsx / DashboardHubPromotionsPage()"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.17
+Nodes (27): _as_date(), _as_datetime(), _as_decimal(), _as_int(), _assert_upsert_write_access(), _assert_write_access(), _cascade_account_rename_to_requests(), _child_typed() (+19 more)
 
 ### Community 42 - "DashboardHubRevenueMixPage.tsx / DashboardHubRevenueMixPage()"
-Cohesion: 0.09
-Nodes (29): get_current_user(), get_current_user_ctx(), Any, Server-side auth dependencies: session resolution, permission + tenant enforceme, Prefer middleware-set context; fall back to resolve_session for rare paths witho, require_admin(), set_current_user(), _user_from_ctx_or_session() (+21 more)
+Cohesion: 0.14
+Nodes (20): get_current_user(), get_current_user_ctx(), Any, Server-side auth dependencies: session resolution, permission + tenant enforceme, Prefer middleware-set context; fall back to resolve_session for rare paths witho, require_admin(), set_current_user(), _user_from_ctx_or_session() (+12 more)
 
 ### Community 43 - "accountProfileData.ts"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.13
+Nodes (24): ACCOMMODATION_TEMPLATE, buildDefaultFeedbackTemplateStore(), buildInitialFeedbackAnswers(), cloneTemplate(), defaultTemplateForType(), EVENT_TEMPLATE, EVENT_WITH_ROOMS_TEMPLATE, FEEDBACK_QUESTION_TYPE_OPTIONS (+16 more)
 
 ### Community 44 - "002_migrate.py / migrate()"
 Cohesion: 0.23
@@ -954,8 +597,8 @@ Cohesion: 0.13
 Nodes (14): ConnectionManager, Any, WebSocket, User ids with at least one live WebSocket subscribed to this property., Tell property subscribers who is online right now (active browser sessions)., Broadcast a change event to all subscribed clients.                  Args:, Send a message to specific users (all their open tabs/devices)., Schedule a per-user broadcast from sync / threadpool code. (+6 more)
 
 ### Community 46 - "DashboardHubShell.tsx / dashboardHubTabs.ts"
-Cohesion: 0.14
-Nodes (19): CHAT_EMOJIS, playChatSound(), ChatWsMessage, dispatchChatWs(), Handler, setChatWsHandler(), ChatAvatar(), GroupInfoPanel() (+11 more)
+Cohesion: 0.18
+Nodes (23): DEFAULT_MEAL_PLANS, dispatchChanged(), EVENT_PACKAGE_TIMING_OPTIONS, eventPackagesFromArray(), eventPackagesKey(), getTimingSlotsForTimingId(), isTimingId(), LEGACY_EVENT_PACKAGE_TO_TIMING (+15 more)
 
 ### Community 47 - "002_migrate.py / migrate()"
 Cohesion: 0.23
@@ -966,16 +609,16 @@ Cohesion: 0.26
 Nodes (10): build_cors_settings(), _expand_www_variants(), _normalize_origin(), ProductionCORSMiddleware, CORS middleware with Render-friendly origin fallbacks., Browser Origin headers never include a path or trailing slash., Allow both apex and www for real custom domains only.      IP addresses (e.g., Accept configured origins/regex plus any https://*.onrender.com host. (+2 more)
 
 ### Community 49 - "DashboardHubActivitiesPage.tsx / DashboardHubActivitiesPage()"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.18
+Nodes (21): accountToLead(), contactDisplayName(), leadToAccount(), mergeAccountIntoCrmLead(), resolveAccountOwnerName(), withContactName(), AccountMergeApplyInput, applyAccountMergeInMemory() (+13 more)
 
 ### Community 50 - "DashboardHubMicePage.tsx / DashboardHubMicePage()"
 Cohesion: 0.13
 Nodes (14): Commands, Current state, Done criteria, Plan 028: Messenger group admin roles (promote / demote / permissions), Scope, Status, Step 1: Schema + backfill, Step 2: Authz helpers (+6 more)
 
 ### Community 51 - "main.py / auth_context_and_security_headers()"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.10
+Nodes (16): DashboardHubComingSoonProps, DashboardHubAccountsPage, DashboardHubActivitiesPage, DashboardHubAgreementsPage, DashboardHubCrmPage, DashboardHubFeedPage, DashboardHubMicePage, DashboardHubPromotionsPage (+8 more)
 
 ### Community 53 - "uploads.py / _resolve_cloudinary_config()"
 Cohesion: 0.26
@@ -986,8 +629,8 @@ Cohesion: 0.05
 Nodes (43): 1. Logo Cover, 1. Monogram + Meaning, 2 × 3 REFERENCE-STYLE LAYOUT, 2. Logo Construction, 2. Product Action, 3. Digital Application, 3. Metaphor Fusion, 4. Brand Essence (+35 more)
 
 ### Community 56 - "MessengerWidget.tsx"
-Cohesion: 0.07
-Nodes (46): ConfirmDialog(), ConfirmDialogProps, CRM(), CRM_QUARTER_MONTH_BLOCKS, crmLeadHasScheduledFollowUp(), CrmNavigateMeta, CRMProps, leadMatchesSalesPeriod() (+38 more)
+Cohesion: 0.08
+Nodes (37): AccountLinkedRequestsModal(), AccountLinkedRequestsModalProps, filterRequestsForAccount(), filterSalesCallsForAccount(), AccountsPageProps, ConfirmDialog(), ConfirmDialogProps, CRM() (+29 more)
 
 ### Community 57 - "compilerOptions / tsconfig.node.json"
 Cohesion: 0.22
@@ -1002,28 +645,28 @@ Cohesion: 0.50
 Nodes (4): BaseModel, Sends subscription inquiry email when SMTP_* env vars are set.     Otherwise re, subscribe(), SubscribePayload
 
 ### Community 61 - "contactDisplayName"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.17
+Nodes (16): APP_VIEW_PATHS, HUB_TAB_IDS, isHubTabId(), ParsedAppPath, PATH_TO_VIEW, contrastOn(), DashboardHubTabPage(), DashboardHubTabBar() (+8 more)
 
 ### Community 62 - "DashboardHubComingSoon.tsx / DashboardHubComingSoonProps"
-Cohesion: 0.16
-Nodes (22): AttachmentGallery(), attachmentKind(), Avatar(), colorsFallbackDim(), DashboardHubFeedPage(), FeedAttachment, FeedCard(), FeedComment (+14 more)
+Cohesion: 0.05
+Nodes (72): AttachmentGallery(), attachmentKind(), Avatar(), colorsFallbackDim(), DashboardHubFeedPage(), FeedAttachment, FeedCard(), FeedComment (+64 more)
 
 ### Community 63 - "websocket-client.ts / WebSocketMessage"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.23
+Nodes (20): bucketYmdForRequest(), buildGrandHotelCombinedRevenueRow(), collectRequestsTouchingMonth(), computeMiceChartRevenueInMonth(), computeRequestRevenueBreakdownNoTax(), dateAtYmd(), filterTypeMice(), getEventPaxInMonth() (+12 more)
 
 ### Community 124 - "Plan 026: Messenger group info panel (member list + wire add/remove)"
 Cohesion: 0.15
 Nodes (12): Commands, Current state, Done criteria, Plan 026: Messenger group info panel (member list + wire add/remove), Scope, Status, Step 1: Group info sheet, Step 2: Wire existing APIs (+4 more)
 
 ### Community 125 - "propertyPaymentMethods.ts"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.19
+Nodes (13): CardExtractResponse, deleteAccountDuplicateQueueItem(), extractBusinessCard(), listAccountDuplicateQueue(), upsertAccountDuplicateQueueItem(), API_ORIGIN, apiUrl(), LandingPage() (+5 more)
 
 ### Community 126 - "propertyAlertSettings.ts"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.18
+Nodes (16): AlertKindRowSettings, DEADLINE_ACCENT_OPTIONS, DEADLINE_OFFSET_OPTIONS, DeadlineAlertAccent, DeadlineAlertRuleSettings, DEFAULT_DEADLINE_ALERT_RULES, DEFAULT_ROW, mergeDeadlineRule() (+8 more)
 
 ### Community 127 - "Advanced Sales & Tour Management System (V3)"
 Cohesion: 0.15
@@ -1034,16 +677,16 @@ Cohesion: 0.15
 Nodes (12): Commands, Current state, Done criteria, Plan 027: Messenger group profile (name, avatar, description), Scope, Status, Step 1: Schema, Step 2: PATCH API (+4 more)
 
 ### Community 129 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.23
+Nodes (16): ACCOUNT_TYPE_LABEL_SYNONYMS, accountTypesKey(), DEFAULT_PROPERTY_ACCOUNT_TYPES, DEFAULT_PROPERTY_SEGMENTS, loadAccountTypesForProperty(), loadSegmentsForProperty(), matchRawToPropertyLabel(), normalizeTaxonomyStringList() (+8 more)
 
 ### Community 130 - "PROJECT_MAP — Advanced Sales (AS) System, V3"
 Cohesion: 0.15
 Nodes (12): [ARCHITECTURE], Backend structure, Data access pattern, [DATA INVENTORY] (2026-07-12 live), Frontend structure (top-level), Key DB design decisions, [ORPHANS & PENDING], PROJECT_MAP — Advanced Sales (AS) System, V3 (+4 more)
 
 ### Community 131 - "CRMProfileView.tsx"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.23
+Nodes (14): buildAccountProfileChartData(), buildDashboardAxis(), DashboardAxisGranularity, DashboardAxisPoint, getDashboardAxisKey(), getMonthKey(), isDashboardExcludedRequest(), isEventsCateringEligibleRequest() (+6 more)
 
 ### Community 132 - "6) Functional Requirements"
 Cohesion: 0.17
@@ -1054,12 +697,12 @@ Cohesion: 0.17
 Nodes (12): 6.10 Theme and UX Personalization, 6.11 Role and Permissions, 6.1 Authentication and Session, 6.2 Landing Experience, 6.3 Dashboard, 6.4 CRM, 6.5 Requests Management, 6.6 Events and Catering (+4 more)
 
 ### Community 134 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.17
+Nodes (12): HERO_FEATURES, LandingPageTasteMotionPreview(), PRICING, Props, TEAMS, withAlpha(), LandingPreviewGallery(), Props (+4 more)
 
 ### Community 135 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.12
+Nodes (15): Commands you will need, Current state, Done criteria, Maintenance notes, Plan 040: Establish a verification gate — typecheck, working lint, and CI, Scope, Status, Step 1: Add a `typecheck` script and decide the gate baseline (+7 more)
 
 ### Community 136 - "Product Specification Document (PSD)"
 Cohesion: 0.18
@@ -1078,8 +721,8 @@ Cohesion: 0.22
 Nodes (8): Advanced Sales Dashboard — Agent Guide, Conventions, Layout, Local feature work (Docker Compose), Ops / health, Password migration (fresh Postgres), Production (when features are finalized), Stack
 
 ### Community 140 - "MessengerContext.tsx"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.12
+Nodes (15): Commands you will need, Current state, Done criteria, Maintenance notes, Plan 041: Characterization tests for money, revenue, and booking-critical logic, Scope, Status, Step 1: Characterize `currency.ts` (+7 more)
 
 ### Community 141 - "AddAccountModal.tsx"
 Cohesion: 0.05
@@ -1194,8 +837,8 @@ Cohesion: 0.10
 Nodes (19): Code Quality, Color and Surfaces, Component Patterns, Content, Design Audit, Fix Priority, How This Works, Iconography (+11 more)
 
 ### Community 169 - "buildVsLyMatrix"
-Cohesion: 0.06
-Nodes (70): accountNameSortKey(), addAccountToContactIndex(), buildSystemDuplicateItems(), compareAccountNames(), findPotentialDuplicateAccounts(), isScanDuplicateQueueItemStale(), isScannedContactOnAccount(), normalizeAccountNameKey() (+62 more)
+Cohesion: 0.16
+Nodes (25): accountNameSortKey(), addAccountToContactIndex(), buildSystemDuplicateItems(), compareAccountNames(), isScanDuplicateQueueItemStale(), isScannedContactOnAccount(), normalizeAccountNameKey(), pushSystemDuplicatePair() (+17 more)
 
 ### Community 170 - "Analysis & Synthesis Instructions"
 Cohesion: 0.11
@@ -1226,16 +869,16 @@ Cohesion: 0.12
 Nodes (16): 1. Skill Meta, 2.1 Swiss Industrial Print, 2.2 Tactical Telemetry & CRT Terminal, 2. Visual Archetypes, 3.1 Macro-Typography (Structural Headers), 3.2 Micro-Typography (Data & Telemetry), 3.3 Textural Contrast (Artistic Disruption), 3. Typographic Architecture (+8 more)
 
 ### Community 177 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.12
+Nodes (15): Commands you will need, Current state, Done criteria, Maintenance notes, Plan 046: Fix the real correctness bugs surfaced by typecheck, Scope, Status, Step 1 (DEBT-02): Export `WebSocketMessage` (+7 more)
 
 ### Community 178 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.19
+Nodes (13): react, react, ChartConfig, ChartContainer(), ChartContext, ChartContextProps, ChartLegendContent(), ChartTooltipContent() (+5 more)
 
 ### Community 179 - "tasteskill: Anti-Slop Frontend Skill"
-Cohesion: 0.13
-Nodes (15): 0.A Read these signals first, 0.B Output a one-line "Design Read" before generating, 0. BRIEF INFERENCE (Read the Room Before Anything Else), 0.C If the brief is ambiguous, ask one question, do not guess, 0.D Anti-Default Discipline, 13. OUT OF SCOPE, 14. FINAL PRE-FLIGHT CHECK, 1.A Dial Inference (design read → dial values) (+7 more)
+Cohesion: 0.18
+Nodes (11): 0.A Read these signals first, 0.B Output a one-line "Design Read" before generating, 0. BRIEF INFERENCE (Read the Room Before Anything Else), 0.C If the brief is ambiguous, ask one question, do not guess, 0.D Anti-Default Discipline, 13. OUT OF SCOPE, 14. FINAL PRE-FLIGHT CHECK, 2.A When to reach for a real design system (use official packages) (+3 more)
 
 ### Community 180 - "Appendix B - Canonical Sources (read these before reinventing)"
 Cohesion: 0.13
@@ -1258,8 +901,8 @@ Cohesion: 0.13
 Nodes (14): 1. Visual Theme & Atmosphere, 2. Color Palette & Roles, 3. Typography Rules, 4. Component Stylings, 5. Hero Section, 6. Layout Principles, 7. Responsive Rules, 8. Motion & Interaction (Code-Phase Intent) (+6 more)
 
 ### Community 185 - "CORE DIRECTIVE: AWWWARDS-LEVEL IMAGE ART DIRECTION"
-Cohesion: 0.12
-Nodes (16): 10. SECTION RHYTHM RULE, 12. DENSITY & SPACING DISCIPLINE, 14. IMAGE / MEDIA DIRECTION, 16. MULTI-IMAGE CONSISTENCY RULE, 17. CLARITY CHECK, 19. RESPONSE BEHAVIOR, 1. ACTIVE BASELINE CONFIGURATION, 21. FINAL GOAL (+8 more)
+Cohesion: 0.14
+Nodes (14): 10. SECTION RHYTHM RULE, 12. DENSITY & SPACING DISCIPLINE, 14. IMAGE / MEDIA DIRECTION, 16. MULTI-IMAGE CONSISTENCY RULE, 17. CLARITY CHECK, 19. RESPONSE BEHAVIOR, 1. ACTIVE BASELINE CONFIGURATION, 21. FINAL GOAL (+6 more)
 
 ### Community 186 - "2. THE COMBINATORIAL VARIATION ENGINE"
 Cohesion: 0.14
@@ -1270,8 +913,8 @@ Cohesion: 0.14
 Nodes (14): 2. THE COMBINATORIAL VARIATION ENGINE, Background Character, Background Mode (per-section), Composition Anchor (per-section), CTA Variation, Hero Architecture, Hero Scale (per-page), Motion-Implied Language (+6 more)
 
 ### Community 188 - "presence.py"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.13
+Nodes (14): Commands you will need, Current state, Done criteria, Maintenance notes, Plan 038: Scope `GET /api/users/{user_id}` to the caller's tenant, Scope, Status, Step 1: Write the failing test (+6 more)
 
 ### Community 189 - "4. DESIGN ENGINEERING DIRECTIVES (Bias Correction)"
 Cohesion: 0.17
@@ -1454,8 +1097,8 @@ Cohesion: 0.40
 Nodes (5): 21. MOBILE ANTI-AI-TELLS RULE, Copy AI tells, Layout AI tells, UI clutter tells, Visual AI tells
 
 ### Community 234 - "crmPipelineCardRequestDetails.ts"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.13
+Nodes (14): Commands you will need, Current state, Done criteria, Maintenance notes, Plan 042: Harden backend input boundaries and file uploads, Scope, Status, Step 1 (SEC-04): Stop serving SVG inline (+6 more)
 
 ### Community 235 - "12. THE BLOCK LIBRARY (Contract - Implementations Land Here Iteratively)"
 Cohesion: 0.40
@@ -1506,8 +1149,8 @@ Cohesion: 0.50
 Nodes (4): 20. EXAMPLE INTERPRETATIONS, Example 1, Example 2, Example 3
 
 ### Community 247 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.13
+Nodes (14): Commands you will need, Current state, Done criteria, Maintenance notes, Plan 043: Auth/session/config hardening (token leak, rate limiter, hardcoded contacts), Scope, Status, Step 1 (SEC-07): Remove the token from response bodies (+6 more)
 
 ### Community 248 - "7. DIAL DEFINITIONS (Technical Reference)"
 Cohesion: 0.50
@@ -1542,194 +1185,114 @@ Cohesion: 0.50
 Nodes (4): 20. EXAMPLE INTERPRETATIONS, Example 1, Example 2, Example 3
 
 ### Community 256 - "LandingPageRedesignPreview.tsx"
-Cohesion: 0.05
-Nodes (53): HERO_FEATURES, LandingPageTasteMotionPreview(), PRICING, Props, TEAMS, withAlpha(), LandingPreviewGallery(), Props (+45 more)
+Cohesion: 0.11
+Nodes (27): Badge(), badgeVariants, Card(), CardAction(), CardContent(), CardDescription(), CardFooter(), CardHeader() (+19 more)
 
 ### Community 257 - "Login.tsx"
 Cohesion: 0.07
 Nodes (27): 1. Rates button is a stub, 2. Request room rates are already a snapshot field, 3. Occupancy + room types already exist, 4. Segment + date matching exemplar (promotions), 5. Flat CRUD pattern to copy, 6. Accounts have no rate fields, Checklist, Commands you will need (+19 more)
 
 ### Community 258 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.13
+Nodes (14): Commands you will need, Current state, Done criteria, Maintenance notes, Plan 044: Make the tenant-scope helper fail closed, Scope, Status, Step 1: Enumerate callers and distinguish the three states (+6 more)
 
 ### Community 259 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.13
+Nodes (14): Commands you will need, Current state, Done criteria, Maintenance notes, Plan 049: Decompose the `AS.tsx` god-file, Scope, Status, Step 0: Prerequisites (+6 more)
 
 ### Community 260 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.27
+Nodes (15): buildFullVsLyMatrix(), buildOtherRevenueRow(), buildSegmentCountRows(), buildSegmentRevenueRows(), buildVsLyMatrix(), filterTypeRooms(), fmtCyOtbVsLyPct(), fmtMoney() (+7 more)
 
 ### Community 261 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.14
+Nodes (13): Commands you will need, Current state, Done criteria, Maintenance notes, Plan 045: Remove the dead, CVE-carrying `xlsx` dependency, Scope, Status, Step 1: Confirm zero imports (do not skip) (+5 more)
 
 ### Community 262 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.14
+Nodes (13): Commands you will need, Current state, Done criteria, Maintenance notes, Plan 047: Remove dead code, unused modals, and mock data, Scope, Status, Step 1 (BUG-01): Delete the dead `RequestsView` (+5 more)
 
 ### Community 263 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.14
+Nodes (13): Commands you will need, Current state, Done criteria, Maintenance notes, Plan 048: Extract a shared currency-formatter hook (kill 8x duplication), Scope, Status, Step 1: Create the hook (+5 more)
 
 ### Community 264 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.14
+Nodes (13): Commands you will need, Current state, Done criteria, Maintenance notes, Plan 050: Harden nginx (headers/gzip/caching) and containers, Scope, Status, Step 1: Add security headers, gzip, and caching to nginx (+5 more)
 
 ### Community 265 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.14
+Nodes (13): Commands you will need, Current state, Done criteria, Maintenance notes, Plan 051: Backend logging/request-IDs and pinned dependencies, Scope, Status, Step 1: Configure logging (+5 more)
 
 ### Community 266 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.15
+Nodes (12): Commands you will need, Current state, Done criteria, Maintenance notes, Plan 052: Stop leaking stack traces; add per-feature error boundaries, Scope, Status, Step 1: Gate the stack trace behind DEV (+4 more)
 
 ### Community 267 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.15
+Nodes (12): Commands you will need, Current state, Done criteria, Maintenance notes, Plan 053: Lazy-load export libraries; batch the tax save, Scope, Status, Step 1 (PERF-02): Dynamic-import the export libs (+4 more)
 
 ### Community 268 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.15
+Nodes (12): Commands you will need, Current state, Done criteria, Maintenance notes, Plan 054: Cross-platform test/dev scripts + complete `.env.example`, Scope, Status, Step 1 (DX-02): Make backend scripts cross-platform (+4 more)
 
 ### Community 269 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.27
+Nodes (11): calculateNights(), countRequestNights(), countRequestRooms(), formatYmd(), getPipelineLinkedRequestDisplay(), getRequestCardDeadlines(), getRequestCreatorName(), getRequestKanbanCardDetails() (+3 more)
 
 ### Community 270 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.18
+Nodes (9): Insert/update a row carrying a `payload jsonb` + typed scalar columns.      `typ, _upsert_doc(), upsert_payload_only(), delete_contract_template(), list_contract_templates(), upsert_contract_template(), delete_cxl_reason(), list_cxl_reasons() (+1 more)
 
 ### Community 271 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.22
+Nodes (9): auth_context_and_security_headers(), _database_host(), global_exception_handler(), on_shutdown(), permission_error_handler(), Exception, Request, close_database() (+1 more)
 
 ### Community 272 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.24
+Nodes (9): get_request(), _load_request_children_maps(), Prefetch all request children in O(tables) queries. Returns maps keyed by reques, Single-row hydrate (kept for any callers); uses the same batched child loader., _request_dict_from_row(), _row_to_request_dict(), _any_property_id(), list_requests batches child loads (plan 001). (+1 more)
 
 ### Community 273 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.31
+Nodes (9): Flat list tenant isolation (plan 005): non-admins must not read other properties, Plan 034: IDOR — overwrite foreign row by sending an allowed propertyId., Admins (unscoped) may still manage rows across properties., _session_cookie(), test_admin_can_upsert_foreign_property_task(), test_scoped_user_can_create_task_on_home_property(), test_scoped_user_cannot_list_foreign_property_tasks(), test_scoped_user_cannot_upsert_foreign_task_with_home_property() (+1 more)
 
 ### Community 274 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.33
+Nodes (9): getRequestDateWindow(), LinkedAccountRow, newPromotionDraft(), normalize(), overlaps(), PromotionRow, PromotionsPage(), requestRevenue() (+1 more)
 
 ### Community 275 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.53
+Nodes (8): upsert_crm_state(), _default_pipeline(), get_crm_state(), _migrate_block(), _normalize_leads(), _normalize_pipeline(), recover_crm_state(), save_crm_state()
 
 ### Community 276 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.42
+Nodes (8): DEFAULT_PAYMENT_METHODS, defaultPaymentMethodForProperty(), dispatchChanged(), normalizePaymentMethods(), postPropertyPatch(), resolvePaymentMethodsForProperty(), savePaymentMethodsForProperty(), storageKey()
 
 ### Community 277 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.25
+Nodes (7): _broadcast_change(), delete_request(), Broadcast a data mutation event to WebSocket clients.          Args:         eve, create_request(), list_requests(), remove_request(), batch_req_id()
 
 ### Community 278 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.39
+Nodes (7): _any_property_id(), rates_fixtures(), Account rate periods API (plan 037): CRUD + accountId filter + tenant write guar, _session_cookie(), _table_ready(), test_account_rates_crud_and_filter(), test_scoped_user_cannot_upsert_foreign_account_rate()
 
 ### Community 279 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.48
+Nodes (5): normalizeRequestAlerts(), RequestAlert, requestHasAlerts(), RequestAlertsModal(), RequestAlertsModalProps
 
 ### Community 280 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.40
+Nodes (3): Messenger group management + prefs smoke tests (Batch E/F)., Schema ensure is idempotent and adds Batch E/F columns., test_ensure_chat_tables_columns()
 
 ### Community 281 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
+Cohesion: 0.50
+Nodes (4): 1.A Dial Inference (design read → dial values), 1.B Use-Case Presets, 1.C How the Dials Drive Output, 1. THE THREE DIALS (Core Configuration)
 
 ### Community 282 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
-
-### Community 283 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
-
-### Community 284 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
-
-### Community 285 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
-
-### Community 286 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
-
-### Community 287 - "GSAP Plugins"
-Cohesion: 0.05
-Nodes (36): Best practices, CustomBounce, CustomEase, CustomWiggle, Development, Do Not, DOM / UI, Draggable (+28 more)
-
-### Community 288 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 289 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
+Cohesion: 0.50
+Nodes (4): get_account(), _load_users_cache(), _row_to_account_dict(), get_account_endpoint()
 
 ### Community 290 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 291 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 292 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 293 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 294 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 295 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 296 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 297 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 298 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 299 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 300 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 301 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 302 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 303 - "gsap.utils"
 Cohesion: 0.07
 Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
 
@@ -1738,146 +1301,6 @@ Cohesion: 0.07
 Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
 
 ### Community 305 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 306 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 307 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 308 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 309 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 310 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 311 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 312 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 313 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 314 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 315 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 316 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 317 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 318 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 319 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 320 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 321 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 322 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 323 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 324 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 325 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 326 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 327 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 328 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 329 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 330 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 331 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 332 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 333 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 334 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 335 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 336 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 337 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 338 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 339 - "gsap.utils"
-Cohesion: 0.07
-Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
-
-### Community 340 - "gsap.utils"
 Cohesion: 0.07
 Nodes (26): Arrays and Collections, Best practices, clamp(min, max, value?), Clamping and Ranges, distribute(config), Do Not, getUnit(value), gsap.utils (+18 more)
 
@@ -1893,67 +1316,7 @@ Nodes (24): accordion, asChild -> render, breadcrumb / marker (Slot users), Cove
 Cohesion: 0.33
 Nodes (5): Cross-tab overlaps, Hub tabs — duplicated KPIs / charts audit, Ownership (recommended after you pick previews), Plan 033 note, Within-tab duplicates (originals)
 
-### Community 344 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 345 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
 ### Community 346 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 347 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 348 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 349 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 350 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 351 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 352 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 353 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 354 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 355 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 356 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 357 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 358 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 359 - "GSAP Core"
 Cohesion: 0.10
 Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
 
@@ -1965,154 +1328,6 @@ Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core 
 Cohesion: 0.10
 Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
 
-### Community 362 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 363 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 364 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 365 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 366 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 367 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 368 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 369 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 370 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 371 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 372 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 373 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 374 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 375 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 376 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 377 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 378 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 379 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 380 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 381 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 382 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 383 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 384 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 385 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 386 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 387 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 388 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 389 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 390 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 391 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 392 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 393 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 394 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 395 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 396 - "GSAP Core"
-Cohesion: 0.10
-Nodes (20): Accessibility and responsive (gsap.matchMedia()), Common vars, Core Tween Methods, Custom: use CustomEase (plugin), Defaults, Do Not, Easing, Function-based values (+12 more)
-
-### Community 397 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 398 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
 ### Community 399 - "GSAP ScrollTrigger"
 Cohesion: 0.12
 Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
@@ -2120,58 +1335,6 @@ Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (contai
 ### Community 400 - "Commands"
 Cohesion: 0.12
 Nodes (17): `add` — Add components, `apply` — Apply a preset to an existing project, `build` — Build a custom registry, Commands, Contents, `diff` — Check for updates, `docs` — Get component documentation URLs, Dry-Run Mode (+9 more)
-
-### Community 401 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 402 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 403 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 404 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 405 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 406 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 407 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 408 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 409 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 410 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 411 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 412 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 413 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
 
 ### Community 414 - "GSAP ScrollTrigger"
 Cohesion: 0.12
@@ -2182,146 +1345,6 @@ Cohesion: 0.12
 Nodes (17): `add` — Add components, `apply` — Apply a preset to an existing project, `build` — Build a custom registry, Commands, Contents, `diff` — Check for updates, `docs` — Get component documentation URLs, Dry-Run Mode (+9 more)
 
 ### Community 416 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 417 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 418 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 419 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 420 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 421 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 422 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 423 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 424 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 425 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 426 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 427 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 428 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 429 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 430 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 431 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 432 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 433 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 434 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 435 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 436 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 437 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 438 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 439 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 440 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 441 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 442 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 443 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 444 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 445 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 446 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 447 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 448 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 449 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 450 - "GSAP ScrollTrigger"
-Cohesion: 0.12
-Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
-
-### Community 451 - "GSAP ScrollTrigger"
 Cohesion: 0.12
 Nodes (14): Basic Trigger, Do Not, GSAP ScrollTrigger, Horizontal scroll (containerAnimation), Key config options, Learn More, Markers (Development), Official GSAP best practices (+6 more)
 
@@ -2341,22 +1364,6 @@ Nodes (4): Icons, Icons in Button use data-icon attribute, No sizing classes on 
 Cohesion: 0.14
 Nodes (14): 1. Built-in variants, 2. Tailwind classes via `className`, 3. Add a new variant, 4. Wrapper components, Adding Custom Colors, Border Radius, Changing the Theme, Checking for Updates (+6 more)
 
-### Community 456 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 457 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 458 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 459 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
 ### Community 460 - "GSAP with Vue, Svelte, and Other Frameworks"
 Cohesion: 0.15
 Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
@@ -2372,110 +1379,6 @@ Nodes (13): Avatar always needs AvatarFallback, Button has no isPending or isLoa
 ### Community 463 - "Styling & Customization"
 Cohesion: 0.15
 Nodes (13): Built-in variants first, className for layout only, Contents, No manual dark: color overrides, No manual z-index on overlay components, No raw color values for status/state indicators, No space-x-* / space-y-*, Prefer size-* over w-* h-* when equal (+5 more)
-
-### Community 464 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 465 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 466 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 467 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 468 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 469 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 470 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 471 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 472 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 473 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 474 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 475 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 476 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 477 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 478 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 479 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 480 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 481 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 482 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 483 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 484 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 485 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 486 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 487 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 488 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 489 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
 
 ### Community 490 - "GSAP with Vue, Svelte, and Other Frameworks"
 Cohesion: 0.15
@@ -2501,302 +1404,6 @@ Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nux
 Cohesion: 0.15
 Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
 
-### Community 496 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 497 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 498 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 499 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 500 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 501 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 502 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 503 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 504 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 505 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 506 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 507 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 508 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 509 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 510 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 511 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 512 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 513 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 514 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 515 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 516 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 517 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 518 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 519 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 520 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 521 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 522 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 523 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 524 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 525 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 526 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 527 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 528 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 529 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 530 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 531 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 532 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 533 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 534 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 535 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 536 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 537 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 538 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 539 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 540 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 541 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 542 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 543 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 544 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 545 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 546 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 547 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 548 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 549 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 550 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 551 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 552 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 553 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 554 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 555 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 556 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 557 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 558 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 559 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 560 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 561 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 562 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 563 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 564 - "GSAP with Vue, Svelte, and Other Frameworks"
-Cohesion: 0.15
-Nodes (12): Do Not, GSAP with Vue, Svelte, and Other Frameworks, Learn More, Nuxt 4, Principles (All Frameworks), Scoping Selectors, ScrollTrigger Cleanup, Svelte (+4 more)
-
-### Community 565 - "GSAP with React"
-Cohesion: 0.15
-Nodes (12): Best practices, Context-Safe Callbacks, Dependency array, scope, and revertOnUpdate, Do Not, gsap.context() in useEffect (when useGSAP isn't used), GSAP with React, Installation, Learn More (+4 more)
-
-### Community 566 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 567 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 568 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 569 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
 ### Community 570 - "GSAP Performance"
 Cohesion: 0.17
 Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
@@ -2812,110 +1419,6 @@ Nodes (12): Action → (no primitive), alert-dialog, Base UI only props worth kn
 ### Community 573 - "Tools"
 Cohesion: 0.17
 Nodes (11): Configuring Registries, Setup, `shadcn:get_add_command_for_items`, `shadcn:get_audit_checklist`, `shadcn:get_item_examples_from_registries`, `shadcn:get_project_registries`, `shadcn:list_items_in_registries`, shadcn MCP Server (+3 more)
-
-### Community 574 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 575 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 576 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 577 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 578 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 579 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 580 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 581 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 582 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 583 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 584 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 585 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 586 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 587 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 588 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 589 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 590 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 591 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 592 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 593 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 594 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 595 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 596 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 597 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 598 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 599 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
 
 ### Community 600 - "GSAP Performance"
 Cohesion: 0.17
@@ -2938,286 +1441,6 @@ Cohesion: 0.17
 Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
 
 ### Community 605 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 606 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 607 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 608 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 609 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 610 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 611 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 612 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 613 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 614 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 615 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 616 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 617 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 618 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 619 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 620 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 621 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 622 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 623 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 624 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 625 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 626 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 627 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 628 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 629 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 630 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 631 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 632 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 633 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 634 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 635 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 636 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 637 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 638 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 639 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 640 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 641 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 642 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 643 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 644 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 645 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 646 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 647 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 648 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 649 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 650 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 651 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 652 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 653 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 654 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 655 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 656 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 657 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 658 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 659 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 660 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 661 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 662 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 663 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 664 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 665 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 666 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 667 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 668 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 669 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 670 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 671 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 672 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 673 - "GSAP Timeline"
-Cohesion: 0.17
-Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
-
-### Community 674 - "GSAP Performance"
-Cohesion: 0.17
-Nodes (11): Batch Reads and Writes, Best practices, Do Not, Frequently updated properties (e.g. mouse followers), GSAP Performance, Many Elements (Stagger, Lists), Prefer Transform and Opacity, Reduce Simultaneous Work (+3 more)
-
-### Community 675 - "GSAP Timeline"
 Cohesion: 0.17
 Nodes (11): Controlling Playback, Creating a Timeline, Do Not, GSAP Timeline, Labels, Nesting Timelines, Official GSAP Best practices, Position Parameter (+3 more)
 
@@ -3389,10 +1612,6 @@ Nodes (5): Base UI only props worth knowing, CSS variables, Data attributes, sep
 Cohesion: 0.40
 Nodes (5): Base UI only props worth knowing, CSS variables, Data attributes, separator, Separator.Root → Separator
 
-### Community 718 - "SKILL.md"
-Cohesion: 0.19
-Nodes (12): ALLOWED_ATTR, ALLOWED_TAGS, htmlToPlainText(), MentionUser, RichContent(), RichTextEditor, RichTextEditorHandle, sanitizeRichHtml() (+4 more)
-
 ### Community 719 - "(new) Fieldset.Root and Fieldset.Legend"
 Cohesion: 0.50
 Nodes (4): Base UI only props worth knowing (form-wide), CSS variables, Data attributes, (new) Fieldset.Root and Fieldset.Legend
@@ -3403,7 +1622,7 @@ Nodes (4): Base UI only props worth knowing (form-wide), CSS variables, Data att
 
 ### Community 721 - "agreementStatus"
 Cohesion: 0.08
-Nodes (48): AccountProfileChartRow, buildAccountProfileChartData(), buildDashboardAxis(), DashboardAxisGranularity, DashboardAxisPoint, getDashboardAxisKey(), getDefaultAccountPerformanceRange(), getMonthKey() (+40 more)
+Nodes (47): AccountProfileChartRow, getDefaultAccountPerformanceRange(), AccountRequestStats, buildAccountTimeline(), computeAccountMetrics(), filterInquiryToTentativeRequests(), filterOpenBookingRequests(), filterOpenOpportunityLeads() (+39 more)
 
 ### Community 724 - "clsx"
 Cohesion: 0.14
@@ -3414,8 +1633,8 @@ Cohesion: 0.14
 Nodes (13): Commands, Current state, Done criteria, Plan 030: Messenger read receipts (and delivery cues), Scope, Status, Step 1: API payload, Step 2: WS broadcast on mark_read (+5 more)
 
 ### Community 726 - "lucide-react"
-Cohesion: 0.07
-Nodes (56): computeAccountMetrics(), WON, ACCOUNT_PROFILE_CHART_TABS, AccountProfileChartTab, AccountProfilePerformanceChart(), LY_COLORS, Props, rechartsTooltipThemeProps() (+48 more)
+Cohesion: 0.12
+Nodes (26): flattenCrmLeads(), convertCurrencyToSar(), inDateRangeYMD(), ReportSegment, requestOperationalDatesOverlapRange(), segmentLineTotalExTax(), csvEscape(), defaultMonthRange() (+18 more)
 
 ### Community 727 - "@fontsource-variable/geist"
 Cohesion: 0.14
@@ -3450,8 +1669,8 @@ Cohesion: 0.10
 Nodes (19): Commands you will need, Current state, Done criteria, Git workflow, Maintenance notes, Plan 015: Hub chrome foundation (tabs, kit, shadcn, GSAP enter), Scope, Status (+11 more)
 
 ### Community 735 - "008_write_authz_test.py"
-Cohesion: 0.10
-Nodes (33): setup(), hash_password(), _any_property_id(), rates_fixtures(), Account rate periods API (plan 037): CRUD + accountId filter + tenant write guar, _session_cookie(), _table_ready(), test_account_rates_crud_and_filter() (+25 more)
+Cohesion: 0.18
+Nodes (17): setup(), hash_password(), admin_pw_fixtures(), _any_property_id(), Plan 035: admin password-only update hardens + revokes sessions., Mirrors Settings edit-user modal: full row fields + password (8-char policy)., _session_cookie(), test_admin_empty_update_returns_400() (+9 more)
 
 ### Community 736 - "Plan 012: Paginate Accounts (and Contacts) list like Requests"
 Cohesion: 0.12
@@ -3558,39 +1777,35 @@ Cohesion: 0.17
 Nodes (11): Commands, Current state, Done criteria, Plan 008: Resolve account form schema once for incomplete checks, Scope, Status, Step 1: Resolve schema once per memo, Step 2: Tiny unit check (optional but preferred) (+3 more)
 
 ### Community 762 - "Advisor plans index"
-Cohesion: 0.07
-Nodes (27): Advisor plans index, Audit coverage note, Batch A — API / Docker / lazy load (DONE), Batch B — Accounts + Settings profile lag (NEW), Batch B — considered and rejected (Ponytail), Batch C — considered and rejected (Ponytail), Batch C — Messenger readability + redesign (NEW), Batch D — considered and rejected (Ponytail) (+19 more)
-
-### Community 763 - "tw-animate-css"
-Cohesion: 0.50
-Nodes (4): CallDetailsModal(), CallDetailsModalProps, kindLabel(), CallTimelineEntry
+Cohesion: 0.06
+Nodes (32): Advisor plans index, Audit coverage note, Batch A — API / Docker / lazy load (DONE), Batch B — Accounts + Settings profile lag (NEW), Batch B — considered and rejected (Ponytail), Batch C — considered and rejected (Ponytail), Batch C — Messenger readability + redesign (NEW), Batch D — considered and rejected (Ponytail) (+24 more)
 
 ### Community 764 - "business_card_scan.py"
-Cohesion: 0.40
-Nodes (9): UploadFile, scan_extract_business_card(), _enrich_company_from_web(), _extract_text_from_responses_payload(), _extract_with_openai(), _normalize_openai_contact(), parse_business_card_image(), Any (+1 more)
+Cohesion: 0.20
+Nodes (14): delete_account(), delete_account_endpoint(), list_accounts_endpoint(), UploadFile, scan_extract_business_card(), sync_accounts(), upsert_account_endpoint(), _enrich_company_from_web() (+6 more)
 
 ### Community 771 - "scripts"
-Cohesion: 0.15
-Nodes (13): scripts, build, db:import:postgres, dev, dev:api, dev:api:win, lint, preview (+5 more)
+Cohesion: 0.14
+Nodes (14): scripts, build, db:import:postgres, dev, dev:api, dev:api:win, lint, preview (+6 more)
 
 ### Community 776 - "package.json"
 Cohesion: 0.40
 Nodes (4): name, private, type, version
 
 ## Knowledge Gaps
-- **8587 isolated node(s):** `LandingPage`, `LandingPageTasteMotionPreview`, `RequestFeedbackPublicPage`, `CRM`, `Contracts` (+8582 more)
+- **3130 isolated node(s):** `LandingPage`, `LandingPageTasteMotionPreview`, `RequestFeedbackPublicPage`, `CRM`, `Contracts` (+3125 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **22 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `dependencies` connect `DashboardHubRequestsPage.tsx / DashboardHubRequestsPage()` to `SKILL.md`, `LandingPageRedesignPreview.tsx`, `buildVsLyMatrix`, `contactDisplayName`, `crmPipelineCardRequestDetails.ts`, `package.json`, `SKILL.md`, `recharts`, `shadcn`, `MessengerWidget.tsx`, `SKILL.md`, `accountProfileChartData.ts`?**
-  _High betweenness centrality (0.003) - this node is a cross-community bridge._
-- **Why does `CRM()` connect `MessengerWidget.tsx` to `LandingPageRedesignPreview.tsx`, `AS.tsx / parseYmd()`, `crmCallReportUtils.ts / crmActivitiesUtils.ts`, `contractsStore.ts / Contracts.tsx`, `CRM.tsx / AccountsPage.tsx`, `requestAlertEngine.ts / propertyAlertSettings.ts`, `buildVsLyMatrix`, `RequestsManager.tsx / RequestsManager()`, `agreementStatus`, `propertyOccupancyTypes.ts / calculateNights()`, `lucide-react`, `apiUrl() / backendApi.ts`?**
-  _High betweenness centrality (0.002) - this node is a cross-community bridge._
-- **Why does `apiUrl()` connect `buildVsLyMatrix` to `CRM.tsx / AccountsPage.tsx`, `AS.tsx / parseYmd()`, `contractsStore.ts / Contracts.tsx`, `requestAlertEngine.ts / propertyAlertSettings.ts`, `RequestsManager.tsx / RequestsManager()`, `formConfigurations.ts / AddAccountModal.tsx`, `DashboardHubShell.tsx / dashboardHubTabs.ts`, `lucide-react`, `MessengerWidget.tsx`, `DashboardHubComingSoon.tsx / DashboardHubComingSoonProps`, `propertyOccupancyTypes.ts`, `AdvancedSalesDashboard() / alertDismissals.ts`?**
-  _High betweenness centrality (0.002) - this node is a cross-community bridge._
+- **Why does `apiUrl()` connect `propertyPaymentMethods.ts` to `CRM.tsx / AccountsPage.tsx`, `AS.tsx / parseYmd()`, `GSAP Plugins`, `contractsStore.ts / Contracts.tsx`, `requestAlertEngine.ts / propertyAlertSettings.ts`, `RequestsManager.tsx / RequestsManager()`, `formConfigurations.ts / AddAccountModal.tsx`, `GSAP Plugins`, `GSAP Plugins`, `resolveCurrencyCode() / formatCurrencyAmount()`, `AdvancedSalesDashboard() / alertDismissals.ts`, `buildVsLyMatrix`, `accountProfileData.ts`, `DashboardHubShell.tsx / dashboardHubTabs.ts`, `DashboardHubActivitiesPage.tsx / DashboardHubActivitiesPage()`, `MessengerWidget.tsx`, `DashboardHubComingSoon.tsx / DashboardHubComingSoonProps`, `lucide-react`, `propertyOccupancyTypes.ts`, `propertyAlertSettings.ts`?**
+  _High betweenness centrality (0.010) - this node is a cross-community bridge._
+- **Why does `CRM()` connect `MessengerWidget.tsx` to `CRM.tsx / AccountsPage.tsx`, `crmCallReportUtils.ts / crmActivitiesUtils.ts`, `contractsStore.ts / Contracts.tsx`, `DashboardHubSalesPerformancePage.tsx / DashboardHubSalesPerformancePa...`, `CRMProfileView.tsx`, `requestAlertEngine.ts / propertyAlertSettings.ts`, `buildVsLyMatrix`, `GSAP Plugins`, `RequestsManager.tsx / RequestsManager()`, `formConfigurations.ts / AddAccountModal.tsx`, `DashboardHubActivitiesPage.tsx / DashboardHubActivitiesPage()`, `agreementStatus`, `GSAP Plugins`, `propertyOccupancyTypes.ts / calculateNights()`, `resolveCurrencyCode() / formatCurrencyAmount()`, `apiUrl() / backendApi.ts`, `propertyPaymentMethods.ts`, `GSAP Plugins`?**
+  _High betweenness centrality (0.009) - this node is a cross-community bridge._
+- **Why does `dependencies` connect `DashboardHubRequestsPage.tsx / DashboardHubRequestsPage()` to `gsap.utils`, `gsap.utils`, `contractsStore.ts / Contracts.tsx`, `package.json`, `recharts`, `GSAP Plugins`, `GSAP Plugins`, `GSAP Plugins`, `GSAP Plugins`?**
+  _High betweenness centrality (0.007) - this node is a cross-community bridge._
 - **Are the 4 inferred relationships involving `AdvancedSalesDashboard()` (e.g. with `defaultChartVsYear()` and `clearPipelineLinkForDeletedRequest()`) actually correct?**
   _`AdvancedSalesDashboard()` has 4 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 59 inferred relationships involving `_get_pool()` (e.g. with `bump_session_version_and_revoke()` and `change_password()`) actually correct?**
@@ -3598,4 +1813,4 @@ _Questions this graph is uniquely positioned to answer:_
 - **Are the 3 inferred relationships involving `RequestsManager()` (e.g. with `ymd()` and `num()`) actually correct?**
   _`RequestsManager()` has 3 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `LandingPage`, `LandingPageTasteMotionPreview`, `RequestFeedbackPublicPage` to the rest of the system?**
-  _8587 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _3130 weakly-connected nodes found - possible documentation gaps or missing edges._
