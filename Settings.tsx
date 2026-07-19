@@ -1,8 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import {
-    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    BarChart, Bar, Cell, PieChart, Pie, Legend, LineChart, Line
-} from 'recharts';
+import React, { useState, useMemo, useEffect, useRef, Suspense, lazy } from 'react';
 import {
     Settings as SettingsIcon, Building, BedDouble, DollarSign, Users,
     User, Upload, Save, Edit, Plus, Trash2, X, Check, Mail, Phone, Shield,
@@ -49,31 +45,8 @@ import {
     ROLE_DEFAULTS,
     type PermissionId,
 } from './userPermissions';
-import {
-    PROFILE_MONTH_LABELS,
-    buildProfileActivityLog,
-    countCallsAllTime,
-    countCallsInMonth,
-    countCallsInYear,
-    countOpenPipeline,
-    countOpenPipelineInYmdRange,
-    countRequestsInYmdRange,
-    filterUserAccounts,
-    filterUserCrmLeads,
-    getProfileRecentRequests,
-    monthlySalesCallTarget,
-    monthRangeRequestSeries,
-    monthRangeRevenueSeries,
-    recordVisibleOnProperty,
-    sumRevenueInYmdRange,
-    taskAssignedToUser,
-    userAttributedOperationalDateBounds,
-    ymdBoundsForCalendarMonth,
-    ymdBoundsForCalendarYear,
-    computeProfileRequestPreTax,
-} from './userProfileMetrics';
+import { checkPasswordPolicy } from './passwordPolicy';
 import { formatCurrencyAmount, resolveCurrencyCode, type CurrencyCode } from './currency';
-import { UserPerformanceDashboard } from './UserPerformanceDashboard';
 import type {
     DeadlineAlertKind,
     DeadlineAlertRuleSettings,
@@ -162,6 +135,18 @@ const DEFAULT_CXL_REASONS = [
     'Other',
 ];
 
+const UserPerformanceDashboard = lazy(() =>
+    import('./UserPerformanceDashboard').then((m) => ({ default: m.UserPerformanceDashboard }))
+);
+
+function ProfileDashboardFallback() {
+    return (
+        <div className="flex items-center justify-center min-h-[40vh] w-full text-sm opacity-60" aria-busy="true">
+            Loading…
+        </div>
+    );
+}
+
 export default function Settings({
     theme,
     currentUser,
@@ -188,22 +173,29 @@ export default function Settings({
     const [managingProperty, setManagingProperty] = useState<any>(null);
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
     const [alertSettingsSaveStatus, setAlertSettingsSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+    const directoryFetchedRef = useRef(false);
+
+    // Profile-only / non-admin: skip directory download. Admin tabs need users + properties once.
+    const needsDirectory = appIsAdmin && activeTab !== 'profile';
 
     useEffect(() => {
+        if (!needsDirectory || directoryFetchedRef.current) return;
+        directoryFetchedRef.current = true;
+
         fetch(apiUrl('/api/users'))
-            .then(res => res.json())
-            .then(data => {
+            .then((res) => res.json())
+            .then((data) => {
                 if (Array.isArray(data)) setUsers(data);
             })
-            .catch(err => console.error("Error fetching users:", err));
+            .catch((err) => console.error('Error fetching users:', err));
 
         fetch(apiUrl('/api/properties'))
-            .then(res => res.json())
-            .then(data => {
+            .then((res) => res.json())
+            .then((data) => {
                 if (Array.isArray(data)) setProperties(data);
             })
-            .catch(err => console.error("Error fetching properties:", err));
-    }, []);
+            .catch((err) => console.error('Error fetching properties:', err));
+    }, [needsDirectory]);
 
     useEffect(() => {
         if (!appIsAdmin && activeTab !== 'profile') {
@@ -226,12 +218,13 @@ export default function Settings({
             alert('Enter your current password.');
             return;
         }
-        if (resetPasswordData.new.length < 4) {
-            alert('New password must be at least 4 characters.');
-            return;
-        }
         if (resetPasswordData.new !== resetPasswordData.confirm) {
             alert('New password and confirmation do not match.');
+            return;
+        }
+        const pwPolicy = checkPasswordPolicy(resetPasswordData.new);
+        if (!pwPolicy.ok) {
+            alert(pwPolicy.message);
             return;
         }
         setResetPasswordBusy(true);
@@ -444,7 +437,7 @@ export default function Settings({
         }
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (modalType === 'property') {
             const formCfgScope =
                 String(managingProperty?.id || '').trim() ||
@@ -536,8 +529,9 @@ export default function Settings({
                             alert('New password and confirmation do not match.');
                             return;
                         }
-                        if (np.length < 4) {
-                            alert('Please enter a new password of at least 4 characters.');
+                        const pwPolicy = checkPasswordPolicy(np);
+                        if (!pwPolicy.ok) {
+                            alert(pwPolicy.message);
                             return;
                         }
                         userData.password = np;
@@ -549,8 +543,9 @@ export default function Settings({
                 }
             } else {
                 const pw = String(modalFormData.password || '').trim();
-                if (!pw || pw.length < 4) {
-                    alert('Please set an initial password of at least 4 characters for the new user.');
+                const pwPolicy = checkPasswordPolicy(pw);
+                if (!pwPolicy.ok) {
+                    alert(pwPolicy.message);
                     return;
                 }
                 userData.password = pw;
@@ -565,33 +560,70 @@ export default function Settings({
                 userData.permissionRevokes = Array.isArray(userData.permissionRevokes) ? userData.permissionRevokes : [];
             }
 
-            const userForState = { ...userData };
-            delete userForState.password;
-
-            if (isEditing) {
-                setUsers(users.map((u) => (u.id === editingItem.id ? userForState : u)));
-            } else {
-                setUsers([...users, userForState]);
+            // Strip client-only / non-API fields so we don't confuse the save payload.
+            for (const k of ['property_ids', 'isAdmin', 'sessionVersion', 'passwordHash', 'stats', 'shapes']) {
+                delete userData[k];
+            }
+            // Backend stores lowercase status; keep login checks consistent.
+            if (userData.status != null) {
+                userData.status = String(userData.status).trim().toLowerCase() || 'active';
+            }
+            // Prefer snake_case property_id for the API (accept camelCase from the form).
+            if (userData.propertyId != null && userData.property_id == null) {
+                userData.property_id = userData.propertyId;
             }
 
-            fetch(apiUrl('/api/users'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(userData),
-            })
-                .then(() => {
-                    onUsersDirectoryChange?.();
-                })
-                .catch((err) => console.error('Error saving user:', err));
+            try {
+                const res = await fetch(apiUrl('/api/users'), {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData),
+                });
+                const raw = await res.text();
+                let detail: string | undefined;
+                let savedUser: any;
+                try {
+                    const j = JSON.parse(raw);
+                    detail =
+                        typeof j?.detail === 'string'
+                            ? j.detail
+                            : Array.isArray(j?.detail)
+                              ? j.detail[0]?.msg
+                              : undefined;
+                    savedUser = j?.user;
+                } catch {
+                    detail = raw?.slice(0, 200);
+                }
+                if (!res.ok) {
+                    alert(detail || 'Could not save user. Password was not changed.');
+                    return;
+                }
+
+                const userForState = { ...(savedUser || userData) };
+                delete userForState.password;
+                if (isEditing) {
+                    setUsers(users.map((u) => (u.id === editingItem.id ? { ...u, ...userForState } : u)));
+                } else {
+                    setUsers([...users, userForState]);
+                }
+                onUsersDirectoryChange?.();
+                setShowModal(false);
+            } catch (err) {
+                console.error('Error saving user:', err);
+                alert('Could not save user. Check your connection and try again.');
+            }
+            return;
         } else if (modalType === 'assignUser') {
             const { propertyId, selectedUserIds } = modalFormData;
             const targetProperty = properties.find(p => p.id === propertyId);
             
-            if (targetProperty) {
-                const updatedProperty = { ...targetProperty, assignedUserIds: selectedUserIds };
-                setProperties(properties.map(p => p.id === propertyId ? updatedProperty : p));
+            const nextAssigned = new Set(selectedUserIds.map((id: any) => String(id)));
 
-                // Save property to backend
+            if (targetProperty) {
+                // Keep property.assignedUserIds in sync for legacy display readers.
+                const updatedProperty = { ...targetProperty, assignedUserIds: Array.from(nextAssigned) };
+                setProperties(properties.map(p => p.id === propertyId ? updatedProperty : p));
                 fetch(apiUrl('/api/properties'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -599,21 +631,27 @@ export default function Settings({
                 }).catch(err => console.error("Error saving property assignment:", err));
             }
 
-            // Sync primary propertyId on each user — PATCH only (never POST full user without password).
+            const pending: Promise<void>[] = [];
+
+            // Grant access on each selected user's record (source of truth for backend access).
             selectedUserIds.forEach((uid: string) => {
                 const idStr = String(uid ?? '').trim();
                 if (!idStr) return;
-                const usr = users.find((u) => String(u?.id ?? '') === idStr);
-                if (usr) {
-                    const updatedUser = { ...usr, propertyId: propertyId };
-                    setUsers((prev) => prev.map((u) => (String(u?.id ?? '') === idStr ? updatedUser : u)));
-                    fetch(apiUrl(`/api/users/${encodeURIComponent(idStr)}`), {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ propertyId }),
-                    }).catch((err) => console.error('Error patching user propertyId:', err));
-                }
+                pending.push(patchUserPropertyAccess(idStr, propertyId));
             });
+
+            // Revoke access for any user previously assigned (by user record) but now deselected.
+            users
+                .filter((usr) => userAssignedToProperty(usr, propertyId))
+                .forEach((usr) => {
+                    const uid = String(usr?.id ?? '');
+                    if (uid && !nextAssigned.has(uid)) {
+                        pending.push(patchUserPropertyAccess(uid, null));
+                    }
+                });
+
+            // Reflect changes across all tabs after the record updates actually persist.
+            Promise.all(pending).then(refreshDirectory);
         }
         setShowModal(false);
     };
@@ -661,44 +699,110 @@ export default function Settings({
         }
     };
 
+    // Single source of truth for "is this user assigned to this property": the USER
+    // record (propertyId / property_ids) — this is exactly what the backend uses for
+    // access control. property.assignedUserIds is a legacy display list that drifts.
+    const userAssignedToProperty = (u: any, propId: string | number): boolean => {
+        if (!u) return false;
+        const pid = String(propId);
+        if (String(u.propertyId ?? '') === pid) return true;
+        const arr = u.property_ids || u.assignedPropertyIds || [];
+        return Array.isArray(arr) && arr.map((x: any) => String(x)).includes(pid);
+    };
+
+    // Re-pull users + properties so every tab reflects assignment changes immediately.
+    const refreshDirectory = () => {
+        fetch(apiUrl('/api/users'))
+            .then((res) => (res.ok ? res.json() : []))
+            .then((data) => {
+                if (Array.isArray(data)) setUsers(data);
+            })
+            .catch(() => {});
+        fetch(apiUrl('/api/properties'))
+            .then((res) => (res.ok ? res.json() : []))
+            .then((data) => {
+                if (Array.isArray(data)) setProperties(data);
+            })
+            .catch(() => {});
+        onUsersDirectoryChange?.();
+    };
+
+    const patchUserPropertyAccess = (userId: string, propertyId: string | null): Promise<void> => {
+        const uidStr = String(userId ?? '').trim();
+        if (!uidStr) return Promise.resolve();
+        const user = users.find((u) => String(u?.id ?? '') === uidStr);
+        if (!user) return Promise.resolve();
+        const updatedUser = {
+            ...user,
+            propertyId: propertyId || null,
+            property_ids: propertyId ? [propertyId] : [],
+        };
+        setUsers((prevUsers) =>
+            prevUsers.map((u) => (String(u?.id ?? '') === uidStr ? updatedUser : u)),
+        );
+        return fetch(apiUrl(`/api/users/${encodeURIComponent(uidStr)}`), {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                propertyId: propertyId || null,
+                assignedPropertyIds: propertyId ? [propertyId] : [],
+            }),
+        })
+            .then(() => undefined)
+            .catch((err) => console.error('Error patching user property access:', err));
+    };
+
     const handleUnassign = (userId: string, targetPropId?: string) => {
         const propId = targetPropId || managingProperty?.id;
         if (!propId) return;
         if (!window.confirm('Are you sure you want to unassign this user from this property?')) return;
 
-        const prop = properties.find((p: any) => p.id === propId);
-        if (!prop) return;
-
-        const updatedAssigned = (prop.assignedUserIds || []).filter((id: string) => id !== userId);
-        const updatedProp = { ...prop, assignedUserIds: updatedAssigned };
-        
-        // Update local property state
-        setProperties((prevProps: any[]) => prevProps.map(p => p.id === propId ? updatedProp : p));
-        if (managingProperty && managingProperty.id === propId) {
-            setManagingProperty(updatedProp);
-        }
-
-        // Sync property to backend
-        fetch(apiUrl('/api/properties'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatedProp)
-        }).catch(err => console.error("Error unassigning user from property:", err));
-
-        // Also check if the user's primary propertyId is this one, if so, clear it
         const uidStr = String(userId ?? '').trim();
         const user = users.find((u) => String(u?.id ?? '') === uidStr);
-        if (user && user.propertyId === propId) {
-            const updatedUser = { ...user, propertyId: '' };
-            setUsers((prevUsers) =>
-                prevUsers.map((u) => (String(u?.id ?? '') === uidStr ? updatedUser : u)),
-            );
-            fetch(apiUrl(`/api/users/${encodeURIComponent(uidStr)}`), {
-                method: 'PATCH',
+
+        // Compute the user's remaining property access after removing this one.
+        const currentAssigned: string[] = Array.isArray(user?.property_ids)
+            ? user!.property_ids.map((x: any) => String(x))
+            : (user?.propertyId ? [String(user.propertyId)] : []);
+        const remaining = currentAssigned.filter((id) => id !== String(propId));
+        const newPrimary =
+            String(user?.propertyId ?? '') === String(propId) ? (remaining[0] || null) : (user?.propertyId ?? null);
+
+        // Revoke on the USER record (this is what the backend uses for access control).
+        setUsers((prevUsers) =>
+            prevUsers.map((u) =>
+                String(u?.id ?? '') === uidStr ? { ...u, propertyId: newPrimary, property_ids: remaining } : u,
+            ),
+        );
+        const patchPromise = uidStr
+            ? fetch(apiUrl(`/api/users/${encodeURIComponent(uidStr)}`), {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ propertyId: newPrimary, assignedPropertyIds: remaining }),
+              })
+                  .then(() => undefined)
+                  .catch((err) => console.error('Error unassigning user:', err))
+            : Promise.resolve();
+
+        // Keep property.assignedUserIds in sync for legacy display readers.
+        const prop = properties.find((p: any) => p.id === propId);
+        if (prop) {
+            const updatedProp = {
+                ...prop,
+                assignedUserIds: (prop.assignedUserIds || []).filter((id: string) => String(id) !== uidStr),
+            };
+            setProperties((prevProps: any[]) => prevProps.map(p => p.id === propId ? updatedProp : p));
+            if (managingProperty && managingProperty.id === propId) {
+                setManagingProperty(updatedProp);
+            }
+            fetch(apiUrl('/api/properties'), {
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ propertyId: '' }),
-            }).catch((err) => console.error('Error updating user after unassign:', err));
+                body: JSON.stringify(updatedProp)
+            }).catch(err => console.error("Error unassigning user from property:", err));
         }
+
+        Promise.resolve(patchPromise).then(refreshDirectory);
     };
 
     // Financial & KPI State
@@ -1160,7 +1264,7 @@ export default function Settings({
                             <Users size={12} /> Assigned Users
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            {users.filter(u => prop.assignedUserIds?.includes(u.id)).map(user => (
+                            {users.filter(u => userAssignedToProperty(u, prop.id)).map(user => (
                                 <div key={user.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/5 border group relative" style={{ borderColor: colors.border }}>
                                     <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[9px] font-bold" style={{ color: colors.primary }}>
                                         {(user.name || user.username || "?").charAt(0)}
@@ -1175,7 +1279,7 @@ export default function Settings({
                                 </div>
                             ))}
                             <button
-                                onClick={() => openModal('assignUser', { propertyId: prop.id, selectedUserIds: prop.assignedUserIds || [] })}
+                                onClick={() => openModal('assignUser', { propertyId: prop.id, selectedUserIds: users.filter(u => userAssignedToProperty(u, prop.id)).map(u => u.id) })}
                                 className="px-3 py-1.5 rounded-lg border border-dashed flex items-center justify-center gap-1.5 hover:bg-white/5 transition-colors text-xs font-medium"
                                 style={{ borderColor: colors.border, color: colors.textMuted }}>
                                 <Plus size={14} /> Assign
@@ -3072,18 +3176,20 @@ export default function Settings({
                     >
                         <ChevronLeft size={16} /> Back to User List
                     </button>
-                    <UserPerformanceDashboard
-                        user={selectedUserForStats}
-                        propertyId={managingProperty?.id || activeProperty?.id}
-                        isOwnProfile={false}
-                        {...userPerformanceDashboardSharedProps}
-                    />
+                    <Suspense fallback={<ProfileDashboardFallback />}>
+                        <UserPerformanceDashboard
+                            user={selectedUserForStats}
+                            propertyId={managingProperty?.id || activeProperty?.id}
+                            isOwnProfile={false}
+                            {...userPerformanceDashboardSharedProps}
+                        />
+                    </Suspense>
                 </div>
             );
         }
 
         const filteredUsers = managingProperty 
-            ? users.filter(u => u.propertyId === managingProperty.id || (managingProperty.assignedUserIds || []).includes(u.id))
+            ? users.filter(u => userAssignedToProperty(u, managingProperty.id))
             : users;
 
         return (
@@ -3128,8 +3234,8 @@ export default function Settings({
                                         </td>
                                         <td className="p-4">
                                             <div className="flex flex-wrap gap-1.5 items-center">
-                                                {properties.filter(p => p.assignedUserIds?.includes(user.id) || p.id === user.propertyId).length > 0 ? (
-                                                    properties.filter(p => p.assignedUserIds?.includes(user.id) || p.id === user.propertyId).map(p => (
+                                                {properties.filter(p => userAssignedToProperty(user, p.id)).length > 0 ? (
+                                                    properties.filter(p => userAssignedToProperty(user, p.id)).map(p => (
                                                         <div key={p.id} className="flex items-center gap-1.5 px-2 py-1 rounded bg-white/5 border border-white/5">
                                                             <Building size={12} className="text-emerald-400" />
                                                             <span className="text-[10px] font-medium" style={{ color: colors.textMain }}>{p.name}</span>
@@ -3187,12 +3293,14 @@ export default function Settings({
             role: currentUser?.role || userProfile.title || 'Staff',
         };
         return (
-            <UserPerformanceDashboard
-                user={mappedUser}
-                isOwnProfile={true}
-                propertyId={activeProperty?.id}
-                {...userPerformanceDashboardSharedProps}
-            />
+            <Suspense fallback={<ProfileDashboardFallback />}>
+                <UserPerformanceDashboard
+                    user={mappedUser}
+                    isOwnProfile={true}
+                    propertyId={activeProperty?.id}
+                    {...userPerformanceDashboardSharedProps}
+                />
+            </Suspense>
         );
     };
 
@@ -4214,7 +4322,7 @@ export default function Settings({
                                                     </div>
                                                     {appIsAdmin ? (
                                                         <p className="text-[11px] leading-relaxed" style={{ color: colors.textMuted }}>
-                                                            Enter the new password twice. It is applied as soon as you click Update user (no current password required).
+                                                            Enter the new password twice, then click Update user. Must be at least 8 characters and use 3 of: lowercase, uppercase, digit, symbol. The user will be signed out of existing sessions.
                                                         </p>
                                                     ) : null}
                                                     <div className="grid grid-cols-1 gap-3">

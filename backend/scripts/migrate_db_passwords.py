@@ -1,81 +1,71 @@
-"""
-Connect to the Neon PostgreSQL database and hash all plaintext user passwords.
-Run this AFTER deploying the new auth code (which expects bcrypt hashes).
+"""Hash any leftover plaintext passwords in the relational `users` table.
 
-Usage from backend folder:
+Idempotent: rows whose password already looks like bcrypt are skipped.
+Safe to re-run. Does not print password values.
+
+Usage (from backend/, with DATABASE_URL set — e.g. Docker as-postgres):
+
     python scripts/migrate_db_passwords.py
+    python scripts/migrate_db_passwords.py --dry-run
 """
-import json
+from __future__ import annotations
+
+import argparse
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+# Allow `python scripts/migrate_db_passwords.py` from backend/
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from dotenv import load_dotenv
-
-load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
-
-import bcrypt as _bcrypt
-from psycopg import connect
-from psycopg.rows import dict_row
-from psycopg.types.json import Json
+from security import hash_password  # noqa: E402
+from utils import get_database_url  # noqa: E402
 
 
-def _hash_password(pwd: str) -> str:
-    return _bcrypt.hashpw(pwd.encode("utf-8"), _bcrypt.gensalt()).decode("utf-8")
+def looks_like_bcrypt(value: str) -> bool:
+    s = (value or "").strip()
+    return s.startswith(("$2a$", "$2b$", "$2y$")) and len(s) >= 55
 
 
-def _is_bcrypt_hash(s: str) -> bool:
-    return s.startswith("$2b$") or s.startswith("$2a$") or s.startswith("$2y$")
+def migrate(*, dry_run: bool = False) -> int:
+    import psycopg
+    from psycopg.rows import dict_row
 
+    url = get_database_url()
+    if not url:
+        raise SystemExit("DATABASE_URL is not set")
 
-def main():
-    db_url = os.getenv("DATABASE_URL", "").strip()
-    if not db_url:
-        print("ERROR: DATABASE_URL is not set in .env")
-        sys.exit(1)
-
-    print(f"Connecting to database...")
-    conn = connect(db_url, row_factory=dict_row)
-    migrated = 0
+    updated = 0
     skipped = 0
+    with psycopg.connect(url, row_factory=dict_row) as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, username, password FROM users;")
+            rows = cur.fetchall()
+            for row in rows:
+                pw = str(row.get("password") or "")
+                if not pw or looks_like_bcrypt(pw):
+                    skipped += 1
+                    continue
+                new_hash = hash_password(pw)
+                if dry_run:
+                    print(f"[dry-run] would hash password for user id={row['id']} username={row.get('username')}")
+                else:
+                    cur.execute(
+                        "UPDATE users SET password = %s WHERE id = %s;",
+                        (new_hash, row["id"]),
+                    )
+                    print(f"hashed password for user id={row['id']} username={row.get('username')}")
+                updated += 1
+        if not dry_run:
+            conn.commit()
+    print(f"done: updated={updated} skipped_already_hashed_or_empty={skipped} dry_run={dry_run}")
+    return updated
 
-    with conn.cursor() as cur:
-        cur.execute(
-            "SELECT row_id, payload FROM app_collection_rows WHERE collection_name = 'users';"
-        )
-        rows = cur.fetchall()
 
-        for row in rows:
-            payload = row["payload"]
-            if not isinstance(payload, dict):
-                continue
-            pwd = payload.get("password", "")
-            if not pwd:
-                skipped += 1
-                continue
-            if _is_bcrypt_hash(pwd):
-                print(f"  SKIP  {payload.get('username', '?')} — already hashed")
-                skipped += 1
-                continue
-
-            hashed = _hash_password(pwd)
-            payload["password"] = hashed
-            cur.execute(
-                """
-                UPDATE app_collection_rows
-                SET payload = %s, updated_at = NOW()
-                WHERE collection_name = 'users' AND row_id = %s;
-                """,
-                (Json(payload), row["row_id"]),
-            )
-            migrated += 1
-            print(f"  HASH  {payload.get('username', '?')} -- plaintext upgraded")
-
-        conn.commit()
-
-    conn.close()
-    print(f"\nDone. {migrated} passwords hashed, {skipped} skipped (already hash or empty).")
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Hash plaintext user passwords (idempotent).")
+    parser.add_argument("--dry-run", action="store_true", help="Report what would change; no writes.")
+    args = parser.parse_args()
+    migrate(dry_run=args.dry_run)
 
 
 if __name__ == "__main__":

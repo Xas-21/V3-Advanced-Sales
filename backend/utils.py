@@ -102,7 +102,7 @@ def set_force_file_storage_after_pg_failure(reason: str | None = None) -> None:
         except Exception:
             pass
         _POOL = None
-    msg = "VisaTour Backend: switching to file-backed JSON storage (backend/data)."
+    msg = "Advanced Sales Backend: switching to file-backed JSON storage (backend/data)."
     if reason:
         msg = f"{msg} Reason: {reason}"
     print(msg, flush=True)
@@ -185,6 +185,29 @@ def _ensure_feed_tables():
             cur.execute(
                 "CREATE INDEX IF NOT EXISTS idx_feed_posts_created_at ON feed_posts(created_at DESC);"
             )
+            # Rich-feed columns (idempotent upgrade of the original plain-text table).
+            # post_type: message | task | poll | event. body_html holds sanitized rich
+            # text; attachments/mentions/hashtags are JSONB arrays; meta carries
+            # type-specific payloads (poll options, task fields, event fields).
+            cur.execute(
+                """
+                ALTER TABLE feed_posts
+                    ADD COLUMN IF NOT EXISTS post_type TEXT NOT NULL DEFAULT 'message',
+                    ADD COLUMN IF NOT EXISTS body_html TEXT,
+                    ADD COLUMN IF NOT EXISTS attachments JSONB NOT NULL DEFAULT '[]'::jsonb,
+                    ADD COLUMN IF NOT EXISTS mentions JSONB NOT NULL DEFAULT '[]'::jsonb,
+                    ADD COLUMN IF NOT EXISTS hashtags JSONB NOT NULL DEFAULT '[]'::jsonb,
+                    ADD COLUMN IF NOT EXISTS meta JSONB NOT NULL DEFAULT '{}'::jsonb,
+                    ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN NOT NULL DEFAULT FALSE;
+                """
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_feed_posts_pinned_created ON feed_posts(is_pinned DESC, created_at DESC);"
+            )
+            # GIN index accelerates the "Mentioned Me" filter (mentions @> [user_id]).
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_feed_posts_mentions ON feed_posts USING GIN (mentions);"
+            )
             cur.execute(
                 """
                 CREATE TABLE IF NOT EXISTS feed_comments (
@@ -201,6 +224,13 @@ def _ensure_feed_tables():
             )
             cur.execute(
                 """
+                ALTER TABLE feed_comments
+                    ADD COLUMN IF NOT EXISTS body_html TEXT,
+                    ADD COLUMN IF NOT EXISTS mentions JSONB NOT NULL DEFAULT '[]'::jsonb;
+                """
+            )
+            cur.execute(
+                """
                 CREATE TABLE IF NOT EXISTS feed_reactions (
                     post_id TEXT NOT NULL REFERENCES feed_posts(id) ON DELETE CASCADE,
                     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -209,6 +239,131 @@ def _ensure_feed_tables():
                     PRIMARY KEY (post_id, user_id, emoji)
                 );
                 """
+            )
+            # Poll votes: one row per user per post (single-choice). option_index maps
+            # into meta->'poll'->'options'.
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS feed_poll_votes (
+                    post_id TEXT NOT NULL REFERENCES feed_posts(id) ON DELETE CASCADE,
+                    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    option_index INTEGER NOT NULL,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    PRIMARY KEY (post_id, user_id)
+                );
+                """
+            )
+            # Event RSVPs: one row per user per event post. status: going | maybe | no.
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS feed_event_rsvps (
+                    post_id TEXT NOT NULL REFERENCES feed_posts(id) ON DELETE CASCADE,
+                    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    status TEXT NOT NULL,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    PRIMARY KEY (post_id, user_id)
+                );
+                """
+            )
+            conn.commit()
+
+
+def _ensure_chat_tables():
+    """Property-scoped messenger: conversations, participants, messages."""
+    pool = _get_pool()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS chat_conversations (
+                    id TEXT PRIMARY KEY,
+                    type TEXT NOT NULL,
+                    name TEXT,
+                    property_id TEXT,
+                    created_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                );
+                """
+            )
+            cur.execute(
+                """
+                ALTER TABLE chat_conversations
+                    ADD COLUMN IF NOT EXISTS avatar_url TEXT,
+                    ADD COLUMN IF NOT EXISTS description TEXT;
+                """
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_chat_conversations_property ON chat_conversations(property_id);"
+            )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS chat_participants (
+                    conversation_id TEXT NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
+                    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    last_read_at TIMESTAMPTZ,
+                    joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    PRIMARY KEY (conversation_id, user_id)
+                );
+                """
+            )
+            cur.execute(
+                """
+                ALTER TABLE chat_participants
+                    ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'member',
+                    ADD COLUMN IF NOT EXISTS muted_until TIMESTAMPTZ,
+                    ADD COLUMN IF NOT EXISTS pinned_at TIMESTAMPTZ;
+                """
+            )
+            # Backfill group creators as admins (idempotent)
+            cur.execute(
+                """
+                UPDATE chat_participants p
+                   SET role = 'admin'
+                  FROM chat_conversations c
+                 WHERE p.conversation_id = c.id
+                   AND c.type = 'group'
+                   AND c.created_by IS NOT NULL
+                   AND p.user_id = c.created_by
+                   AND COALESCE(p.role, 'member') <> 'admin';
+                """
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_chat_participants_user ON chat_participants(user_id);"
+            )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS chat_messages (
+                    id TEXT PRIMARY KEY,
+                    conversation_id TEXT NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
+                    sender_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    body TEXT NOT NULL DEFAULT '',
+                    body_html TEXT,
+                    attachments JSONB NOT NULL DEFAULT '[]'::jsonb,
+                    mentions JSONB NOT NULL DEFAULT '[]'::jsonb,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                );
+                """
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_chat_messages_conv ON chat_messages(conversation_id, created_at DESC);"
+            )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS chat_invite_links (
+                    id TEXT PRIMARY KEY,
+                    conversation_id TEXT NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
+                    token TEXT NOT NULL UNIQUE,
+                    created_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+                    expires_at TIMESTAMPTZ,
+                    max_uses INTEGER,
+                    use_count INTEGER NOT NULL DEFAULT 0,
+                    revoked_at TIMESTAMPTZ,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                );
+                """
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_chat_invite_links_conv ON chat_invite_links(conversation_id);"
             )
             conn.commit()
 
@@ -640,6 +795,7 @@ def init_database():
         _ensure_special_tables()
         _ensure_special_migration()
         _ensure_feed_tables()
+        _ensure_chat_tables()
     except Exception as e:
         set_force_file_storage_after_pg_failure(repr(e))
 

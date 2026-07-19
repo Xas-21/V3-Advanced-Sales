@@ -1,139 +1,194 @@
-import hashlib
-import os
-import time
-from urllib.parse import urlparse
+"""Upload endpoints: local disk storage on the Docker volume (as-uploads-data)."""
+from __future__ import annotations
 
-import httpx
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+import os
+import re
+import uuid
+from pathlib import Path
+
+from fastapi import APIRouter, Cookie, File, Form, HTTPException, UploadFile
+from fastapi.responses import FileResponse
+
+from dependencies import require_user
+from security import SESSION_COOKIE_NAME
 
 router = APIRouter(prefix="/api/uploads", tags=["Uploads"])
 
+MAX_UPLOAD_BYTES = 20 * 1024 * 1024  # 20 MB
+ALLOWED_FOLDERS = {"feed", "chat", "general", "contracts", "requests"}
+ALLOWED_EXTENSIONS = {
+    ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg",
+    ".mp4", ".webm", ".mov",
+    ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt", ".csv", ".zip",
+}
+IMAGE_EXT = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg"}
+VIDEO_EXT = {".mp4", ".webm", ".mov"}
 
-class CloudinarySignRequest(BaseModel):
-    folder: str | None = None
+
+def _uploads_root() -> Path:
+    raw = (os.getenv("UPLOADS_DIR") or "").strip()
+    if raw:
+        root = Path(raw)
+    else:
+        root = Path(__file__).resolve().parent.parent / "uploads"
+    root.mkdir(parents=True, exist_ok=True)
+    return root.resolve()
 
 
-class CloudinaryDeleteRequest(BaseModel):
-    publicId: str
-    resourceType: str | None = "raw"
-    deliveryType: str | None = "upload"
-    invalidate: bool | None = True
+def _safe_folder(folder: str | None) -> str:
+    f = re.sub(r"[^a-z0-9_-]", "", (folder or "general").strip().lower().split("/")[-1])
+    if f not in ALLOWED_FOLDERS:
+        f = "general"
+    return f
 
 
-def _first_env(*names: str) -> str:
-    for name in names:
-        value = os.getenv(name, "").strip()
-        if value:
-            return value
+def _ext_of(filename: str) -> str:
+    ext = Path(filename or "").suffix.lower()
+    if ext in ALLOWED_EXTENSIONS:
+        return ext
     return ""
 
 
-def _cloudinary_from_url() -> tuple[str, str, str]:
-    raw = os.getenv("CLOUDINARY_URL", "").strip()
-    if not raw:
-        return "", "", ""
-    try:
-        parsed = urlparse(raw)
-        cloud_name = (parsed.hostname or "").strip()
-        api_key = (parsed.username or "").strip()
-        api_secret = (parsed.password or "").strip()
-        return cloud_name, api_key, api_secret
-    except Exception:
-        return "", "", ""
+def _resource_type(ext: str) -> str:
+    if ext in IMAGE_EXT:
+        return "image"
+    if ext in VIDEO_EXT:
+        return "video"
+    return "raw"
 
 
-def _resolve_cloudinary_config() -> tuple[str, str, str]:
-    url_cloud, url_key, url_secret = _cloudinary_from_url()
-    cloud_name = _first_env("CLOUDINARY_CLOUD_NAME", "CLOUDINARY_CLOUD", "CLOUD_NAME", "CLOUDINARY_NAME") or url_cloud
-    api_key = _first_env("CLOUDINARY_API_KEY", "CLOUDINARY_KEY", "API_KEY") or url_key
-    api_secret = _first_env("CLOUDINARY_API_SECRET", "CLOUDINARY_SECRET", "API_SECRET") or url_secret
-    return cloud_name, api_key, api_secret
+def _guess_media_type(ext: str) -> str:
+    mapping = {
+        ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+        ".gif": "image/gif", ".webp": "image/webp", ".bmp": "image/bmp",
+        ".svg": "image/svg+xml",
+        ".mp4": "video/mp4", ".webm": "video/webm", ".mov": "video/quicktime",
+        ".pdf": "application/pdf",
+        ".txt": "text/plain", ".csv": "text/csv",
+        ".zip": "application/zip",
+        ".doc": "application/msword",
+        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ".xls": "application/vnd.ms-excel",
+        ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ".ppt": "application/vnd.ms-powerpoint",
+        ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    }
+    return mapping.get(ext, "application/octet-stream")
 
 
-def _cloudinary_signature(params: dict[str, str], api_secret: str) -> str:
-    to_sign = "&".join(f"{key}={params[key]}" for key in sorted(params))
-    return hashlib.sha1(f"{to_sign}{api_secret}".encode("utf-8")).hexdigest()
+@router.post("/local")
+async def upload_local_file(
+    file: UploadFile = File(...),
+    folder: str = Form("general"),
+    session_id: str | None = Cookie(default=None, alias=SESSION_COOKIE_NAME),
+):
+    """Save a file to the Docker volume and return a same-origin URL + metadata."""
+    require_user(session_id)
 
-
-@router.post("/cloudinary/sign")
-def sign_cloudinary_upload(body: CloudinarySignRequest):
-    cloud_name, api_key, api_secret = _resolve_cloudinary_config()
-
-    if not cloud_name or not api_key or not api_secret:
+    original = (file.filename or "file").strip() or "file"
+    ext = _ext_of(original)
+    if not ext:
         raise HTTPException(
-            status_code=503,
-            detail="Cloudinary is not configured on the backend. Set CLOUDINARY_CLOUD_NAME/CLOUDINARY_API_KEY/CLOUDINARY_API_SECRET or CLOUDINARY_URL.",
+            status_code=400,
+            detail="File type not allowed. Use images, video, PDF, or common office documents.",
         )
 
-    timestamp = int(time.time())
-    params = {"timestamp": str(timestamp)}
-    folder = (body.folder or "").strip()
-    if folder:
-        params["folder"] = folder
+    safe_folder = _safe_folder(folder)
+    dest_dir = _uploads_root() / safe_folder
+    dest_dir.mkdir(parents=True, exist_ok=True)
 
-    signature = _cloudinary_signature(params, api_secret)
+    stored_name = f"{uuid.uuid4().hex}{ext}"
+    dest_path = dest_dir / stored_name
 
-    return {
-        "cloudName": cloud_name,
-        "apiKey": api_key,
-        "timestamp": timestamp,
-        "signature": signature,
-        "folder": folder or None,
-    }
-
-
-@router.post("/cloudinary/delete")
-def delete_cloudinary_asset(body: CloudinaryDeleteRequest):
-    cloud_name, api_key, api_secret = _resolve_cloudinary_config()
-    if not cloud_name or not api_key or not api_secret:
-        raise HTTPException(
-            status_code=503,
-            detail="Cloudinary is not configured on the backend. Set CLOUDINARY_CLOUD_NAME/CLOUDINARY_API_KEY/CLOUDINARY_API_SECRET or CLOUDINARY_URL.",
-        )
-
-    public_id = str(body.publicId or "").strip()
-    if not public_id:
-        raise HTTPException(status_code=400, detail="publicId is required.")
-
-    resource_type = str(body.resourceType or "raw").strip().lower()
-    delivery_type = str(body.deliveryType or "upload").strip().lower()
-    invalidate = bool(body.invalidate if body.invalidate is not None else True)
-    timestamp = int(time.time())
-
-    sign_params = {
-        "public_id": public_id,
-        "timestamp": str(timestamp),
-        "type": delivery_type,
-    }
-    if invalidate:
-        sign_params["invalidate"] = "true"
-    signature = _cloudinary_signature(sign_params, api_secret)
-
-    url = f"https://api.cloudinary.com/v1_1/{cloud_name}/{resource_type}/destroy"
-    form = {
-        "public_id": public_id,
-        "timestamp": str(timestamp),
-        "api_key": api_key,
-        "signature": signature,
-        "type": delivery_type,
-    }
-    if invalidate:
-        form["invalidate"] = "true"
-
+    size = 0
     try:
-        with httpx.Client(timeout=20.0) as client:
-            resp = client.post(url, data=form)
-        if resp.status_code >= 400:
-            raise HTTPException(status_code=resp.status_code, detail=resp.text)
-        payload = resp.json()
+        with dest_path.open("wb") as out:
+            while True:
+                chunk = await file.read(1024 * 1024)
+                if not chunk:
+                    break
+                size += len(chunk)
+                if size > MAX_UPLOAD_BYTES:
+                    out.close()
+                    dest_path.unlink(missing_ok=True)
+                    raise HTTPException(status_code=413, detail="File too large (max 20 MB).")
+                out.write(chunk)
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Failed to delete Cloudinary asset: {exc}") from exc
+        dest_path.unlink(missing_ok=True)
+        raise HTTPException(status_code=500, detail=f"Failed to save upload: {exc}") from exc
+    finally:
+        await file.close()
+
+    public_id = f"{safe_folder}/{stored_name}"
+    secure_url = f"/api/uploads/files/{public_id}"
 
     return {
-        "result": payload.get("result"),
-        "publicId": public_id,
-        "resourceType": resource_type,
+        "secure_url": secure_url,
+        "public_id": public_id,
+        "original_filename": original[:200],
+        "bytes": size,
+        "format": ext.lstrip("."),
+        "resource_type": _resource_type(ext),
     }
+
+
+@router.get("/files/{folder}/{filename}")
+def get_local_file(
+    folder: str,
+    filename: str,
+    session_id: str | None = Cookie(default=None, alias=SESSION_COOKIE_NAME),
+):
+    """Serve a previously uploaded file (auth required; cookie sent by <img>/<a>)."""
+    require_user(session_id)
+
+    safe_folder = _safe_folder(folder)
+    name = Path(filename).name
+    if not re.fullmatch(r"[a-f0-9]{32}\.[a-z0-9]{1,8}", name, flags=re.I):
+        raise HTTPException(status_code=404, detail="File not found.")
+    ext = _ext_of(name)
+    if not ext:
+        raise HTTPException(status_code=404, detail="File not found.")
+
+    path = (_uploads_root() / safe_folder / name).resolve()
+    root = _uploads_root()
+    try:
+        path.relative_to(root)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="File not found.") from None
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="File not found.")
+
+    return FileResponse(
+        path,
+        media_type=_guess_media_type(ext),
+        filename=name,
+        content_disposition_type="inline",
+    )
+
+
+@router.delete("/local")
+def delete_local_file(
+    publicId: str,
+    session_id: str | None = Cookie(default=None, alias=SESSION_COOKIE_NAME),
+):
+    """Delete a local upload by public_id (folder/filename)."""
+    require_user(session_id)
+    pid = str(publicId or "").strip().replace("\\", "/")
+    parts = pid.split("/")
+    if len(parts) != 2:
+        raise HTTPException(status_code=400, detail="Invalid publicId.")
+    folder, filename = parts
+    safe_folder = _safe_folder(folder)
+    name = Path(filename).name
+    if not re.fullmatch(r"[a-f0-9]{32}\.[a-z0-9]{1,8}", name, flags=re.I):
+        raise HTTPException(status_code=400, detail="Invalid publicId.")
+    path = (_uploads_root() / safe_folder / name).resolve()
+    try:
+        path.relative_to(_uploads_root())
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid path.") from None
+    if path.is_file():
+        path.unlink()
+    return {"ok": True, "publicId": f"{safe_folder}/{name}"}

@@ -309,6 +309,33 @@ export async function persistAccountMergeToBackend(opts: {
         throw new Error(`Failed to save merged account: ${accRes.status} ${t}`);
     }
 
+    // Reassign account rate periods to destination before source delete (FK cascade would drop them).
+    const destId = String(mergedAccount?.id || '').trim();
+    if (destId) {
+        const ratesRes = await fetch(
+            apiUrl(
+                `/api/account-rates?propertyId=${encodeURIComponent(pid)}&accountId=${encodeURIComponent(sid)}`
+            )
+        );
+        if (ratesRes.ok) {
+            const rates = await ratesRes.json().catch(() => []);
+            if (Array.isArray(rates)) {
+                for (const period of rates) {
+                    const moved = { ...period, accountId: destId, propertyId: String(period?.propertyId || pid) };
+                    const moveRes = await fetch(apiUrl('/api/account-rates'), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(moved),
+                    });
+                    if (!moveRes.ok) {
+                        const t = await moveRes.text().catch(() => '');
+                        throw new Error(`Failed to reassign account rate ${period?.id}: ${moveRes.status} ${t}`);
+                    }
+                }
+            }
+        }
+    }
+
     const delRes = await fetch(apiUrl(`/api/accounts/${encodeURIComponent(sid)}`), { method: 'DELETE' });
     if (!delRes.ok && delRes.status !== 404) {
         const t = await delRes.text().catch(() => '');

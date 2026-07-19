@@ -1,0 +1,272 @@
+{
+  "auth_db.py": {
+    "mtime": 1784064079.8884182,
+    "ast_hash": "8361df227bb553ca65c4a21fc8f8f669",
+    "semantic_hash": ""
+  },
+  "cors_middleware.py": {
+    "mtime": 1783892590.9967601,
+    "ast_hash": "c90f4c24056ba6f922b3c72e3912de2b",
+    "semantic_hash": ""
+  },
+  "crm_recovery.py": {
+    "mtime": 1783892590.9967601,
+    "ast_hash": "74465da71287903d694d54b32b877e35",
+    "semantic_hash": ""
+  },
+  "data/accounts.json": {
+    "mtime": 1783892590.9977732,
+    "ast_hash": "757203cabb41cf9f471cd91e8816deb7",
+    "semantic_hash": ""
+  },
+  "data/crm_state.json": {
+    "mtime": 1783892590.9977732,
+    "ast_hash": "e9e1caf48fc0aa89cb70f3e950dc54f7",
+    "semantic_hash": ""
+  },
+  "data/financials.json": {
+    "mtime": 1783892590.9977732,
+    "ast_hash": "7b71f963aac075af549811bae2e4774e",
+    "semantic_hash": ""
+  },
+  "data/properties.json": {
+    "mtime": 1783892590.998776,
+    "ast_hash": "1e96f7757c67a899b204ae88a7315147",
+    "semantic_hash": ""
+  },
+  "data/requests.json": {
+    "mtime": 1783892590.998776,
+    "ast_hash": "6bbd7b6a5453d097813debc929760181",
+    "semantic_hash": ""
+  },
+  "data/room_types.json": {
+    "mtime": 1783892590.998776,
+    "ast_hash": "347468b2694108b77516c760425c6aa3",
+    "semantic_hash": ""
+  },
+  "data/taxes.json": {
+    "mtime": 1783892590.999778,
+    "ast_hash": "b90034a7fe9a5017d144d5e15924c9b2",
+    "semantic_hash": ""
+  },
+  "data/users.json": {
+    "mtime": 1783892590.999778,
+    "ast_hash": "63c38a302659c53eb00d433c34db131f",
+    "semantic_hash": ""
+  },
+  "data/venues.json": {
+    "mtime": 1783892590.999778,
+    "ast_hash": "85057e7558f4899efdf3ee88b2f3473f",
+    "semantic_hash": ""
+  },
+  "data_access.py": {
+    "mtime": 1784063440.6740177,
+    "ast_hash": "5f0bf4ff7a0625598006b7c1e45879ce",
+    "semantic_hash": ""
+  },
+  "dependencies.py": {
+    "mtime": 1784064079.229326,
+    "ast_hash": "3d9a7aecab820d07b2665bc705a24d10",
+    "semantic_hash": ""
+  },
+  "main.py": {
+    "mtime": 1783982361.2868028,
+    "ast_hash": "31fc1e7a71d666fc389e93a7ff2d7e76",
+    "semantic_hash": ""
+  },
+  "migrations/001_normalized_schema.sql": {
+    "mtime": 1783892591.0017745,
+    "ast_hash": "ae5f07e5caca047fcd63f69db76daf06",
+    "semantic_hash": ""
+  },
+  "migrations/002_migrate.py": {
+    "mtime": 1783892591.0017745,
+    "ast_hash": "0fa4bc2467d08b7ba474085806266ee8",
+    "semantic_hash": ""
+  },
+  "migrations/003_verify.py": {
+    "mtime": 1783892591.0027752,
+    "ast_hash": "680669855cef004160ec2ee8f698c58e",
+    "semantic_hash": ""
+  },
+  "migrations/006_e2e_test.py": {
+    "mtime": 1783892591.0027752,
+    "ast_hash": "1a2a5765aea4e4d41cd1e00e68c68da3",
+    "semantic_hash": ""
+  },
+  "migrations/007_debug.py": {
+    "mtime": 1783892591.0027752,
+    "ast_hash": "3b18be74f191cd736657aa5f98725465",
+    "semantic_hash": ""
+  },
+  "migrations/008_write_authz_test.py": {
+    "mtime": 1783982361.2811818,
+    "ast_hash": "d72e3763fae37d56268fed8d9cbf2c81",
+    "semantic_hash": ""
+  },
+  "migrations/010_add_indexes.py": {
+    "mtime": 1783982191.9708328,
+    "ast_hash": "0b3ea1ae8f29acaf8dc1bba0e6ce9f6c",
+    "semantic_hash": ""
+  },
+  "routers/__init__.py": {
+    "mtime": 1783892591.0037732,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "routers/accounts.py": {
+    "mtime": 1783982191.863577,
+    "ast_hash": "2e074287b8047455e41bf7df41d4eb40",
+    "semantic_hash": ""
+  },
+  "routers/auth.py": {
+    "mtime": 1783892591.0047748,
+    "ast_hash": "45b7f15773d1ce9beafb6d1371b99cd3",
+    "semantic_hash": ""
+  },
+  "routers/chat.py": {
+    "mtime": 1783982194.7266479,
+    "ast_hash": "17c1e945329dae9c1bcfc30146ec6f0b",
+    "semantic_hash": ""
+  },
+  "routers/contact.py": {
+    "mtime": 1783892591.0047748,
+    "ast_hash": "5f9a6c198cbbde0537d4888a3fe61f1b",
+    "semantic_hash": ""
+  },
+  "routers/contracts.py": {
+    "mtime": 1783892591.0047748,
+    "ast_hash": "b6c0bf0fd5cec28ab7a7db12606daab7",
+    "semantic_hash": ""
+  },
+  "routers/crm_state.py": {
+    "mtime": 1783892591.0057752,
+    "ast_hash": "9fb917bdb69275c2d981d2e19fcc3234",
+    "semantic_hash": ""
+  },
+  "routers/cxl_reasons.py": {
+    "mtime": 1783892591.0057752,
+    "ast_hash": "39404d6d6a9e60415dd53dbe323f5478",
+    "semantic_hash": ""
+  },
+  "routers/feed.py": {
+    "mtime": 1783982192.1884937,
+    "ast_hash": "35d055ee5df7299ee7d714d9111a5948",
+    "semantic_hash": ""
+  },
+  "routers/financials.py": {
+    "mtime": 1783892591.0067747,
+    "ast_hash": "dab18e421bad4f84c840f54f405f41ed",
+    "semantic_hash": ""
+  },
+  "routers/presence.py": {
+    "mtime": 1783982194.9491022,
+    "ast_hash": "a95211cd53e0f1307971421562505e31",
+    "semantic_hash": ""
+  },
+  "routers/promotions.py": {
+    "mtime": 1783892591.0067747,
+    "ast_hash": "a557c07b8cbfb409e626bc83a92e17c1",
+    "semantic_hash": ""
+  },
+  "routers/properties.py": {
+    "mtime": 1783892591.0067747,
+    "ast_hash": "fc72c9b726c18ae76dd35deefc7628ba",
+    "semantic_hash": ""
+  },
+  "routers/reqs.py": {
+    "mtime": 1783892591.0067747,
+    "ast_hash": "6c6c6d4a13605852b18fe4e7d7752e9e",
+    "semantic_hash": ""
+  },
+  "routers/rooms.py": {
+    "mtime": 1783892591.0077763,
+    "ast_hash": "e9c2c0debb50dcefebf6567f7f9d617f",
+    "semantic_hash": ""
+  },
+  "routers/tasks.py": {
+    "mtime": 1783892591.0077763,
+    "ast_hash": "808d4d964ec43b971ff58e7f2a20a0a4",
+    "semantic_hash": ""
+  },
+  "routers/taxes.py": {
+    "mtime": 1783892591.0077763,
+    "ast_hash": "7cde9b9ad082e1dc367a5a966e962d2e",
+    "semantic_hash": ""
+  },
+  "routers/uploads.py": {
+    "mtime": 1783982309.5980709,
+    "ast_hash": "bbb92f0d84c089eb9efd581e8738aa6e",
+    "semantic_hash": ""
+  },
+  "routers/users.py": {
+    "mtime": 1783900609.317956,
+    "ast_hash": "ee48f287156a2a5d1b4c65b5e2afb36b",
+    "semantic_hash": ""
+  },
+  "routers/venues.py": {
+    "mtime": 1783892591.008775,
+    "ast_hash": "5ac8396b04d0eed1e3e310ac8a227f8d",
+    "semantic_hash": ""
+  },
+  "routers/ws.py": {
+    "mtime": 1783982184.269218,
+    "ast_hash": "2252b0cc24b453206c72b2109549a8e2",
+    "semantic_hash": ""
+  },
+  "security.py": {
+    "mtime": 1783892591.0187728,
+    "ast_hash": "c095e47f0d47bd558356305e9906c70f",
+    "semantic_hash": ""
+  },
+  "services/business_card_scan.py": {
+    "mtime": 1783892591.0187728,
+    "ast_hash": "50b6a71fa312a0c15f15f0dcec59301b",
+    "semantic_hash": ""
+  },
+  "services/rich_text.py": {
+    "mtime": 1783982194.3376784,
+    "ast_hash": "5e9c50067ab9e82a852d1b7b96eb15e1",
+    "semantic_hash": ""
+  },
+  "tests/__init__.py": {
+    "mtime": 1783892591.0197747,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "tests/test_api_full.py": {
+    "mtime": 1783892591.0197747,
+    "ast_hash": "0605bbaf36347fdee2de8a1c4412bd8e",
+    "semantic_hash": ""
+  },
+  "tests/test_list_requests_batch.py": {
+    "mtime": 1784063616.1319222,
+    "ast_hash": "7075e038694bd951d02f57ba921d29dc",
+    "semantic_hash": ""
+  },
+  "utils.py": {
+    "mtime": 1783982194.236781,
+    "ast_hash": "d4c1df46558a339028d29134a649eda8",
+    "semantic_hash": ""
+  },
+  "websocket_manager.py": {
+    "mtime": 1783982173.9326735,
+    "ast_hash": "0ad698ee7337d26a009f343d800b51dc",
+    "semantic_hash": ""
+  },
+  "requirements.txt": {
+    "mtime": 1783982174.1803277,
+    "ast_hash": "63203bc00634c13a9fa177772b0b2864",
+    "semantic_hash": ""
+  },
+  "runtime.txt": {
+    "mtime": 1783892591.008775,
+    "ast_hash": "a8d144c1af57772a7aa7231d7702c21b",
+    "semantic_hash": ""
+  },
+  "tests/test_session_resolve_once.py": {
+    "mtime": 1784064095.8231094,
+    "ast_hash": "26372ec2dd1faacea2a01eab0fa9b859",
+    "semantic_hash": ""
+  }
+}

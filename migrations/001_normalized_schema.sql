@@ -300,6 +300,19 @@ CREATE TABLE IF NOT EXISTS promotions (
     include_events_revenue BOOLEAN
 );
 
+-- Account contracted room rates by date period (plan 037)
+CREATE TABLE IF NOT EXISTS account_rates (
+    id          TEXT PRIMARY KEY,
+    property_id TEXT REFERENCES properties(id) ON DELETE CASCADE,
+    account_id  TEXT REFERENCES accounts(id) ON DELETE CASCADE,
+    start_date  DATE,
+    end_date    DATE,
+    segments    JSONB DEFAULT '[]'::jsonb,
+    payload     JSONB,
+    created_at  TIMESTAMPTZ DEFAULT now(),
+    updated_at  TIMESTAMPTZ DEFAULT now()
+);
+
 -- ---------------------------------------------------------------------------
 -- Contract templates & cancellation reasons (were: app_collections arrays)
 -- Stored as id+payload to guarantee lossless capture; refine later.

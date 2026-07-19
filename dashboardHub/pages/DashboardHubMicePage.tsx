@@ -1,306 +1,398 @@
-import React, { useEffect, useState, useMemo } from 'react';
+/**
+ * MICE preview — events/meetings volume, status & MICE-scoped revenue only.
+ * Not whole-hotel Revenue Mix; period filter via requestWhen.
+ */
+import React, { useEffect, useMemo, useState } from 'react';
 import { apiUrl } from '../../backendApi';
 import {
-    BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, LineChart, Line,
+    BarChart, Bar, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
+    Line, ComposedChart, Area,
 } from 'recharts';
-import { PartyPopper, Building2, Users, CalendarRange, AlertCircle, Loader2, Armchair } from 'lucide-react';
+import { PartyPopper, Building2, Users, CalendarRange, Armchair, DollarSign, CheckCircle2 } from 'lucide-react';
+import { useHubData } from '../HubDataContext';
+import {
+    hexA, num, fmtInt, fmtMoney, money, fmtPct, delta, groupBy, tip, legendStyle, palette,
+    Card, MiniStat, RangeTabs, EmptyState, Hero, LoadingState, PageShell,
+    rangeBounds, monthKey, type RangeKey,
+} from '../analyticsKit';
+import { requestWhen, requestTime, CHART_H, CHART_H_LG, GRID_2 } from '../hubPreviewShared';
 
-/* ------------------------------- helpers ---------------------------------- */
-type Colors = any;
-
-function hexA(hex: string, a: string): string {
-    if (!hex) return 'rgba(148,163,184,0.14)';
-    if (hex.startsWith('#')) {
-        let h = hex.slice(1);
-        if (h.length === 3) h = h.split('').map((c) => c + c).join('');
-        if (h.length === 6) return `#${h}${a}`;
-    }
-    return hex;
+function isMiceRequest(r: any): boolean {
+    const seg = (r.segment || '').toLowerCase();
+    return seg === 'mice' || !!r.eventStart || !!r.eventEnd;
 }
 
-function num(v: any): number {
-    if (typeof v === 'number') return v;
-    if (v == null) return 0;
-    const n = parseFloat(String(v).replace(/[^0-9.\-]/g, ''));
-    return Number.isFinite(n) ? n : 0;
+function miceEventMonth(r: any): string | null {
+    return monthKey(r.eventStart || r.checkIn || requestWhen(r));
 }
 
-function fmtInt(n: number): string { return (Number.isFinite(n) ? Math.round(n) : 0).toLocaleString('en-US'); }
-
-function tip(colors: Colors) {
-    return {
-        contentStyle: { background: colors.tooltip, border: `1px solid ${colors.border}`, borderRadius: 10, color: colors.textMain, fontSize: 12 },
-        labelStyle: { color: colors.textMuted },
-        itemStyle: { color: colors.textMain },
-    };
-}
-
-function Card({ title, icon: Icon, children, colors }: any) {
-    return (
-        <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 16, padding: 18 }}>
-            {(title) && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: colors.textMain, fontWeight: 700, fontSize: 14, marginBottom: 14 }}>
-                    {Icon && <Icon size={16} style={{ color: colors.primary }} />}
-                    {title}
-                </div>
-            )}
-            {children}
-        </div>
-    );
-}
-
-function MiniStat({ label, value, sub, icon: Icon, colorKey, colors }: any) {
-    const c = colors[colorKey] || colors.primary;
-    return (
-        <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 16, padding: 16, position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: -14, right: -10, opacity: 0.1 }}><Icon size={72} color={c} /></div>
-            <div style={{ color: colors.textMuted, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6 }}>{label}</div>
-            <div style={{ color: colors.textMain, fontSize: 25, fontWeight: 800, marginTop: 6 }}>{value}</div>
-            {sub && <div style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>{sub}</div>}
-        </div>
-    );
-}
-
-function EmptyState({ icon: Icon, text, colors }: any) {
-    return (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 12px', color: colors.textMuted, gap: 10 }}>
-            {Icon && <Icon size={34} style={{ opacity: 0.45 }} />}
-            <div style={{ fontSize: 13 }}>{text}</div>
-        </div>
-    );
-}
-
-/* ------------------------------- component -------------------------------- */
 export default function DashboardHubMicePage({ colors }: { colors: any }) {
+    const { requests, currency, activeProperty } = useHubData();
+    const propertyId = activeProperty?.id || '';
     const [venues, setVenues] = useState<any[]>([]);
-    const [properties, setProperties] = useState<any[]>([]);
-    const [requests, setRequests] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [range, setRange] = useState<RangeKey>('90');
+    const pal = palette(colors);
+    const { start, prevStart, prevEnd } = useMemo(() => rangeBounds(range), [range]);
 
     useEffect(() => {
         let cancelled = false;
+        setLoading(true);
         (async () => {
             try {
-                const [v, p, r] = await Promise.all([
-                    fetch(apiUrl('/api/venues')).then((x) => x.json()),
-                    fetch(apiUrl('/api/properties')).then((x) => x.json()),
-                    fetch(apiUrl('/api/requests')).then((x) => x.json()),
-                ]);
+                const url = propertyId ? `/api/venues?propertyId=${encodeURIComponent(propertyId)}` : '/api/venues';
+                const v = await fetch(apiUrl(url), { credentials: 'include' }).then((x) => x.json());
                 if (cancelled) return;
-                setVenues(Array.isArray(v) ? v : []);
-                setProperties(Array.isArray(p) ? p : []);
-                setRequests(Array.isArray(r) ? r : []);
-            } catch (e: any) {
-                if (!cancelled) setError(e?.message || 'Failed to load');
+                const list = Array.isArray(v) ? v : [];
+                setVenues(propertyId ? list.filter((x: any) => !x.propertyId || x.propertyId === propertyId) : list);
+            } catch {
+                if (!cancelled) setVenues([]);
             } finally {
                 if (!cancelled) setLoading(false);
             }
         })();
         return () => { cancelled = true; };
-    }, []);
+    }, [propertyId]);
 
-    const propMap = useMemo(() => Object.fromEntries(properties.map((p) => [p.id, p.name])), [properties]);
-    const palette = [colors.blue, colors.green, colors.purple, colors.orange, colors.yellow, colors.cyan, colors.red, colors.primary];
+    const allMice = useMemo(() => requests.filter(isMiceRequest), [requests]);
 
-    // MICE-related requests (segment MICE / Leisure group / any with eventStart)
-    const miceReqs = useMemo(() =>
-        requests.filter((r) => {
-            const seg = (r.segment || '').toLowerCase();
-            if (seg === 'mice') return true;
-            if (r.eventStart || r.eventEnd) return true;
-            return false;
-        }), [requests]);
+    const inPeriod = (r: any, from: number, to = Infinity) => {
+        const t = requestTime(r);
+        return !Number.isNaN(t) && t >= from && t < to;
+    };
 
-    const totalVenues = venues.length;
-    const totalArea = useMemo(() => venues.reduce((a, v) => a + num(v.area), 0), [venues]);
-    const totalVenueCap = useMemo(() => venues.reduce((a, v) => {
+    const curMice = useMemo(() => {
+        if (range === 'all') return allMice;
+        return allMice.filter((r) => inPeriod(r, start));
+    }, [allMice, start, range]);
+
+    const prevMice = useMemo(() => {
+        if (range === 'all') return [];
+        return allMice.filter((r) => inPeriod(r, prevStart, prevEnd));
+    }, [allMice, prevStart, prevEnd, range]);
+
+    const venueCap = (v: any) => {
         const shapes = Array.isArray(v.shapes) ? v.shapes : [];
-        if (shapes.length) return a + shapes.reduce((s: number, sh: any) => s + num(sh.capacity), 0);
-        return a + num(v.capacity);
-    }, 0), [venues]);
+        return shapes.length ? shapes.reduce((s: number, sh: any) => s + num(sh.capacity), 0) : num(v.capacity);
+    };
 
-    const byProperty = useMemo(() => {
-        const m: Record<string, any> = {};
-        for (const v of venues) {
-            const k = v.propertyId || '—';
-            if (!m[k]) m[k] = { name: propMap[k] || k || 'Unassigned', count: 0, area: 0 };
-            m[k].count += 1;
-            m[k].area += num(v.area);
+    const totalArea = useMemo(() => venues.reduce((a, v) => a + num(v.area), 0), [venues]);
+    const totalVenueCap = useMemo(() => venues.reduce((a, v) => a + venueCap(v), 0), [venues]);
+
+    const miceRevenue = useMemo(() => curMice.reduce((s, r) => s + num(r.totalCost), 0), [curMice]);
+    const prevMiceRevenue = useMemo(() => prevMice.reduce((s, r) => s + num(r.totalCost), 0), [prevMice]);
+
+    const confirmedCount = useMemo(
+        () => curMice.filter((r) => String(r.status || '').toLowerCase() === 'confirmed').length,
+        [curMice],
+    );
+    const prevConfirmed = useMemo(
+        () => prevMice.filter((r) => String(r.status || '').toLowerCase() === 'confirmed').length,
+        [prevMice],
+    );
+
+    const statusMix = useMemo(() => {
+        const m = groupBy(curMice, (r) => r.status || 'Unknown');
+        return Object.entries(m)
+            .map(([name, arr]) => ({ name, value: arr.length }))
+            .sort((a, b) => b.value - a.value);
+    }, [curMice]);
+
+    const seasonal = useMemo(() => {
+        const map: Record<string, { events: number; revenue: number }> = {};
+        for (const r of curMice) {
+            const k = miceEventMonth(r); if (!k) continue;
+            if (!map[k]) map[k] = { events: 0, revenue: 0 };
+            map[k].events += 1;
+            map[k].revenue += num(r.totalCost);
         }
-        return Object.values(m).sort((a: any, b: any) => b.count - a.count);
-    }, [venues, propMap]);
+        return Object.keys(map).sort().map((k) => ({
+            month: k,
+            events: map[k].events,
+            revenue: Math.round(map[k].revenue),
+        }));
+    }, [curMice]);
+
+    const eventTypes = useMemo(() => {
+        const m: Record<string, number> = {};
+        for (const r of curMice) {
+            const t = String(r.eventType || r.segment || 'MICE');
+            m[t] = (m[t] || 0) + 1;
+        }
+        return Object.entries(m).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+    }, [curMice]);
 
     const capacityBands = useMemo(() => {
         const bands: [string, number, number][] = [['<100', 0, 99], ['100–300', 100, 300], ['301–600', 301, 600], ['600+', 601, 1e9]];
         const arr = bands.map(([name]) => ({ name, value: 0 }));
         for (const v of venues) {
-            const shapes = Array.isArray(v.shapes) ? v.shapes : [];
-            const cap = shapes.length ? shapes.reduce((s: number, sh: any) => s + num(sh.capacity), 0) : num(v.capacity);
+            const cap = venueCap(v);
             for (let i = 0; i < bands.length; i++) {
-                const [_, lo, hi] = bands[i];
+                const [, lo, hi] = bands[i];
                 if (cap >= lo && cap <= hi) { arr[i].value += 1; break; }
             }
         }
-        return arr;
+        return arr.filter((x) => x.value > 0);
     }, [venues]);
 
-    // Seasonal demand: MICE requests by month (eventStart)
-    const seasonal = useMemo(() => {
-        const map: Record<string, number> = {};
-        for (const r of miceReqs) {
-            const d = new Date(r.eventStart || r.checkIn);
-            if (Number.isNaN(d.getTime())) continue;
-            const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-            map[k] = (map[k] || 0) + 1;
-        }
-        return Object.keys(map).sort().map((k) => ({ month: k, events: map[k] }));
-    }, [miceReqs]);
+    const topVenues = useMemo(() => (
+        venues.map((v) => ({ name: v.name || 'Unnamed', capacity: venueCap(v), area: num(v.area) }))
+            .sort((a, b) => b.capacity - a.capacity)
+            .slice(0, 8)
+    ), [venues]);
 
-    // Bookings by venue (match via property / name heuristic - count MICE requests per property as proxy)
-    const bookingsByProp = useMemo(() => {
-        const m: Record<string, number> = {};
-        for (const r of miceReqs) { const k = r.propertyId || '—'; m[k] = (m[k] || 0) + 1; }
-        return Object.entries(m).map(([id, v]) => ({ name: propMap[id] || id || 'Unassigned', value: v })).sort((a, b) => b.value - a.value);
-    }, [miceReqs, propMap]);
-
-    const eventTypes = useMemo(() => {
-        const m: Record<string, number> = {};
-        for (const r of miceReqs) {
-            const t = (r.eventType || r.segment || 'MICE').toString();
-            m[t] = (m[t] || 0) + 1;
-        }
-        return Object.entries(m).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-    }, [miceReqs]);
-
-    const ready = !loading && !error;
+    const rangeLabel = range === 'all' ? 'all time' : range === '365' ? 'last year' : `last ${range} days`;
     const hasVenues = venues.length > 0;
+    const hasMiceData = curMice.length > 0;
+    const hasAnything = hasVenues || allMice.length > 0;
 
     return (
-        <div style={{ padding: 4 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', background: hexA(colors.primary, '22'), color: colors.primary }}>
-                    <PartyPopper size={22} />
+        <PageShell colors={colors} enterDeps={[range, propertyId]}>
+            <div style={{ padding: 4 }}>
+                <div data-hub-animate>
+                    <Hero
+                        icon={PartyPopper}
+                        title="MICE Events & Venues"
+                        colors={colors}
+                        activeProperty={activeProperty}
+                        subtitle={
+                            hasMiceData
+                                ? `${fmtInt(curMice.length)} MICE events · ${fmtMoney(miceRevenue, currency)} MICE revenue · ${rangeLabel}`
+                                : hasVenues
+                                    ? `${fmtInt(venues.length)} venues · no MICE events in ${rangeLabel}`
+                                    : 'No venues or MICE events'
+                        }
+                        right={<RangeTabs value={range} onChange={(k: RangeKey) => setRange(k)} colors={colors} />}
+                    />
                 </div>
-                <div>
-                    <div style={{ color: colors.textMain, fontSize: 20, fontWeight: 800 }}>MICE & Venue Analytics</div>
-                    <div style={{ color: colors.textMuted, fontSize: 12 }}>Venue capacity, event types & seasonal demand</div>
-                </div>
-            </div>
 
-            {loading && <EmptyState icon={Loader2} text="Loading venues…" colors={colors} />}
-            {error && <Card colors={colors}><div style={{ display: 'flex', alignItems: 'center', gap: 10, color: colors.red }}><AlertCircle size={18} /> <span>Failed to load: {error}</span></div></Card>}
-            {ready && !hasVenues && <EmptyState icon={PartyPopper} text="No venue data found." colors={colors} />}
+                {loading ? (
+                    <LoadingState colors={colors} text="Loading venues…" />
+                ) : !hasAnything ? (
+                    <EmptyState icon={PartyPopper} text="No venues or MICE events for this property." colors={colors} />
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                        <div
+                            data-hub-animate
+                            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 14 }}
+                        >
+                            <MiniStat
+                                label="MICE events"
+                                value={fmtInt(curMice.length)}
+                                sub={rangeLabel}
+                                delta={range !== 'all' ? delta(curMice.length, prevMice.length) : undefined}
+                                icon={PartyPopper}
+                                colorKey="blue"
+                                colors={colors}
+                            />
+                            <MiniStat
+                                label="MICE revenue"
+                                value={fmtMoney(miceRevenue, currency)}
+                                sub="segment-scoped only"
+                                delta={range !== 'all' ? delta(miceRevenue, prevMiceRevenue) : undefined}
+                                icon={DollarSign}
+                                colorKey="orange"
+                                colors={colors}
+                            />
+                            <MiniStat
+                                label="Confirmed events"
+                                value={fmtInt(confirmedCount)}
+                                sub={curMice.length ? `${fmtPct(confirmedCount / curMice.length)} of MICE pipeline` : '—'}
+                                delta={range !== 'all' ? delta(confirmedCount, prevConfirmed) : undefined}
+                                icon={CheckCircle2}
+                                colorKey="green"
+                                colors={colors}
+                            />
+                            {hasVenues && (
+                                <>
+                                    <MiniStat
+                                        label="Venues"
+                                        value={fmtInt(venues.length)}
+                                        sub="inventory"
+                                        icon={Building2}
+                                        colorKey="purple"
+                                        colors={colors}
+                                    />
+                                    <MiniStat
+                                        label="Total area"
+                                        value={`${fmtInt(totalArea)} m²`}
+                                        sub="event space"
+                                        icon={Armchair}
+                                        colorKey="green"
+                                        colors={colors}
+                                    />
+                                    <MiniStat
+                                        label="Total capacity"
+                                        value={fmtInt(totalVenueCap)}
+                                        sub="seats"
+                                        icon={Users}
+                                        colorKey="blue"
+                                        colors={colors}
+                                    />
+                                </>
+                            )}
+                        </div>
 
-            {ready && hasVenues && (
-                <>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 16 }}>
-                        <MiniStat label="Venues" value={fmtInt(totalVenues)} sub={`${byProperty.length} properties`} icon={Building2} colorKey="blue" colors={colors} />
-                        <MiniStat label="Total Area" value={fmtInt(totalArea) + ' m²'} sub="event space" icon={Armchair} colorKey="green" colors={colors} />
-                        <MiniStat label="Total Capacity" value={fmtInt(totalVenueCap)} sub="seats" icon={Users} colorKey="purple" colors={colors} />
-                        <MiniStat label="MICE Events" value={fmtInt(miceReqs.length)} sub="in requests" icon={CalendarRange} colorKey="orange" colors={colors} />
-                    </div>
+                        {!hasMiceData ? (
+                            <EmptyState
+                                icon={PartyPopper}
+                                text={`No MICE events in ${rangeLabel}. Venue inventory below is static — widen the period or add MICE bookings.`}
+                                colors={colors}
+                            />
+                        ) : (
+                            <>
+                                {seasonal.length > 0 ? (
+                                    <Card title={`MICE demand & revenue (${currency})`} icon={CalendarRange} colors={colors}>
+                                        <ResponsiveContainer width="100%" height={CHART_H_LG}>
+                                            <ComposedChart data={seasonal} margin={{ top: 8, right: 8, left: 4, bottom: 0 }}>
+                                                <defs>
+                                                    <linearGradient id="micePrevRev" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="0%" stopColor={colors.orange} stopOpacity={0.4} />
+                                                        <stop offset="100%" stopColor={colors.orange} stopOpacity={0.02} />
+                                                    </linearGradient>
+                                                </defs>
+                                                <CartesianGrid stroke={colors.grid} vertical={false} />
+                                                <XAxis dataKey="month" tick={{ fill: colors.textMuted, fontSize: 11 }} stroke={colors.grid} />
+                                                <YAxis yAxisId="l" tick={{ fill: colors.textMuted, fontSize: 11 }} allowDecimals={false} stroke={colors.grid} />
+                                                <YAxis
+                                                    yAxisId="r"
+                                                    orientation="right"
+                                                    tick={{ fill: colors.textMuted, fontSize: 11 }}
+                                                    tickFormatter={(v: number) => fmtMoney(v, '').trim()}
+                                                    stroke={colors.grid}
+                                                />
+                                                <Tooltip
+                                                    {...tip(colors)}
+                                                    formatter={(v: any, n: any) => [
+                                                        n === 'MICE revenue' ? money(v, currency) : fmtInt(v),
+                                                        n,
+                                                    ]}
+                                                />
+                                                <Area
+                                                    yAxisId="r"
+                                                    type="monotone"
+                                                    dataKey="revenue"
+                                                    name="MICE revenue"
+                                                    stroke={colors.orange}
+                                                    fill="url(#micePrevRev)"
+                                                    strokeWidth={2}
+                                                />
+                                                <Line
+                                                    yAxisId="l"
+                                                    type="monotone"
+                                                    dataKey="events"
+                                                    name="Events"
+                                                    stroke={colors.purple}
+                                                    strokeWidth={2}
+                                                    dot={{ r: 3 }}
+                                                />
+                                                <Legend formatter={legendStyle(colors)} />
+                                            </ComposedChart>
+                                        </ResponsiveContainer>
+                                    </Card>
+                                ) : (
+                                    <EmptyState icon={CalendarRange} text="MICE events lack event/check-in dates for monthly trend." colors={colors} />
+                                )}
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
-                        <Card title="Venues by Property" icon={Building2} colors={colors}>
-                            <ResponsiveContainer width="100%" height={260}>
-                                <BarChart data={byProperty} margin={{ top: 4, right: 8, left: -12, bottom: 0 }}>
-                                    <CartesianGrid stroke={colors.grid} vertical={false} />
-                                    <XAxis dataKey="name" tick={{ fill: colors.textMuted, fontSize: 11 }} stroke={colors.grid} interval={0} angle={-12} textAnchor="end" height={50} />
-                                    <YAxis tick={{ fill: colors.textMuted, fontSize: 11 }} stroke={colors.grid} allowDecimals={false} />
-                                    <Tooltip {...tip(colors)} cursor={{ fill: hexA(colors.primary, '12') }} />
-                                    <Bar dataKey="count" name="Venues" radius={[6, 6, 0, 0]}>
-                                        {byProperty.map((_: any, i: number) => <Cell key={i} fill={palette[i % palette.length]} />)}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </Card>
+                                <div data-hub-animate style={{ display: 'grid', gridTemplateColumns: GRID_2, gap: 18 }}>
+                                    {statusMix.length > 0 ? (
+                                        <Card title="MICE status mix" icon={CheckCircle2} colors={colors}>
+                                            <ResponsiveContainer width="100%" height={CHART_H}>
+                                                <BarChart data={statusMix} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
+                                                    <CartesianGrid stroke={colors.grid} horizontal={false} />
+                                                    <XAxis type="number" tick={{ fill: colors.textMuted, fontSize: 11 }} allowDecimals={false} />
+                                                    <YAxis type="category" dataKey="name" tick={{ fill: colors.textMuted, fontSize: 11 }} width={110} />
+                                                    <Tooltip {...tip(colors)} formatter={(v: any) => [fmtInt(v), 'Events']} cursor={{ fill: hexA(colors.primary, '12') }} />
+                                                    <Bar dataKey="value" name="Events" radius={[0, 6, 6, 0]}>
+                                                        {statusMix.map((_, i) => <Cell key={i} fill={pal[i % pal.length]} />)}
+                                                    </Bar>
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </Card>
+                                    ) : null}
 
-                        <Card title="Venue Capacity Tiers" icon={Users} colors={colors}>
-                            <ResponsiveContainer width="100%" height={260}>
-                                <PieChart>
-                                    <Pie data={capacityBands} dataKey="value" nameKey="name" innerRadius={55} outerRadius={95} paddingAngle={2}>
-                                        {capacityBands.map((_, i) => <Cell key={i} fill={palette[i % palette.length]} />)}
-                                    </Pie>
-                                    <Tooltip {...tip(colors)} />
-                                    <Legend formatter={(v: any) => <span style={{ color: colors.textMuted, fontSize: 11 }}>{v}</span>} />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </Card>
+                                    {eventTypes.length > 0 ? (
+                                        <Card title="Event type volume" icon={PartyPopper} colors={colors}>
+                                            <ResponsiveContainer width="100%" height={CHART_H}>
+                                                <BarChart data={eventTypes} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
+                                                    <CartesianGrid stroke={colors.grid} horizontal={false} />
+                                                    <XAxis type="number" tick={{ fill: colors.textMuted, fontSize: 11 }} allowDecimals={false} />
+                                                    <YAxis type="category" dataKey="name" tick={{ fill: colors.textMuted, fontSize: 11 }} width={120} />
+                                                    <Tooltip {...tip(colors)} formatter={(v: any) => [fmtInt(v), 'Events']} cursor={{ fill: hexA(colors.primary, '12') }} />
+                                                    <Bar dataKey="value" name="Events" radius={[0, 6, 6, 0]}>
+                                                        {eventTypes.map((_, i) => <Cell key={i} fill={pal[(i + 2) % pal.length]} />)}
+                                                    </Bar>
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </Card>
+                                    ) : null}
+                                </div>
+                            </>
+                        )}
 
-                        <Card title="MICE Events by Property" icon={CalendarRange} colors={colors}>
-                            {bookingsByProp.length ? (
-                                <ResponsiveContainer width="100%" height={260}>
-                                    <BarChart data={bookingsByProp} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
-                                        <CartesianGrid stroke={colors.grid} horizontal={false} />
-                                        <XAxis type="number" tick={{ fill: colors.textMuted, fontSize: 11 }} stroke={colors.grid} allowDecimals={false} />
-                                        <YAxis type="category" dataKey="name" tick={{ fill: colors.textMuted, fontSize: 11 }} stroke={colors.grid} width={110} />
-                                        <Tooltip {...tip(colors)} cursor={{ fill: hexA(colors.primary, '12') }} />
-                                        <Bar dataKey="value" name="Events" fill={colors.purple} radius={[0, 6, 6, 0]} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            ) : <EmptyState icon={CalendarRange} text="No MICE event bookings" colors={colors} />}
-                        </Card>
+                        {hasVenues && (
+                            <div data-hub-animate style={{ display: 'grid', gridTemplateColumns: GRID_2, gap: 18 }}>
+                                {topVenues.length > 0 && (
+                                    <Card title="Venues by capacity" icon={Building2} colors={colors}>
+                                        <ResponsiveContainer width="100%" height={CHART_H}>
+                                            <BarChart data={topVenues} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
+                                                <CartesianGrid stroke={colors.grid} horizontal={false} />
+                                                <XAxis type="number" tick={{ fill: colors.textMuted, fontSize: 11 }} allowDecimals={false} />
+                                                <YAxis type="category" dataKey="name" tick={{ fill: colors.textMuted, fontSize: 11 }} width={120} />
+                                                <Tooltip {...tip(colors)} formatter={(v: any) => [fmtInt(v), 'Seats']} cursor={{ fill: hexA(colors.primary, '12') }} />
+                                                <Bar dataKey="capacity" name="Capacity" radius={[0, 6, 6, 0]}>
+                                                    {topVenues.map((_, i) => <Cell key={i} fill={pal[i % pal.length]} />)}
+                                                </Bar>
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </Card>
+                                )}
 
-                        <Card title="Event Type Mix" icon={PartyPopper} colors={colors}>
-                            {eventTypes.length ? (
-                                <ResponsiveContainer width="100%" height={260}>
-                                    <PieChart>
-                                        <Pie data={eventTypes} dataKey="value" nameKey="name" innerRadius={55} outerRadius={95} paddingAngle={2}>
-                                            {eventTypes.map((_, i) => <Cell key={i} fill={palette[(i + 2) % palette.length]} />)}
-                                        </Pie>
-                                        <Tooltip {...tip(colors)} />
-                                        <Legend formatter={(v: any) => <span style={{ color: colors.textMuted, fontSize: 11 }}>{v}</span>} />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            ) : <EmptyState icon={PartyPopper} text="No event types" colors={colors} />}
-                        </Card>
-
-                        <Card title="Seasonal Demand (MICE events / month)" icon={CalendarRange} colors={colors}>
-                            {seasonal.length ? (
-                                <ResponsiveContainer width="100%" height={260}>
-                                    <LineChart data={seasonal} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-                                        <CartesianGrid stroke={colors.grid} vertical={false} />
-                                        <XAxis dataKey="month" tick={{ fill: colors.textMuted, fontSize: 11 }} stroke={colors.grid} />
-                                        <YAxis tick={{ fill: colors.textMuted, fontSize: 11 }} stroke={colors.grid} allowDecimals={false} />
-                                        <Tooltip {...tip(colors)} />
-                                        <Line type="monotone" dataKey="events" name="Events" stroke={colors.orange} strokeWidth={2} dot={{ r: 3 }} />
-                                    </LineChart>
-                                </ResponsiveContainer>
-                            ) : <EmptyState icon={CalendarRange} text="No seasonal data" colors={colors} />}
-                        </Card>
-
-                        <Card title="Venue Detail" icon={Building2} colors={colors}>
-                            <div style={{ overflowX: 'auto' }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                                    <thead>
-                                        <tr style={{ color: colors.textMuted }}>
-                                            <Th colors={colors}>Venue</Th><Th colors={colors}>Property</Th><Th colors={colors}>Area</Th><Th colors={colors}>Capacity</Th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {venues.map((v, i) => {
-                                            const shapes = Array.isArray(v.shapes) ? v.shapes : [];
-                                            const cap = shapes.length ? shapes.reduce((s: number, sh: any) => s + num(sh.capacity), 0) : num(v.capacity);
-                                            return (
-                                                <tr key={v.id || i} style={{ borderTop: `1px solid ${colors.border}`, color: colors.textMain }}>
-                                                    <Td colors={colors}>{v.name || 'Unnamed'}</Td>
-                                                    <Td colors={colors}>{propMap[v.propertyId] || v.propertyId || '—'}</Td>
-                                                    <Td colors={colors}>{fmtInt(num(v.area))} m²</Td>
-                                                    <Td colors={colors}>{fmtInt(cap)}</Td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
+                                {capacityBands.length > 0 && (
+                                    <Card title="Venue capacity tiers" icon={Users} colors={colors}>
+                                        <ResponsiveContainer width="100%" height={CHART_H}>
+                                            <BarChart data={capacityBands} margin={{ top: 4, right: 8, left: 4, bottom: 0 }}>
+                                                <CartesianGrid stroke={colors.grid} vertical={false} />
+                                                <XAxis dataKey="name" tick={{ fill: colors.textMuted, fontSize: 11 }} stroke={colors.grid} />
+                                                <YAxis tick={{ fill: colors.textMuted, fontSize: 11 }} allowDecimals={false} stroke={colors.grid} />
+                                                <Tooltip {...tip(colors)} formatter={(v: any) => [fmtInt(v), 'Venues']} cursor={{ fill: hexA(colors.primary, '12') }} />
+                                                <Bar dataKey="value" name="Venues" radius={[6, 6, 0, 0]}>
+                                                    {capacityBands.map((_, i) => <Cell key={i} fill={pal[(i + 1) % pal.length]} />)}
+                                                </Bar>
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </Card>
+                                )}
                             </div>
-                        </Card>
+                        )}
+
+                        {hasVenues && (
+                            <Card title="Venue detail" icon={Armchair} colors={colors}>
+                                <div style={{ overflowX: 'auto' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                                        <thead>
+                                            <tr style={{ color: colors.textMuted, textAlign: 'left' }}>
+                                                <th style={{ padding: '8px 10px' }}>Venue</th>
+                                                <th style={{ padding: '8px 10px', textAlign: 'right' }}>Area</th>
+                                                <th style={{ padding: '8px 10px', textAlign: 'right' }}>Capacity</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {venues.map((v, i) => (
+                                                <tr key={v.id || i} style={{ borderTop: `1px solid ${colors.border}`, color: colors.textMain }}>
+                                                    <td style={{ padding: '8px 10px' }}>{v.name || 'Unnamed'}</td>
+                                                    <td style={{ padding: '8px 10px', textAlign: 'right' }}>{fmtInt(num(v.area))} m²</td>
+                                                    <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600 }}>{fmtInt(venueCap(v))}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </Card>
+                        )}
                     </div>
-                </>
-            )}
-        </div>
+                )}
+            </div>
+        </PageShell>
     );
 }
-
-function Th({ children, colors }: any) { return <th style={{ textAlign: 'left', padding: '8px 10px', fontWeight: 700 }}>{children}</th>; }
-function Td({ children, colors }: any) { return <td style={{ padding: '8px 10px' }}>{children}</td>; }

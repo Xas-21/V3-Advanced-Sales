@@ -1,7 +1,7 @@
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
 import { jsPDF } from 'jspdf';
-import { deleteFileFromCloudinary, uploadFileToCloudinary } from './cloudinaryUpload';
+import { deleteFileLocal, mediaUrl, uploadFileLocal } from './localUpload';
 import { apiUrl } from './backendApi';
 
 export type ContractStatus = 'Generated' | 'Signed' | 'Expired';
@@ -223,14 +223,9 @@ export async function deleteContractTemplate(templateId: string): Promise<void> 
     const target = all.find((t) => String(t.id) === String(templateId));
     if (target?.templatePublicId) {
         try {
-            await deleteFileFromCloudinary({
-                publicId: target.templatePublicId,
-                resourceType: 'raw',
-                deliveryType: 'upload',
-                invalidate: true,
-            });
+            await deleteFileLocal(target.templatePublicId);
         } catch {
-            /* proceed with system delete even if cloud delete fails */
+            /* proceed with system delete even if file delete fails */
         }
     }
     try {
@@ -254,9 +249,7 @@ export async function uploadContractTemplate(params: {
     const buf = await params.file.arrayBuffer();
     const bytes = new Uint8Array(buf);
     const variables = parseVariablesFromDocxBytes(bytes);
-    const uploaded = await uploadFileToCloudinary(params.file, {
-        folder: `visatour/contracts/templates/${params.propertyId || 'global'}`,
-    });
+    const uploaded = await uploadFileLocal(params.file, { folder: 'contracts' });
     const t: ContractTemplate = {
         id: `tpl-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         propertyId: params.propertyId,
@@ -313,7 +306,7 @@ export async function generateContractFromTemplate(params: {
     let docBytes: Uint8Array;
     if (tpl.templateUrl) {
         try {
-            const response = await fetch(tpl.templateUrl);
+            const response = await fetch(mediaUrl(tpl.templateUrl), { credentials: 'include' });
             if (!response.ok) throw new Error(`Template fetch failed (${response.status})`);
             docBytes = new Uint8Array(await response.arrayBuffer());
         } catch {
@@ -500,9 +493,7 @@ export function deleteContractRecord(recordId: string): void {
 
 export async function attachSignedContractFile(recordId: string, file: File): Promise<void> {
     const buf = await file.arrayBuffer();
-    const uploaded = await uploadFileToCloudinary(file, {
-        folder: 'visatour/contracts/signed',
-    });
+    const uploaded = await uploadFileLocal(file, { folder: 'contracts' });
     const all = readJson<ContractRecord[]>(RECORD_KEY, []);
     const next = all.map((r) =>
         r.id === recordId

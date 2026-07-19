@@ -33,6 +33,7 @@ import {
     mergeChartRowsWithLyComparison,
     shiftRangeToComparisonYear,
 } from './chartVsYearCompare';
+import AccountRatesModal from './AccountRatesModal';
 
 export interface CRMProfileViewProps {
     lead: any;
@@ -45,6 +46,9 @@ export interface CRMProfileViewProps {
     onOpenRequest?: (requestId: string) => void;
     onViewAccountRequests?: () => void;
     onEditAccount?: () => void;
+    /** Property context for Rates (room types / segments / occupancy). */
+    activeProperty?: any;
+    segmentOptions?: string[];
     /** View-only profile: hide all create/edit/delete controls. */
     readOnly?: boolean;
     /** Delete account (Head of Sales + Admin). */
@@ -128,6 +132,8 @@ export default function CRMProfileView({
     onMergeAccountIntoCurrent,
     onAssignAccountOwner,
     onScanContactCard,
+    activeProperty,
+    segmentOptions,
 }: CRMProfileViewProps) {
     const colors = theme.colors;
     const selectedCurrency = resolveCurrencyCode(currency);
@@ -333,7 +339,7 @@ export default function CRMProfileView({
     const initial = (lead.company || '?').toString().charAt(0) || '?';
 
     const [showActivityModal, setShowActivityModal] = useState(false);
-    const [showRatesComingSoon, setShowRatesComingSoon] = useState(false);
+    const [showRatesModal, setShowRatesModal] = useState(false);
     const [editingActivityId, setEditingActivityId] = useState<string | null>(null);
     const [activityForm, setActivityForm] = useState({ title: '', body: '' });
     const [tagDraft, setTagDraft] = useState('');
@@ -640,7 +646,7 @@ export default function CRMProfileView({
                     )}
                     <button
                         type="button"
-                        onClick={() => setShowRatesComingSoon(true)}
+                        onClick={() => setShowRatesModal(true)}
                         className="px-4 py-2 rounded border font-bold flex items-center gap-2 hover:opacity-90 transition-opacity"
                         style={{
                             borderColor: colors.primary,
@@ -1661,56 +1667,17 @@ export default function CRMProfileView({
                 </div>
             )}
 
-            {showRatesComingSoon && (
-                <div
-                    className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-                    onClick={() => setShowRatesComingSoon(false)}
-                >
-                    <div
-                        className="relative w-full max-w-sm p-6 rounded-2xl border text-center shadow-2xl animate-in zoom-in-95 duration-200"
-                        style={{
-                            backgroundColor: colors.card,
-                            borderColor: colors.primary + '55',
-                            boxShadow: `0 0 32px ${colors.primary}33`,
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <button
-                            type="button"
-                            onClick={() => setShowRatesComingSoon(false)}
-                            className="absolute top-4 right-4 p-1 rounded-lg hover:opacity-70"
-                            style={{ color: colors.textMuted }}
-                            aria-label="Close"
-                        >
-                            <X size={18} />
-                        </button>
-                        <div
-                            className="inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest animate-pulse mb-4"
-                            style={{
-                                color: colors.primary,
-                                backgroundColor: `${colors.primary}18`,
-                                boxShadow: `0 0 14px ${colors.primary}55`,
-                            }}
-                        >
-                            Coming Soon
-                        </div>
-                        <h3 className="text-lg font-bold mb-2" style={{ color: colors.textMain }}>
-                            Account Rates
-                        </h3>
-                        <p className="text-sm leading-relaxed" style={{ color: colors.textMuted }}>
-                            Rate management for this account is under development. Check back later.
-                        </p>
-                        <button
-                            type="button"
-                            onClick={() => setShowRatesComingSoon(false)}
-                            className="mt-6 w-full py-2.5 rounded-lg font-bold text-sm"
-                            style={{ backgroundColor: colors.primary, color: '#000' }}
-                        >
-                            OK
-                        </button>
-                    </div>
-                </div>
-            )}
+            <AccountRatesModal
+                open={showRatesModal}
+                onClose={() => setShowRatesModal(false)}
+                theme={theme}
+                accountId={destAccountId}
+                accountName={String(lead.company || lead.name || '')}
+                propertyId={String(lead.propertyId || activeProperty?.id || '').trim()}
+                activeProperty={activeProperty}
+                segmentOptions={segmentOptions}
+                readOnly={readOnly}
+            />
 
             {showActivityModal && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">

@@ -35,13 +35,13 @@ export default function DashboardHubComingSoon({ tabLabel, colors }: DashboardHu
                         boxShadow: `0 0 14px ${colors.primary}55`,
                     }}
                 >
-                    Coming Soon
+                    Feature coming soon
                 </div>
                 <h3 className="text-3xl font-bold mb-4" style={{ color: colors.textMain }}>
                     {tabLabel}
                 </h3>
                 <p className="text-sm leading-relaxed" style={{ color: colors.textMuted }}>
-                    This analysis view is under development. Check back later for dedicated {tabLabel} insights and
+                    This view is still under development. Check back later for dedicated {tabLabel} insights and
                     reporting.
                 </p>
             </div>

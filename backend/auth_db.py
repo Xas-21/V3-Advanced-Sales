@@ -173,7 +173,16 @@ def resolve_session(token: Optional[str]) -> Optional[dict]:
             u = cur.fetchone()
             if not u or (u["status"] or "").lower() != "active" or int(u["session_version"] or 0) != ver:
                 return None
-            cur.execute("UPDATE sessions SET last_seen = NOW() WHERE token = %s;", (token,))
+            # Throttle last_seen writes: at most once per 5 minutes per session.
+            cur.execute(
+                """
+                UPDATE sessions
+                SET last_seen = NOW()
+                WHERE token = %s
+                  AND (last_seen IS NULL OR last_seen < NOW() - interval '5 minutes');
+                """,
+                (token,),
+            )
             conn.commit()
     return get_user_by_id(uid)
 

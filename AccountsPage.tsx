@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Search, Plus, Building2, Camera, GitMerge, AlertCircle } from 'lucide-react';
+import { Search, Plus, Building2, Camera, GitMerge, AlertCircle, ChevronRight } from 'lucide-react';
 import CRMProfileView from './CRMProfileView';
 import AddAccountModal from './AddAccountModal';
 import { accountToLead, leadToAccount, contactDisplayName } from './accountLeadMapping';
@@ -20,8 +20,8 @@ import {
     flattenCrmLeads,
     filterRequestsForAccount,
     filterSalesCallsForAccount,
+    buildRequestStatsByAccount,
 } from './accountProfileData';
-import { computeRequestRevenueBreakdownNoTax } from './operationalSegmentRevenue';
 import { formatCompactCurrency } from './formatCompactCurrency';
 import {
     isAccountsPageReadOnly,
@@ -51,8 +51,10 @@ import {
     normalizeAccountNameKey,
     isScanDuplicateQueueItemStale,
     isScannedContactOnAccount,
+    buildSystemDuplicateItems,
 } from './accountDuplicateUtils';
 import { getAccountProfileGaps, isAccountProfileIncomplete, meaningfulContactEmail, meaningfulContactPhone } from './accountProfileCompleteness';
+import { getResolvedFormSchema } from './formConfigurations';
 import {
     deleteAccountDuplicateQueueItem,
     extractBusinessCard,
@@ -66,6 +68,7 @@ const DEFAULT_CONTACT_COLUMN_ORDER = ['contact', 'segment', 'city', 'phone', 'em
 
 type AccountsListSort = 'name_az' | 'rev_high' | 'rev_low';
 type AccountsPageTab = 'accounts' | 'contacts';
+type AccountsListPageSize = 30 | 60 | 100;
 
 interface AccountsPageProps {
     theme: any;
@@ -129,6 +132,8 @@ export default function AccountsPage({
     const [search, setSearch] = useState('');
     const [listTab, setListTab] = useState<AccountsPageTab>('accounts');
     const [listSort, setListSort] = useState<AccountsListSort>('name_az');
+    const [listPageSize, setListPageSize] = useState<AccountsListPageSize>(30);
+    const [listCurrentPage, setListCurrentPage] = useState(1);
     const [cityFilter, setCityFilter] = useState('');
     const [segmentFilter, setSegmentFilter] = useState('');
     const [filterWithContract, setFilterWithContract] = useState(false);
@@ -233,20 +238,10 @@ export default function AccountsPage({
         accountName: 'Account Name',
     };
 
-    const requestStatsByAccountId = useMemo(() => {
-        const m = new Map<string, { revSar: number; reqCount: number }>();
-        for (const a of accounts) {
-            const id = String(a?.id ?? '');
-            if (!id) continue;
-            const reqs = filterRequestsForAccount(sharedRequests, id, a?.name);
-            let revSar = 0;
-            for (const r of reqs) {
-                revSar += computeRequestRevenueBreakdownNoTax(r).totalLineNoTax;
-            }
-            m.set(id, { revSar, reqCount: reqs.length });
-        }
-        return m;
-    }, [accounts, sharedRequests]);
+    const requestStatsByAccountId = useMemo(
+        () => buildRequestStatsByAccount(accounts, sharedRequests),
+        [accounts, sharedRequests]
+    );
 
     const segmentFilterOptions = useMemo(() => {
         const fromProp =
@@ -360,75 +355,45 @@ export default function AccountsPage({
         return rows;
     }, [sortedFiltered]);
 
-    const systemDuplicateItems = useMemo(() => {
-        const byName = new Map<string, any[]>();
-        for (const a of accountsSameProperty) {
-            const key = normalizeAccountNameKey(String(a?.name || ''));
-            if (!key) continue;
-            if (!byName.has(key)) byName.set(key, []);
-            byName.get(key)!.push(a);
+    const listTotalItems = listTab === 'accounts' ? sortedFiltered.length : sortedContactRows.length;
+    const listTotalPages = Math.max(1, Math.ceil(listTotalItems / listPageSize) || 1);
+
+    useEffect(() => {
+        setListCurrentPage(1);
+    }, [search, cityFilter, segmentFilter, filterWithContract, filterWithoutContract, listSort, listTab, listPageSize]);
+
+    useEffect(() => {
+        if (listCurrentPage > listTotalPages) setListCurrentPage(listTotalPages);
+    }, [listCurrentPage, listTotalPages]);
+
+    const pagedAccounts = useMemo(() => {
+        const start = (listCurrentPage - 1) * listPageSize;
+        return sortedFiltered.slice(start, start + listPageSize);
+    }, [sortedFiltered, listCurrentPage, listPageSize]);
+
+    const pagedContacts = useMemo(() => {
+        const start = (listCurrentPage - 1) * listPageSize;
+        return sortedContactRows.slice(start, start + listPageSize);
+    }, [sortedContactRows, listCurrentPage, listPageSize]);
+
+    const listShowingFrom = listTotalItems > 0 ? (listCurrentPage - 1) * listPageSize + 1 : 0;
+    const listShowingTo =
+        listTotalItems > 0 ? Math.min(listCurrentPage * listPageSize, listTotalItems) : 0;
+
+    const listPageNumbers = useMemo(() => {
+        if (listTotalPages <= 12) {
+            return Array.from({ length: listTotalPages }, (_, i) => i + 1);
         }
-        const out: any[] = [];
-        const pushPair = (left: any, right: any, reason: string, key: string) => {
-            const id = `sys-${reason}-${key}-${String(left?.id || '')}-${String(right?.id || '')}`;
-            out.push({
-                id,
-                source: 'system-detection',
-                reason,
-                scannedAccountName: String(left?.name || ''),
-                candidateAccountId: String(right?.id || ''),
-                candidateAccountName: String(right?.name || ''),
-                baseAccountId: String(left?.id || ''),
-                baseAccountName: String(left?.name || ''),
-                scannedContact: (left?.contacts && left.contacts[0]) || null,
-                status: 'open',
-            });
-        };
-        for (const [k, list] of byName.entries()) {
-            if (list.length < 2) continue;
-            for (let i = 0; i < list.length; i += 1) {
-                for (let j = i + 1; j < list.length; j += 1) {
-                    pushPair(list[i], list[j], 'same-name', k);
-                }
-            }
-        }
-        const seenContactKey = new Set<string>();
-        for (let i = 0; i < accountsSameProperty.length; i += 1) {
-            const a = accountsSameProperty[i];
-            const contactsA = Array.isArray(a?.contacts) ? a.contacts : [];
-            for (let j = i + 1; j < accountsSameProperty.length; j += 1) {
-                const b = accountsSameProperty[j];
-                const contactsB = Array.isArray(b?.contacts) ? b.contacts : [];
-                let reason = '';
-                outer: for (const ca of contactsA) {
-                    const ea = meaningfulContactEmail(ca?.email);
-                    const pa = meaningfulContactPhone(ca?.phone);
-                    for (const cb of contactsB) {
-                        const eb = meaningfulContactEmail(cb?.email);
-                        const pb = meaningfulContactPhone(cb?.phone);
-                        if (ea && eb && ea === eb) {
-                            reason = `same-contact-email:${ea}`;
-                            break outer;
-                        }
-                        if (pa && pb && pa === pb) {
-                            reason = `same-contact-phone:${pa}`;
-                            break outer;
-                        }
-                    }
-                }
-                if (!reason || seenContactKey.has(reason + `:${a.id}:${b.id}`)) continue;
-                seenContactKey.add(reason + `:${a.id}:${b.id}`);
-                pushPair(a, b, reason, `${a.id}-${b.id}`);
-            }
-        }
-        const seen = new Set<string>();
-        return out.filter((item) => {
-            const key = `${item.baseAccountId}|${item.candidateAccountId}|${item.reason}`;
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
-        });
-    }, [accountsSameProperty]);
+        let start = Math.max(1, listCurrentPage - 3);
+        let end = Math.min(listTotalPages, start + 6);
+        start = Math.max(1, end - 6);
+        return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+    }, [listCurrentPage, listTotalPages]);
+
+    const systemDuplicateItems = useMemo(
+        () => buildSystemDuplicateItems(accountsSameProperty),
+        [accountsSameProperty]
+    );
 
     const activeScanDuplicateQueue = useMemo(
         () => duplicateQueue.filter((item) => !isScanDuplicateQueueItemStale(item, accountsSameProperty)),
@@ -468,11 +433,16 @@ export default function AccountsPage({
 
     const propertyIdForForms = activeProperty?.id ? String(activeProperty.id) : undefined;
 
+    const accountFormSchema = useMemo(
+        () => getResolvedFormSchema(propertyIdForForms, 'account_new', activeProperty),
+        [propertyIdForForms, activeProperty]
+    );
+
     const incompleteAccounts = useMemo(() => {
         return accountsSameProperty
-            .filter((a: any) => isAccountProfileIncomplete(a, propertyIdForForms, activeProperty))
+            .filter((a: any) => isAccountProfileIncomplete(a, propertyIdForForms, activeProperty, accountFormSchema))
             .sort((a: any, b: any) => compareAccountNames(a?.name, b?.name));
-    }, [accountsSameProperty, propertyIdForForms, activeProperty]);
+    }, [accountsSameProperty, propertyIdForForms, activeProperty, accountFormSchema]);
 
     const openAccountForEdit = (account: any) => {
         if (!account || profileReadOnly) return;
@@ -976,6 +946,8 @@ export default function AccountsPage({
                     }
                     onAssignAccountOwner={allowAccountMergeAndOwner ? handleAssignAccountOwner : undefined}
                     onScanContactCard={profileReadOnly ? undefined : handleScanContactForCurrentProfile}
+                    activeProperty={activeProperty}
+                    segmentOptions={segmentOptions}
                 />
                 <AddAccountModal
                     isOpen={showEditAccountModal}
@@ -1047,6 +1019,12 @@ export default function AccountsPage({
                                   : sortedFiltered.length === accounts.length
                                     ? `${sortedContactRows.length} contacts`
                                     : `${sortedContactRows.length} contacts (filtered)`}
+                            {listTotalItems > 0 ? (
+                                <span className="opacity-70">
+                                    {' '}
+                                    · Showing {listShowingFrom}–{listShowingTo}
+                                </span>
+                            ) : null}
                         </p>
                     </div>
                     <div className="flex flex-col items-center gap-2.5 w-full min-w-0 max-w-3xl justify-self-center mx-auto lg:px-2">
@@ -1106,6 +1084,19 @@ export default function AccountsPage({
                                         <option value="rev_low">Lowest Rev</option>
                                     </>
                                 )}
+                            </select>
+                        </div>
+                        <div className="flex flex-col gap-1 w-full min-w-[8rem] max-w-[10rem]">
+                            <label className="text-[10px] font-bold uppercase tracking-wider opacity-60 text-center" style={{ color: colors.textMuted }}>Per page</label>
+                            <select
+                                value={listPageSize}
+                                onChange={(e) => setListPageSize(Number(e.target.value) as AccountsListPageSize)}
+                                className="w-full px-3 py-2 rounded-xl border text-sm outline-none font-bold"
+                                style={{ backgroundColor: colors.bg, borderColor: colors.border, color: colors.textMain }}
+                            >
+                                <option value={30}>30</option>
+                                <option value={60}>60</option>
+                                <option value={100}>100</option>
                             </select>
                         </div>
                     </div>
@@ -1188,8 +1179,8 @@ export default function AccountsPage({
                 </div>
             </div>
 
-            <div className="flex-1 overflow-auto p-6 min-h-0">
-                <div className="flex items-center gap-1 mb-4">
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                <div className="shrink-0 flex items-center gap-1 px-6 pt-6 pb-2">
                     {(['accounts', 'contacts'] as AccountsPageTab[]).map((tab) => {
                         const active = listTab === tab;
                         return (
@@ -1212,6 +1203,7 @@ export default function AccountsPage({
                         );
                     })}
                 </div>
+                <div className="flex-1 overflow-auto px-6 pb-4 min-h-0">
                 {listTab === 'accounts' ? (
                 !sortedFiltered.length ? (
                     <div className="flex flex-col items-center justify-center py-20 text-center" style={{ color: colors.textMuted }}>
@@ -1239,7 +1231,7 @@ export default function AccountsPage({
                             </tr>
                         </thead>
                         <tbody>
-                            {sortedFiltered.map((a: any) => (
+                            {pagedAccounts.map((a: any) => (
                                 <tr
                                     key={a.id}
                                     onClick={() => setProfileLead(accountToLead(a))}
@@ -1290,7 +1282,7 @@ export default function AccountsPage({
                             </tr>
                         </thead>
                         <tbody>
-                            {sortedContactRows.map((row) => (
+                            {pagedContacts.map((row) => (
                                 <tr
                                     key={row.key}
                                     onClick={() => setProfileLead(accountToLead(row.account))}
@@ -1319,6 +1311,58 @@ export default function AccountsPage({
                         </tbody>
                     </table>
                 )}
+                </div>
+                {listTotalItems > 0 ? (
+                    <div
+                        className="shrink-0 flex flex-col sm:flex-row items-center justify-center gap-3 px-6 py-3 border-t"
+                        style={{ borderColor: colors.border, backgroundColor: colors.card }}
+                    >
+                        <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: colors.textMuted }}>
+                            Page {listCurrentPage} of {listTotalPages}
+                            <span className="opacity-70 font-medium normal-case tracking-normal">
+                                {' '}
+                                · {listShowingFrom}–{listShowingTo} of {listTotalItems}
+                            </span>
+                        </span>
+                        <div className="flex items-center gap-1 flex-wrap justify-center max-w-full overflow-x-auto pb-1">
+                            <button
+                                type="button"
+                                disabled={listCurrentPage <= 1}
+                                onClick={() => setListCurrentPage(listCurrentPage - 1)}
+                                className="p-2 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+                                style={{ color: colors.textMain }}
+                                aria-label="Previous page"
+                            >
+                                <ChevronRight size={16} className="rotate-180" />
+                            </button>
+                            {listPageNumbers.map((pageNum) => (
+                                <button
+                                    type="button"
+                                    key={pageNum}
+                                    onClick={() => setListCurrentPage(pageNum)}
+                                    className={`min-w-[2.25rem] h-9 px-2 rounded-lg flex items-center justify-center text-xs font-bold transition-all ${pageNum === listCurrentPage ? 'shadow-lg' : 'hover:bg-white/5'}`}
+                                    style={{
+                                        backgroundColor: pageNum === listCurrentPage ? colors.primary : 'transparent',
+                                        color: pageNum === listCurrentPage ? '#000' : colors.textMain,
+                                        boxShadow: pageNum === listCurrentPage ? `0 4px 12px ${colors.primary}40` : 'none',
+                                    }}
+                                >
+                                    {pageNum}
+                                </button>
+                            ))}
+                            <button
+                                type="button"
+                                disabled={listCurrentPage >= listTotalPages}
+                                onClick={() => setListCurrentPage(listCurrentPage + 1)}
+                                className="p-2 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+                                style={{ color: colors.textMain }}
+                                aria-label="Next page"
+                            >
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
+                    </div>
+                ) : null}
             </div>
 
             <AddAccountModal
@@ -1451,7 +1495,7 @@ export default function AccountsPage({
                             {incompleteAccounts.length === 0 ? (
                                 <p className="text-sm" style={{ color: colors.textMuted }}>All accounts have complete profiles.</p>
                             ) : incompleteAccounts.map((account: any) => {
-                                const gaps = getAccountProfileGaps(account, propertyIdForForms, activeProperty);
+                                const gaps = getAccountProfileGaps(account, propertyIdForForms, activeProperty, accountFormSchema);
                                 return (
                                     <div
                                         key={account.id}

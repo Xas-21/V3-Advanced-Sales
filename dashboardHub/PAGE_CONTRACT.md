@@ -10,15 +10,22 @@ AS.tsx — each tab must be its own file in `dashboardHub/pages/`.
 - Use ONLY the `colors` prop for all styling (no Tailwind arbitrary colors). `colors` has:
   `bg, card, primary, textMain, textMuted, border, grid, blue, green, red, orange, yellow, purple,
    blueBg, greenBg, redBg, orangeBg, purpleBg` (and `*Bg` variants are hex+alpha like `#3b82f618`).
-- Data fetching: `import { apiUrl } from "../../backendApi";` then
-  `const res = await fetch(apiUrl("/api/<endpoint>")); const data = await res.json();`
-  The session cookie is auto-sent (same-origin). NO manual Authorization header.
+- **Data:** prefer `useHubData()` from `HubDataContext` for requests, accounts, CRM, promotions,
+  financials, users, and property scope. Local `fetch` only for inventory not in context
+  (rooms, venues, contract templates, etc.).
 - Charts: `import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, Tooltip,
    ResponsiveContainer, AreaChart, Area, CartesianGrid, Legend } from "recharts";`
 - Icons: `import { <Icon> } from "lucide-react";` (e.g. BarChart3, TrendingUp, Users, etc.)
-- Do NOT modify AS.tsx, DashboardHubShell.tsx, dashboardHubTabs.ts, or backendApi.ts.
-- Keep each file self-contained (its own helper functions). No shared new utils.
-- Use a `Card`-like wrapper: a div with `style={{ backgroundColor: colors.card, borderColor: colors.border, borderRadius: 16, borderWidth: 1 }}` and padding.
+- Do NOT modify AS.tsx, dashboardHubTabs.ts, or backendApi.ts unless explicitly scoped.
+- **Shared kit:** import UI helpers from `dashboardHub/analyticsKit.tsx` (Hero, MiniStat, Card,
+  RangeTabs, FilterChips, EmptyState, LoadingState, Section, PageShell, contrastOn, etc.).
+- **Motion:** import `useHubPageEnter` from `dashboardHub/hubMotion.ts` (or re-export via analyticsKit).
+  Wrap page content in `PageShell` when using enter animation. Put `data-hub-animate` on Hero,
+  KPI row, and primary chart section — not on every chart node.
+- **Chrome:** `DashboardHubShell.tsx` and `DashboardHubTabBar.tsx` may be edited for shared hub chrome.
+- **shadcn:** structural components (Skeleton, Separator, Table, Tabs, Badge) are OK via `@/components/ui/*`.
+  Chart colors and surfaces still come from `colors`, not shadcn theme tokens.
+- Motion uses transform/opacity only; honor `prefers-reduced-motion` (handled by `useHubPageEnter`).
 - Add a date-range filter (Last 7 / 30 / 90 days / All) where time-series make sense, computed in JS from `createdAt`/`checkIn`/`date` fields.
 
 ## Endpoints & real field shapes (tenant-scoped server-side; call WITHOUT propertyId)
@@ -67,6 +74,5 @@ Be thoughtful per tab name. Handle EMPTY data gracefully (show "No data yet" sta
                                         revenue per rep, leaderboard)
 
 ## Verification
-After writing, run `cd /docker/hermes-agent-ypek/data/V2-Advanced-Sales && npx tsc --noEmit -p tsconfig.json`
-is NOT required; instead ensure valid TSX. The orchestrator will rebuild. Do not run the dev server.
+After writing, ensure valid TSX. The orchestrator will rebuild. Do not run the dev server.
 Return a one-line summary per file you created.

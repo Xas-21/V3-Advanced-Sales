@@ -1,44 +1,44 @@
 services:
-  as-postgres-v2:
+  # Live local DB: container as-postgres-V2 / volume as-postgres-v2-data.
+  # Alias `as-postgres` matches DATABASE_URL host. User/db come from .env
+  # (existing volume keeps its original role — do not recreate this volume casually).
+  as-postgres:
     image: postgres:18-alpine
     container_name: as-postgres-V2
     environment:
-      - POSTGRES_USER=neondb_owner
+      - POSTGRES_USER=${POSTGRES_USER:-as_owner}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=neondb
+      - POSTGRES_DB=${POSTGRES_DB:-as-postgres}
     healthcheck:
       test:
         - CMD-SHELL
-        - pg_isready -U neondb_owner -d neondb
+        - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
     ports:
-    - 127.0.0.1:5433:5432
+      - 127.0.0.1:5433:5432
     volumes:
       - as-postgres-v2-data:/var/lib/postgresql
+    networks:
+      default:
+        aliases:
+          - as-postgres
+
   as-backend:
     build:
       context: .
       dockerfile: Dockerfile.backend
     container_name: as-backend
+    # Local: reload on ./backend mounts (prod compose uses image CMD without reload)
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     environment:
       - USE_FILE_STORAGE=false
       - DATABASE_URL=${DATABASE_URL}
       - SESSION_SECRET=${SESSION_SECRET}
-      - CORS_ORIGINS=https://app.as-saas.com
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.as-backend.rule=Host(`app.as-saas.com`) && PathPrefix(`/api`)
-      - traefik.http.routers.as-backend.entrypoints=websecure
-      - traefik.http.routers.as-backend.tls.certresolver=letsencrypt
-      - traefik.http.services.as-backend.loadbalancer.server.port=8000
-      # WebSocket live-updates endpoint — must route to backend, not frontend
-      - traefik.http.routers.as-backend-ws.rule=Host(`app.as-saas.com`) && PathPrefix(`/ws`)
-      - traefik.http.routers.as-backend-ws.entrypoints=websecure
-      - traefik.http.routers.as-backend-ws.tls.certresolver=letsencrypt
-      - traefik.http.routers.as-backend-ws.priority=50
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      - UPLOADS_DIR=/data/uploads
     healthcheck:
       test:
         - CMD
@@ -54,26 +54,30 @@ services:
       - 8000:8000
     volumes:
       - ./backend:/app
+      - as-uploads-data:/data/uploads
     depends_on:
-      - as-postgres-v2
+      as-postgres:
+        condition: service_healthy
+
   as-frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend
     container_name: as-frontend
-    command: sh -c "npm install --no-audit --no-fund && npm run dev -- --host 0.0.0.0"
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.as-frontend.rule=Host(`app.as-saas.com`)
-      - traefik.http.routers.as-frontend.entrypoints=websecure
-      - traefik.http.routers.as-frontend.tls.certresolver=letsencrypt
-      - traefik.http.services.as-frontend.loadbalancer.server.port=5173
+    # Local feature work only — Vite HMR. For production see docker-compose.prod.yml
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    command: npm run dev -- --host 0.0.0.0
     restart: unless-stopped
+    ports:
+      - 5173:5173
     volumes:
       - ./:/app
       - as-frontend-node-modules:/app/node_modules
     depends_on:
       - as-backend
+
 volumes:
-  as-frontend-node-modules: 
+  as-frontend-node-modules:
   as-postgres-v2-data:
+  as-uploads-data:

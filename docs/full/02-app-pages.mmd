@@ -1,0 +1,54 @@
+flowchart TB
+  Shell["AS.tsx shell"]
+
+  subgraph Sidebar["Sidebar mainNavItems"]
+    D["dashboard — Dashboard Hub"]
+    C["calendar — Calendar"]
+    T["todo — To Do"]
+    E["events — Events and Catering"]
+    R["requests — Requests Management"]
+    CRM["crm — CRM"]
+    CT["contracts — Contracts"]
+    A["accounts — Accounts"]
+    P["promotions — Promotions"]
+  end
+
+  subgraph Header["Also reachable views"]
+    RP["reports — Reports"]
+    ST["settings — Settings"]
+  end
+
+  subgraph Files["Primary module files"]
+    F1["dashboardHub/DashboardHubShell.tsx"]
+    F2["calendar UI in AS.tsx"]
+    F3["todo / tasks UI in AS.tsx"]
+    F4["events UI in AS.tsx"]
+    F5["RequestsManager.tsx"]
+    F6["CRM.tsx + CRMProfileView.tsx"]
+    F7["Contracts.tsx"]
+    F8["AccountsPage.tsx"]
+    F9["PromotionsPage.tsx"]
+    F10["Reports.tsx"]
+    F11["Settings.tsx"]
+  end
+
+  subgraph Global["Always-on overlays"]
+    M["messenger/MessengerWidget.tsx"]
+    MC["messenger/MessengerContext.tsx"]
+  end
+
+  Shell --> D & C & T & E & R & CRM & CT & A & P
+  Shell --> RP & ST
+  D --> F1
+  C --> F2
+  T --> F3
+  E --> F4
+  R --> F5
+  CRM --> F6
+  CT --> F7
+  A --> F8
+  P --> F9
+  RP --> F10
+  ST --> F11
+  Shell --> M
+  M --> MC

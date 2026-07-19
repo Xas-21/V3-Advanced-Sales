@@ -12,81 +12,141 @@
 import { useEffect, useRef } from 'react';
 
 interface WebSocketMessage {
-  type: 'created' | 'updated' | 'deleted';
-  entity: 'request' | 'account' | 'property' | 'task' | 'promotion' | 'financial';
+  // 'refresh' = a bulk change occurred; consumers should refetch rather than
+  // merge a single payload (used e.g. for account-rename cascades).
+  type: 'created' | 'updated' | 'deleted' | 'refresh';
+  // Backend broadcasts the entity as its table/domain name. Kept as a broad
+  // string so new broadcast sources never break the type; consumers switch on
+  // the known values ('request', 'account', 'promotions', 'tasks',
+  // 'financials', 'taxes', 'crm_state', 'venues', 'rooms', 'properties', ...).
+  entity: string;
   data: any;
   timestamp: string;
 }
 
-export function useWebSocket(onMessage: (msg: WebSocketMessage) => void) {
+// Close codes that must NOT trigger a reconnect:
+// 1000 = normal closure, 4401 = auth required, 4403 = forbidden.
+const NO_RECONNECT_CODES = new Set([1000, 4401, 4403]);
+
+export function useWebSocket(onMessage: (msg: WebSocketMessage) => void, enabled = true) {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<number | null>(null);
   const reconnectAttempts = useRef(0);
+  const onMessageRef = useRef(onMessage);
+  onMessageRef.current = onMessage;
 
   useEffect(() => {
+    if (!enabled) {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+      const existing = wsRef.current;
+      if (existing) {
+        existing.onopen = null;
+        existing.onmessage = null;
+        existing.onerror = null;
+        existing.onclose = null;
+        if (existing.readyState === WebSocket.OPEN || existing.readyState === WebSocket.CLOSING) {
+          existing.close(1000, 'Disabled');
+        }
+        wsRef.current = null;
+      }
+      return;
+    }
+
+    reconnectAttempts.current = 0;
+    let cancelled = false;
+    let ws: WebSocket | null = null;
+    let pingInterval: number | undefined;
+
+    function detachSocket() {
+      if (pingInterval !== undefined) {
+        clearInterval(pingInterval);
+        pingInterval = undefined;
+      }
+      if (!ws) return;
+      ws.onopen = null;
+      ws.onmessage = null;
+      ws.onerror = null;
+      ws.onclose = null;
+      // Avoid "closed before connection established" in React Strict Mode dev:
+      // only call close() when the socket is already open/closing.
+      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CLOSING) {
+        ws.close(1000, 'Closed');
+      }
+      if (wsRef.current === ws) wsRef.current = null;
+      ws = null;
+    }
+
     function connect() {
-      // WebSocket inherits cookies automatically (same-origin)
+      if (cancelled) return;
+      detachSocket();
+
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsUrl = `${protocol}//${window.location.host}/ws`;
+      const socket = new WebSocket(wsUrl);
+      ws = socket;
+      wsRef.current = socket;
 
-      const ws = new WebSocket(wsUrl);
-
-      ws.onopen = () => {
+      socket.onopen = () => {
+        if (cancelled) return;
         console.log('[WebSocket] Connected');
         reconnectAttempts.current = 0;
-        // Send periodic pings to keep connection alive
-        const pingInterval = setInterval(() => {
-          if (ws.readyState === WebSocket.OPEN) {
-            ws.send('ping');
-          }
-        }, 30000); // ping every 30s
-        ws.addEventListener('close', () => clearInterval(pingInterval));
+        pingInterval = window.setInterval(() => {
+          if (socket.readyState === WebSocket.OPEN) socket.send('ping');
+        }, 30000);
       };
 
-      ws.onmessage = (event) => {
-        if (event.data === 'pong') return; // ignore pong responses
+      socket.onmessage = (event) => {
+        if (cancelled || event.data === 'pong') return;
         try {
           const msg: WebSocketMessage = JSON.parse(event.data);
           console.log('[WebSocket] Received:', msg);
-          onMessage(msg);
+          onMessageRef.current(msg);
         } catch (e) {
           console.error('[WebSocket] Failed to parse message:', e);
         }
       };
 
-      ws.onerror = (error) => {
-        console.error('[WebSocket] Error:', error);
+      socket.onerror = () => {
+        if (cancelled) return;
+        console.error('[WebSocket] Error');
       };
 
-      ws.onclose = (event) => {
-        console.log(`[WebSocket] Closed (code=${event.code}, reason=${event.reason})`);
-        wsRef.current = null;
+      socket.onclose = (event) => {
+        if (pingInterval !== undefined) {
+          clearInterval(pingInterval);
+          pingInterval = undefined;
+        }
+        if (wsRef.current === socket) wsRef.current = null;
+        ws = null;
 
-        // Reconnect with exponential backoff
-        if (event.code !== 1000) {
-          // 1000 = normal closure, don't reconnect
+        // Intentional teardown (React Strict Mode unmount, logout, etc.)
+        if (cancelled || event.code === 1000) return;
+
+        console.log(`[WebSocket] Closed (code=${event.code}, reason=${event.reason})`);
+
+        if (!NO_RECONNECT_CODES.has(event.code)) {
           const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
           reconnectAttempts.current += 1;
           console.log(`[WebSocket] Reconnecting in ${delay}ms...`);
           reconnectTimeoutRef.current = window.setTimeout(connect, delay);
         }
       };
-
-      wsRef.current = ws;
     }
 
     connect();
 
-    // Cleanup on unmount
     return () => {
+      cancelled = true;
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
       }
-      if (wsRef.current) {
-        wsRef.current.close(1000, 'Component unmounted');
-      }
+      detachSocket();
     };
-  }, [onMessage]);
+  }, [enabled]);
 
   return wsRef.current;
 }

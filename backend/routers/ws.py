@@ -34,7 +34,7 @@ async def websocket_endpoint(
     
     user_id = user.get("id", "unknown")
     property_id = user.get("propertyId")
-    assigned_properties = user.get("assignedPropertyIds", [])
+    assigned_properties = user.get("property_ids") or []
     
     # Determine property subscriptions
     if property_id:
@@ -42,7 +42,7 @@ async def websocket_endpoint(
         property_ids = [property_id]
     elif assigned_properties:
         # Multi-property user
-        property_ids = assigned_properties
+        property_ids = list(assigned_properties)
     else:
         # Admin / no property scope → global subscription
         property_ids = None

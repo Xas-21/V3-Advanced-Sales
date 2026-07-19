@@ -1,0 +1,12 @@
+---
+description: Project-local shadcn/ui skill — use when adding or composing shadcn components
+alwaysApply: true
+---
+
+# shadcn/ui skill (project)
+
+This project has shadcn initialized (`components.json`) and the `shadcn` skill at `.cursor/skills/shadcn/` and `.agents/skills/shadcn/`.
+
+When the user asks to add, search, fix, style, or compose shadcn/ui components — read and follow the `shadcn` skill. Use `npx shadcn@latest` (this repo uses npm, not pnpm).
+
+Also installed: `migrate-radix-to-base` — only when migrating Radix components to Base UI.

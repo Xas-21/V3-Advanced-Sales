@@ -1,0 +1,74 @@
+# Production stack — static frontend (no npm run dev).
+# Usage (from repo root, with production .env):
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# App: http://HOST/   API: http://HOST/api/   WS: ws://HOST/ws
+
+services:
+  as-postgres:
+    image: postgres:18-alpine
+    container_name: as-postgres
+    environment:
+      - POSTGRES_USER=as_owner
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=as-postgres
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U as_owner -d as-postgres
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    volumes:
+      - as-postgres-data:/var/lib/postgresql
+    # Do not publish Postgres to the host in production unless you need admin access.
+
+  as-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: as-backend
+    environment:
+      - USE_FILE_STORAGE=false
+      - DATABASE_URL=${DATABASE_URL}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      - UPLOADS_DIR=/data/uploads
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    volumes:
+      - as-uploads-data:/data/uploads
+    depends_on:
+      as-postgres:
+        condition: service_healthy
+    # Behind nginx; expose only if you need direct API access:
+    # ports:
+    #   - 127.0.0.1:8000:8000
+
+  as-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend.prod
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    container_name: as-frontend
+    restart: unless-stopped
+    ports:
+      - 80:80
+    depends_on:
+      as-backend:
+        condition: service_healthy
+
+volumes:
+  as-postgres-data:
+  as-uploads-data:

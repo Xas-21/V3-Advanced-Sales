@@ -9,7 +9,7 @@
 |-------|-----------|---------|-------|
 | Frontend | React + TypeScript | 18.x | Vite, Tailwind CSS, Recharts, Lucide |
 | Backend | FastAPI + Uvicorn | Python 3.13 | Async API, psycopg3 PG driver |
-| Database | PostgreSQL | 18 Alpine | Container: `as-postgres-V2` |
+| Database | PostgreSQL | 18 Alpine | Container + DB: `as-postgres` (user `as_owner`) |
 | Real-time | WebSocket | — | `ws.py` router + `websocket_manager.py` |
 | Auth | Cookie-based sessions | — | Same session for REST + WebSocket |
 | Edge | Traefik + Let's Encrypt | — | `app.as-saas.com` → containers |
@@ -152,7 +152,7 @@ docker-compose.yml
 
 ## [ORPHANS & PENDING]
 
-- [x] DONE: Full Neon→local Postgres migration (29 tables, 408 accounts, 375 requests)
+- [x] DONE: Full import into local/Docker Postgres `as-postgres` (29 tables, 408 accounts, 375 requests)
 - [x] DONE: Password remediation (81 payload ghost owners → Abdullah)
 - [x] DONE: FK/index schema hardening (29 FKs, 71 indexes)
 - [x] DONE: Feed feature (backend + frontend, 8 emoji reactions)

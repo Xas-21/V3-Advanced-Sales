@@ -1,0 +1,20 @@
+{
+  "0": "feed.py",
+  "1": "data_access.py",
+  "2": "_get_pool",
+  "3": "auth_db.py",
+  "4": "delete_flat",
+  "5": "test_api_full.py",
+  "6": "main.py",
+  "7": "001_normalized_schema.sql",
+  "8": "ConnectionManager",
+  "9": "crm_state.py",
+  "10": "auth.py",
+  "11": "uploads.py",
+  "12": "002_migrate.py",
+  "13": "business_card_scan.py",
+  "14": "003_verify.py",
+  "15": "__init__.py",
+  "16": "__init__.py",
+  "17": "set_current_user"
+}

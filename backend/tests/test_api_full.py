@@ -66,7 +66,13 @@ PROP_ID = os.environ.get("TEST_PROP_ID", "Psvnv5dahi")
 def test_health():
     r = client.get("/api/health")
     assert r.status_code == 200
-    assert r.json().get("status") == "ok"
+    body = r.json()
+    assert body.get("status") == "ok"
+    assert body.get("live") is True
+    assert body.get("ready") is True
+    assert "database_connected" in body
+    assert body.get("storage_mode") in ("postgres", "unavailable")
+    assert body.get("version")
 
 
 def test_root():

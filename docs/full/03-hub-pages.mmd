@@ -1,0 +1,27 @@
+flowchart LR
+  Shell["DashboardHubShell.tsx"]
+  Tabs["dashboardHubTabs.ts"]
+  Ctx["HubDataContext + analyticsKit"]
+
+  Shell --> Tabs
+  Shell --> Ctx
+
+  subgraph LiveTabs["All hub tabs live:true"]
+    Feed["feed — DashboardHubFeedPage"]
+    Dash["dashboard — main KPI dashboard"]
+    Req["requests — DashboardHubRequestsPage"]
+    Rooms["rooms — DashboardHubRoomsPage"]
+    Mice["mice — DashboardHubMicePage"]
+    Rev["revenue-mix — DashboardHubRevenueMixPage"]
+    Crm["crm — DashboardHubCrmPage"]
+    Acc["accounts — DashboardHubAccountsPage"]
+    Promo["promotions — DashboardHubPromotionsPage"]
+    Agr["agreements — DashboardHubAgreementsPage"]
+    Act["activities — DashboardHubActivitiesPage"]
+    Sales["sales-performance — DashboardHubSalesPerformancePage"]
+  end
+
+  Tabs --> Feed & Dash & Req & Rooms & Mice & Rev & Crm & Acc & Promo & Agr & Act & Sales
+
+  Feed --> RT["richText.tsx mentions / posts"]
+  Feed --> LU["localUpload.ts media"]

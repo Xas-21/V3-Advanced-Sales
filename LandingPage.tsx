@@ -1,16 +1,17 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { ArrowRight, CheckCircle2, BarChart3, CalendarDays, Users, Palette } from 'lucide-react';
 import { apiUrl } from './backendApi';
-import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
+import { ProductExperienceDemo } from './landingPreviews/productDemoKit';
 
 interface LandingPageProps {
     themes: any;
     currentThemeId: string;
     onOpenLogin: () => void;
     onThemeChange: () => void;
+    onOpenRedesignPreview?: () => void;
 }
 
-export default function LandingPage({ themes, currentThemeId, onOpenLogin, onThemeChange }: LandingPageProps) {
+export default function LandingPage({ themes, currentThemeId, onOpenLogin, onThemeChange, onOpenRedesignPreview }: LandingPageProps) {
     const theme = themes[currentThemeId] || themes.light;
     const colors = theme.colors;
     const contactRef = useRef<HTMLDivElement | null>(null);
@@ -23,20 +24,7 @@ export default function LandingPage({ themes, currentThemeId, onOpenLogin, onThe
         phone: '',
         message: '',
     });
-    const [demoMetric, setDemoMetric] = useState<'revenue' | 'miceRequests' | 'requests'>('revenue');
-    const [demoMonths, setDemoMonths] = useState(6);
-    const [dragCardId, setDragCardId] = useState<string | null>(null);
     const [contactSubmitting, setContactSubmitting] = useState(false);
-    const [kanbanCols, setKanbanCols] = useState<Record<string, any[]>>({
-        Inquiry: [
-            { id: 'k1', title: 'Tech Expo 2026', account: 'Red Sea Global', pax: 120, value: 'SAR 28K' },
-            { id: 'k2', title: 'Board Retreat', account: 'Reem Travel', pax: 35, value: 'SAR 12K' },
-        ],
-        Accepted: [{ id: 'k3', title: 'VIP Product Launch', account: 'Toast', pax: 90, value: 'SAR 37K' }],
-        Tentative: [{ id: 'k4', title: 'Medical Congress', account: 'Health Gate', pax: 210, value: 'SAR 61K' }],
-        Definite: [{ id: 'k5', title: 'Annual Distributor Meet', account: 'Dweedy', pax: 180, value: 'SAR 74K' }],
-        Actual: [{ id: 'k6', title: 'Executive Leadership Summit', account: 'Blue Horizon', pax: 55, value: 'SAR 19K' }],
-    });
 
     const targetTeams = [
         'Sales Team',
@@ -95,44 +83,8 @@ export default function LandingPage({ themes, currentThemeId, onOpenLogin, onThe
         },
     ];
 
-    const demoSeries = [
-        { month: 'Jan', revenue: 15000, miceRequests: 1, requests: 9 },
-        { month: 'Feb', revenue: 11000, miceRequests: 0, requests: 7 },
-        { month: 'Mar', revenue: 3000, miceRequests: 0, requests: 4 },
-        { month: 'Apr', revenue: 37130, miceRequests: 1, requests: 10 },
-        { month: 'May', revenue: 900, miceRequests: 0, requests: 2 },
-        { month: 'Jun', revenue: 1200, miceRequests: 0, requests: 3 },
-        { month: 'Jul', revenue: 4500, miceRequests: 0, requests: 4 },
-        { month: 'Aug', revenue: 1200, miceRequests: 0, requests: 3 },
-        { month: 'Sep', revenue: 800, miceRequests: 0, requests: 2 },
-        { month: 'Oct', revenue: 1400, miceRequests: 0, requests: 2 },
-        { month: 'Nov', revenue: 2200, miceRequests: 0, requests: 3 },
-        { month: 'Dec', revenue: 4100, miceRequests: 0, requests: 4 },
-    ];
-    const demoData = demoSeries.slice(-demoMonths);
-
     const scrollToContact = () => {
         contactRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    };
-
-    const moveKanbanCard = (cardId: string, targetCol: string) => {
-        setKanbanCols((prev) => {
-            let moving: any = null;
-            const next: Record<string, any[]> = {};
-            Object.keys(prev).forEach((col) => {
-                next[col] = prev[col].filter((c: any) => {
-                    if (c.id === cardId) {
-                        moving = c;
-                        return false;
-                    }
-                    return true;
-                });
-            });
-            if (moving) {
-                next[targetCol] = [...(next[targetCol] || []), moving];
-            }
-            return next;
-        });
     };
 
     const subscribeNotifyEmail = 'Abdullah.saleh-@hotmail.com';
@@ -205,6 +157,17 @@ export default function LandingPage({ themes, currentThemeId, onOpenLogin, onThe
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        {onOpenRedesignPreview && (
+                            <button
+                                type="button"
+                                onClick={onOpenRedesignPreview}
+                                className="px-3 py-2 rounded-lg border text-xs font-bold"
+                                style={{ borderColor: colors.primary, color: colors.primary }}
+                                title="Return to the main Advanced Sales landing"
+                            >
+                                Main landing
+                            </button>
+                        )}
                         <button onClick={scrollToContact} className="px-4 py-2 rounded-lg border text-sm font-bold" style={{ borderColor: colors.border, color: colors.textMain }}>
                             Subscribe
                         </button>
@@ -271,115 +234,13 @@ export default function LandingPage({ themes, currentThemeId, onOpenLogin, onThe
                 </section>
 
                 <section className="max-w-[1800px] mx-auto px-6 pb-10">
-                    <div className="p-4 rounded-2xl border animate-in fade-in slide-in-from-bottom-4 transition-all duration-500 hover:-translate-y-1" style={{ borderColor: colors.border, backgroundColor: colors.card }}>
-                        <h2 className="text-2xl font-black mb-3">Dashboard</h2>
-                        <p className="text-sm mb-4" style={{ color: colors.textMuted }}>
-                            Main commercial cockpit with KPI cards, distribution widgets, and operational snapshots.
+                    <div className="mb-4">
+                        <h2 className="text-2xl font-black">Try the real product</h2>
+                        <p className="text-sm mt-1" style={{ color: colors.textMuted }}>
+                            Same dashboard chrome, Requests list, and CRM pipeline as the signed-in app — sample property data, read-only.
                         </p>
-                        <img
-                            src="https://res.cloudinary.com/dmydt1xa9/image/upload/v1775861819/Dashboard_wj8uwe.png"
-                            alt="Dashboard"
-                            className="w-full rounded-xl border"
-                            style={{ borderColor: colors.border }}
-                        />
                     </div>
-                </section>
-
-                <section className="max-w-[1800px] mx-auto px-6 pb-10">
-                    <div className="p-4 rounded-2xl border animate-in fade-in slide-in-from-bottom-4 transition-all duration-500 hover:-translate-y-1" style={{ borderColor: colors.border, backgroundColor: colors.card }}>
-                        <div className="flex items-center justify-between mb-4">
-                            <div>
-                                <h2 className="text-2xl font-black">Events & Catering Kanban (Live Try)</h2>
-                                <p className="text-sm mt-1" style={{ color: colors.textMuted }}>
-                                    Drag cards between columns to simulate pipeline movement. Demo-only; nothing is saved.
-                                </p>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                            {Object.keys(kanbanCols).map((col) => (
-                                <div
-                                    key={col}
-                                    className="rounded-xl border p-2 min-h-[260px]"
-                                    style={{ borderColor: colors.border, backgroundColor: colors.bg }}
-                                    onDragOver={(e) => e.preventDefault()}
-                                    onDrop={() => {
-                                        if (dragCardId) moveKanbanCard(dragCardId, col);
-                                        setDragCardId(null);
-                                    }}
-                                >
-                                    <p className="text-[11px] font-black uppercase mb-2" style={{ color: colors.primary }}>{col}</p>
-                                    <div className="space-y-2">
-                                        {(kanbanCols[col] || []).map((card: any) => (
-                                            <div
-                                                key={card.id}
-                                                draggable
-                                                onDragStart={() => setDragCardId(card.id)}
-                                                className="p-2 rounded-lg border cursor-move transition-all duration-300 hover:scale-[1.02]"
-                                                style={{ borderColor: colors.border, backgroundColor: colors.card }}
-                                            >
-                                                <p className="text-xs font-bold">{card.title}</p>
-                                                <p className="text-[10px]" style={{ color: colors.textMuted }}>{card.account}</p>
-                                                <div className="flex justify-between text-[10px] mt-1" style={{ color: colors.textMuted }}>
-                                                    <span>{card.pax} pax</span>
-                                                    <span style={{ color: colors.primary }}>{card.value}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-
-                <section className="max-w-[1800px] mx-auto px-6 pb-10">
-                    <div className="p-6 rounded-2xl border" style={{ borderColor: colors.border, backgroundColor: colors.card }}>
-                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-6">
-                            <div>
-                                <h2 className="text-2xl font-black">Try Live Demo</h2>
-                                <p className="text-sm mt-1" style={{ color: colors.textMuted }}>
-                                    Interact with chart metrics and range.
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap gap-3">
-                                <select
-                                    value={demoMetric}
-                                    onChange={(e) => setDemoMetric(e.target.value as 'revenue' | 'miceRequests' | 'requests')}
-                                    className="px-3 py-2 rounded border bg-black/10 text-sm"
-                                    style={{ borderColor: colors.border }}
-                                >
-                                    <option value="revenue">Revenue</option>
-                                    <option value="miceRequests">MICE Requests</option>
-                                    <option value="requests">Total Requests</option>
-                                </select>
-                                <select
-                                    value={demoMonths}
-                                    onChange={(e) => setDemoMonths(Number(e.target.value))}
-                                    className="px-3 py-2 rounded border bg-black/10 text-sm"
-                                    style={{ borderColor: colors.border }}
-                                >
-                                    <option value={3}>Last 3 Months</option>
-                                    <option value={6}>Last 6 Months</option>
-                                    <option value={12}>Last 12 Months</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div className="h-72 rounded-xl border p-3" style={{ borderColor: colors.border }}>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={demoData}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
-                                    <XAxis dataKey="month" tick={{ fill: colors.textMuted, fontSize: 11 }} />
-                                    <YAxis tick={{ fill: colors.textMuted, fontSize: 11 }} />
-                                    <Tooltip
-                                        contentStyle={{ backgroundColor: colors.tooltip, borderColor: colors.border, color: colors.textMain }}
-                                        labelStyle={{ color: colors.textMain, fontWeight: 700 }}
-                                        itemStyle={{ color: colors.textMain }}
-                                    />
-                                    <Area dataKey={demoMetric} stroke={colors.primary} fill={colors.primary + '33'} strokeWidth={2} />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
+                    <ProductExperienceDemo theme={theme} title="Advanced Sales — live product tour" />
                 </section>
 
                 <section className="max-w-[1800px] mx-auto px-6 pb-10">

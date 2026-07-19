@@ -366,22 +366,19 @@ export function buildMonthlyHistory(
     return out;
 }
 
-export function sumRevenueInYmdRange(requests: any[], propertyId: string | undefined, user: any, start: string, end: string): number {
+/** Requests already filtered by property + user attribution — status/date only (Plan 011). */
+export function sumRevenueInYmdRangeAttributed(requests: any[], start: string, end: string): number {
     let sum = 0;
-    for (const req of requests) {
-        if (!requestInProperty(req, propertyId)) continue;
-        if (!requestAttributedToUser(req, user)) continue;
+    for (const req of requests || []) {
         if (normStatus(req?.status) === 'cancelled' || normStatus(req?.status) === 'lost') continue;
         sum += sumRequestProratedRevenueExTaxInRange(req, start, end);
     }
     return sum;
 }
 
-export function countRequestsInYmdRange(requests: any[], propertyId: string | undefined, user: any, start: string, end: string): number {
+export function countRequestsInYmdRangeAttributed(requests: any[], start: string, end: string): number {
     let n = 0;
-    for (const req of requests) {
-        if (!requestInProperty(req, propertyId)) continue;
-        if (!requestAttributedToUser(req, user)) continue;
+    for (const req of requests || []) {
         if (normStatus(req?.status) === 'cancelled' || normStatus(req?.status) === 'lost') continue;
         if (!requestTouchesOperationalDateRange(req, start, end)) continue;
         n += 1;
@@ -389,14 +386,41 @@ export function countRequestsInYmdRange(requests: any[], propertyId: string | un
     return n;
 }
 
-export function countOpenPipeline(requests: any[], propertyId: string | undefined, user: any): number {
+export function countOpenPipelineAttributed(requests: any[]): number {
     let n = 0;
-    for (const req of requests) {
-        if (!requestInProperty(req, propertyId)) continue;
-        if (!requestAttributedToUser(req, user)) continue;
+    for (const req of requests || []) {
         if (OPEN_PIPELINE.has(normStatus(req?.status))) n += 1;
     }
     return n;
+}
+
+/** Open-pipeline requests whose operational window touches [start, end] (YYYY-MM-DD). */
+export function countOpenPipelineInYmdRangeAttributed(requests: any[], start: string, end: string): number {
+    let n = 0;
+    for (const req of requests || []) {
+        if (!OPEN_PIPELINE.has(normStatus(req?.status))) continue;
+        if (!requestTouchesOperationalDateRange(req, start, end)) continue;
+        n += 1;
+    }
+    return n;
+}
+
+function filterAttributedRequests(requests: any[], propertyId: string | undefined, user: any): any[] {
+    return (requests || []).filter(
+        (req) => requestInProperty(req, propertyId) && requestAttributedToUser(req, user)
+    );
+}
+
+export function sumRevenueInYmdRange(requests: any[], propertyId: string | undefined, user: any, start: string, end: string): number {
+    return sumRevenueInYmdRangeAttributed(filterAttributedRequests(requests, propertyId, user), start, end);
+}
+
+export function countRequestsInYmdRange(requests: any[], propertyId: string | undefined, user: any, start: string, end: string): number {
+    return countRequestsInYmdRangeAttributed(filterAttributedRequests(requests, propertyId, user), start, end);
+}
+
+export function countOpenPipeline(requests: any[], propertyId: string | undefined, user: any): number {
+    return countOpenPipelineAttributed(filterAttributedRequests(requests, propertyId, user));
 }
 
 /** Open-pipeline requests whose primary operational date falls in [start, end] (YYYY-MM-DD). */
@@ -407,15 +431,7 @@ export function countOpenPipelineInYmdRange(
     start: string,
     end: string
 ): number {
-    let n = 0;
-    for (const req of requests) {
-        if (!requestInProperty(req, propertyId)) continue;
-        if (!requestAttributedToUser(req, user)) continue;
-        if (!OPEN_PIPELINE.has(normStatus(req?.status))) continue;
-        if (!requestTouchesOperationalDateRange(req, start, end)) continue;
-        n += 1;
-    }
-    return n;
+    return countOpenPipelineInYmdRangeAttributed(filterAttributedRequests(requests, propertyId, user), start, end);
 }
 
 export function ymdBoundsForCalendarMonth(year: number, monthIndex0: number): { start: string; end: string } {
@@ -431,17 +447,35 @@ export function ymdBoundsForCalendarYear(year: number): { start: string; end: st
 
 export type ProfileActivityRow = { id: string; title: string; desc: string; date: string; atMs: number; kind: string };
 
+/** Newest rows on the profile strip (light DOM). */
+export const PROFILE_ACTIVITY_PREVIEW_CAP = 30;
+/** Newest rows loaded only when “View all” opens. */
+export const PROFILE_ACTIVITY_MODAL_CAP = 90;
+/** Default / modal-sized cap (Plan 011+). */
+export const PROFILE_ACTIVITY_LOG_CAP = PROFILE_ACTIVITY_MODAL_CAP;
+
+function activityRowMatchesQuery(title: string, desc: string, query: string | undefined): boolean {
+    if (!query) return true;
+    const q = query.trim().toLowerCase();
+    if (!q) return true;
+    return title.toLowerCase().includes(q) || desc.toLowerCase().includes(q);
+}
+
 export function buildProfileActivityLog(
     requests: any[],
     accounts: any[],
     tasks: any[],
     user: any,
     propertyId: string | undefined,
-    maxAgeMs: number
+    maxAgeMs: number,
+    maxRows: number = PROFILE_ACTIVITY_LOG_CAP,
+    query?: string,
+    dayPrefix?: string
 ): ProfileActivityRow[] {
     const now = Date.now();
     const minAt = now - maxAgeMs;
     const rows: ProfileActivityRow[] = [];
+    const day = String(dayPrefix || '').trim();
 
     for (const req of requests) {
         if (!requestInProperty(req, propertyId)) continue;
@@ -450,11 +484,16 @@ export function buildProfileActivityLog(
             if (!logUserMatchesLog(normalizeActivityUser(log.user), user)) continue;
             const at = Date.parse(log.date || '') || 0;
             if (at < minAt) continue;
+            const date = String(log.date || '').replace('T', ' ').slice(0, 16);
+            if (day && !date.startsWith(day)) continue;
+            const title = String(log.action || 'Request activity');
+            const desc = `${req.requestName || req.confirmationNo || req.id}${log.details ? ` — ${String(log.details).slice(0, 120)}` : ''}`;
+            if (!activityRowMatchesQuery(title, desc, query)) continue;
             rows.push({
                 id: `req-${req.id}-${at}-${log.action}`,
-                title: String(log.action || 'Request activity'),
-                desc: `${req.requestName || req.confirmationNo || req.id}${log.details ? ` — ${String(log.details).slice(0, 120)}` : ''}`,
-                date: String(log.date || '').replace('T', ' ').slice(0, 16),
+                title,
+                desc,
+                date,
                 atMs: at,
                 kind: 'request',
             });
@@ -467,11 +506,16 @@ export function buildProfileActivityLog(
             if (!logUserMatchesLog(normalizeActivityUser(act.user), user)) continue;
             const at = Date.parse(act.at || '') || 0;
             if (at < minAt) continue;
+            const date = String(act.at || '').replace('T', ' ').slice(0, 16);
+            if (day && !date.startsWith(day)) continue;
+            const title = String(act.title || 'Account activity');
+            const desc = `${acc.name || acc.id}${act.body ? ` — ${String(act.body).slice(0, 120)}` : ''}`;
+            if (!activityRowMatchesQuery(title, desc, query)) continue;
             rows.push({
                 id: `acc-${acc.id}-${at}-${act.title}`,
-                title: String(act.title || 'Account activity'),
-                desc: `${acc.name || acc.id}${act.body ? ` — ${String(act.body).slice(0, 120)}` : ''}`,
-                date: String(act.at || '').replace('T', ' ').slice(0, 16),
+                title,
+                desc,
+                date,
                 atMs: at,
                 kind: 'account',
             });
@@ -482,18 +526,24 @@ export function buildProfileActivityLog(
         if (!taskAssignedToUser(task, user)) continue;
         const at = Date.parse(`${task.date || ''}T12:00:00`) || 0;
         if (at < minAt) continue;
+        const date = String(task.date || '').replace('T', ' ').slice(0, 16);
+        if (day && !date.startsWith(day)) continue;
+        const title = task.completed ? 'Task completed' : 'Task';
+        const desc = String(task.task || task.title || '');
+        if (!activityRowMatchesQuery(title, desc, query)) continue;
         rows.push({
             id: `task-${task.id}-${at}`,
-            title: task.completed ? 'Task completed' : 'Task',
-            desc: String(task.task || task.title || ''),
-            date: String(task.date || '').replace('T', ' ').slice(0, 16),
+            title,
+            desc,
+            date,
             atMs: at,
             kind: 'task',
         });
     }
 
     rows.sort((a, b) => b.atMs - a.atMs);
-    return rows;
+    // ponytail: walk sources then slice — correct newest-N; upgrade = early-stop heap if lists get huge
+    return rows.slice(0, Math.max(1, maxRows));
 }
 
 /** Inclusive month range; labels like "Jan 2025". */

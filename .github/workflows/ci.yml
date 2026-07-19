@@ -1,0 +1,60 @@
+# Plan 040 verification gate.
+# Typecheck is ratchet mode (continue-on-error): baseline 50 errors as of 2026-07-19.
+# Flip to blocking once `npm run typecheck` reaches zero.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Typecheck (ratchet — reporting only; baseline 50 tsc errors)
+        continue-on-error: true
+        run: npm run typecheck
+      # Lint script keeps --max-warnings 0; brownfield still has thousands of
+      # warn-level findings. continue-on-error until the lint ratchet hits zero.
+      - name: Lint (ratchet — reporting only until warning count is zero)
+        continue-on-error: true
+        run: npm run lint
+      - run: npm run test:frontend
+      - run: npm run build
+
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: as_owner
+          POSTGRES_PASSWORD: ci_throwaway_password
+          POSTGRES_DB: as-postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U as_owner -d as-postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://as_owner:ci_throwaway_password@localhost:5432/as-postgres
+      SESSION_SECRET: ci-throwaway-session-secret-not-for-prod
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install backend deps
+        run: pip install -r backend/requirements.txt
+      - name: Pytest
+        working-directory: backend
+        run: python -m pytest tests -q

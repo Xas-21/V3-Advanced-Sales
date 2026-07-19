@@ -1,0 +1,15 @@
+---
+description: Project-local shadcn/improve skill availability for audits and implementation plans
+alwaysApply: true
+---
+
+# Improve skill (project)
+
+This project includes the `improve` skill at:
+
+- `.cursor/skills/improve/SKILL.md`
+- `.agents/skills/improve/SKILL.md`
+
+When the user asks to audit the codebase, find improvement opportunities (bugs, security, performance, tests, tech debt, migrations, DX), suggest roadmap/features, or produce handoff plans for another agent to implement — read and follow the `improve` skill before acting.
+
+Do not use the improve skill for normal implementation, bugfix, or feature work unless the user asks for an audit/plan in that mode.

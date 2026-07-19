@@ -1,0 +1,36 @@
+flowchart TB
+  subgraph SettingsTabs["Settings.tsx admin tabs"]
+    Profile["profile — Settings"]
+    Property["property — Properties"]
+    Users["users — User Mgmt"]
+    Config["config — Configurations"]
+  end
+
+  subgraph ConfigTabs["Property configuration tabs"]
+    Rooms["rooms — Room Types"]
+    Venues["venues — Venues"]
+    Meals["meals_packages — Meals and Packages"]
+    Fin["financial — Financial and KPIs"]
+    Taxes["taxes — Tax Config"]
+    Pay["payment_methods — Payment Methods"]
+    Seg["segments_types — Segments and Account Types"]
+    Cxl["cxl — CXL"]
+    Fb["feedback_forms — Feedback Forms"]
+    Alerts["alert_notifications — Alerts"]
+    Calls["calls — Calls"]
+  end
+
+  subgraph Docker["Docker Compose runtime"]
+    FE["as-frontend :5173"]
+    BE["as-backend :8000"]
+    PG["as-postgres-V2 :5433 host"]
+    V1[("as-frontend-node-modules")]
+    V2[("as-postgres-v2-data")]
+    V3[("as-uploads-data /data/uploads")]
+  end
+
+  Config --> ConfigTabs
+  FE --> BE --> PG
+  FE --- V1
+  BE --- V3
+  PG --- V2

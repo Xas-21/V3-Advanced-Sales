@@ -300,6 +300,19 @@ CREATE TABLE IF NOT EXISTS promotions (
     include_events_revenue BOOLEAN
 );
 
+-- Account contracted room rates by date period (plan 037)
+CREATE TABLE IF NOT EXISTS account_rates (
+    id          TEXT PRIMARY KEY,
+    property_id TEXT REFERENCES properties(id) ON DELETE CASCADE,
+    account_id  TEXT REFERENCES accounts(id) ON DELETE CASCADE,
+    start_date  DATE,
+    end_date    DATE,
+    segments    JSONB DEFAULT '[]'::jsonb,
+    payload     JSONB,
+    created_at  TIMESTAMPTZ DEFAULT now(),
+    updated_at  TIMESTAMPTZ DEFAULT now()
+);
+
 -- ---------------------------------------------------------------------------
 -- Contract templates & cancellation reasons (were: app_collections arrays)
 -- Stored as id+payload to guarantee lossless capture; refine later.
@@ -402,6 +415,8 @@ ALTER TABLE venues                ADD CONSTRAINT fk_venues_prop               FO
 ALTER TABLE taxes                 ADD CONSTRAINT fk_taxes_prop                FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE;
 ALTER TABLE promotions            ADD CONSTRAINT fk_promotions_prop            FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE;
 ALTER TABLE financials            ADD CONSTRAINT fk_financials_prop           FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE;
+ALTER TABLE account_rates         ADD CONSTRAINT fk_account_rates_prop         FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE;
+ALTER TABLE account_rates         ADD CONSTRAINT fk_account_rates_acc          FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE;
 
 -- ---------------------------------------------------------------------------
 -- Performance indexes (added 2026-07-12)
@@ -411,3 +426,5 @@ CREATE INDEX IF NOT EXISTS ix_request_transportation_req ON request_transportati
 CREATE INDEX IF NOT EXISTS ix_accounts_name             ON accounts(name);
 CREATE INDEX IF NOT EXISTS ix_requests_check_in         ON requests(check_in);
 CREATE INDEX IF NOT EXISTS ix_properties_name          ON properties(name);
+CREATE INDEX IF NOT EXISTS ix_account_rates_account    ON account_rates(account_id);
+CREATE INDEX IF NOT EXISTS ix_account_rates_property_updated ON account_rates(property_id, updated_at DESC, id);

@@ -1,0 +1,19 @@
+flowchart TB
+  FE["as-frontend<br/>Vite React :5173"]
+  BE["as-backend<br/>FastAPI :8000"]
+  PG["as-postgres-V2<br/>postgres:18-alpine<br/>host 127.0.0.1:5433"]
+
+  VolNM[("as-frontend-node-modules")]
+  VolDB[("as-postgres-v2-data")]
+  VolUP[("as-uploads-data<br/>/data/uploads")]
+
+  FE -->|"depends_on"| BE
+  BE -->|"depends_on"| PG
+  FE --- VolNM
+  BE --- VolUP
+  PG --- VolDB
+
+  classDef svc fill:#dae8fc,stroke:#6c8ebf,color:#000
+  classDef vol fill:#f5f5f5,stroke:#666666,color:#000
+  class FE,BE,PG svc
+  class VolNM,VolDB,VolUP vol

@@ -104,3 +104,99 @@ export function isScanDuplicateQueueItemStale(item: any, accounts: any[]): boole
     if (!candidate) return true;
     return isScannedContactOnAccount(candidate, item?.scannedContact);
 }
+
+function pushSystemDuplicatePair(out: any[], left: any, right: any, reason: string, key: string) {
+    out.push({
+        id: `sys-${reason}-${key}-${String(left?.id || '')}-${String(right?.id || '')}`,
+        source: 'system-detection',
+        reason,
+        scannedAccountName: String(left?.name || ''),
+        candidateAccountId: String(right?.id || ''),
+        candidateAccountName: String(right?.name || ''),
+        baseAccountId: String(left?.id || ''),
+        baseAccountName: String(left?.name || ''),
+        scannedContact: (left?.contacts && left.contacts[0]) || null,
+        status: 'open',
+    });
+}
+
+function addAccountToContactIndex(map: Map<string, any[]>, key: string, account: any) {
+    if (!key) return;
+    const list = map.get(key);
+    if (!list) {
+        map.set(key, [account]);
+        return;
+    }
+    if (!list.some((a) => String(a?.id) === String(account?.id))) list.push(account);
+}
+
+/**
+ * System-detected duplicate account pairs (same normalized name, or shared contact email/phone).
+ * Contact matching is Map-indexed (O(contacts)), not account×account nested scans.
+ */
+export function buildSystemDuplicateItems(accountsSameProperty: any[]): any[] {
+    const list = Array.isArray(accountsSameProperty) ? accountsSameProperty : [];
+    const out: any[] = [];
+
+    const byName = new Map<string, any[]>();
+    for (const a of list) {
+        const key = normalizeAccountNameKey(String(a?.name || ''));
+        if (!key) continue;
+        if (!byName.has(key)) byName.set(key, []);
+        byName.get(key)!.push(a);
+    }
+    for (const [k, group] of byName.entries()) {
+        if (group.length < 2) continue;
+        for (let i = 0; i < group.length; i += 1) {
+            for (let j = i + 1; j < group.length; j += 1) {
+                pushSystemDuplicatePair(out, group[i], group[j], 'same-name', k);
+            }
+        }
+    }
+
+    const emailToAccounts = new Map<string, any[]>();
+    const phoneToAccounts = new Map<string, any[]>();
+    const indexById = new Map<string, number>();
+    list.forEach((a, idx) => {
+        const id = String(a?.id ?? '');
+        if (id) indexById.set(id, idx);
+        const contacts = Array.isArray(a?.contacts) ? a.contacts : [];
+        for (const c of contacts) {
+            addAccountToContactIndex(emailToAccounts, meaningfulContactEmail(c?.email), a);
+            addAccountToContactIndex(phoneToAccounts, meaningfulContactPhone(c?.phone), a);
+        }
+    });
+
+    const seenContactPair = new Set<string>();
+    const emitContactPairs = (map: Map<string, any[]>, reasonPrefix: 'same-contact-email' | 'same-contact-phone') => {
+        for (const [contactKey, group] of map.entries()) {
+            if (group.length < 2) continue;
+            const ordered = [...group].sort(
+                (a, b) => (indexById.get(String(a?.id)) ?? 0) - (indexById.get(String(b?.id)) ?? 0)
+            );
+            for (let i = 0; i < ordered.length; i += 1) {
+                for (let j = i + 1; j < ordered.length; j += 1) {
+                    const left = ordered[i];
+                    const right = ordered[j];
+                    const pairKey = `${left?.id}:${right?.id}`;
+                    if (seenContactPair.has(pairKey)) continue;
+                    seenContactPair.add(pairKey);
+                    const reason = `${reasonPrefix}:${contactKey}`;
+                    pushSystemDuplicatePair(out, left, right, reason, `${left?.id}-${right?.id}`);
+                }
+            }
+        }
+    };
+    // Email preferred over phone for a given account pair (matches prior first-match behavior).
+    emitContactPairs(emailToAccounts, 'same-contact-email');
+    emitContactPairs(phoneToAccounts, 'same-contact-phone');
+
+    const seen = new Set<string>();
+    return out.filter((item) => {
+        const key = `${item.baseAccountId}|${item.candidateAccountId}|${item.reason}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+}
+

@@ -17,9 +17,7 @@ Design rules (per owner directive):
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-import asyncio
 import logging
-import threading
 import uuid
 from psycopg import sql
 from psycopg.types.json import Json
@@ -40,6 +38,43 @@ except ImportError:
 
 _NOW = lambda: datetime.now(timezone.utc)
 
+
+def _assert_write_access(property_id: Optional[str]) -> None:
+    """Enforce tenant isolation on writes/deletes, symmetric with read scoping.
+
+    Uses the same request-scoped user + `_tenant_scope()` that filters reads, so
+    any user who can SEE a property's data may write it — and no one else:
+      - scope is None  -> admin (or unauthenticated public route; data routers
+                          already require_user) -> allowed.
+      - property_id empty/None -> global/unscoped row (e.g. contract templates) ->
+                          allowed (these are not per-tenant).
+      - property_id set but not in scope -> raise PermissionError (403 upstream).
+    """
+    scope = _tenant_scope()
+    if scope is None:
+        return
+    pid = str(property_id or "").strip()
+    if not pid:
+        return
+    if pid not in scope:
+        raise PermissionError("Access denied to this property.")
+
+
+def _assert_upsert_write_access(
+    existing_property_id: Optional[str],
+    incoming_property_id: Optional[str],
+    *,
+    row_exists: bool,
+) -> None:
+    """Block IDOR overwrite: require access to the existing row AND the incoming property.
+
+    Matching delete_flat: ownership is taken from the stored row, not only the body.
+    """
+    if row_exists:
+        _assert_write_access(existing_property_id)
+    _assert_write_access(incoming_property_id)
+
+
 # Tables that carry a property_id column (tenant-scoped on read).
 _FLAT_WITH_PID = {
     "rooms",
@@ -48,6 +83,7 @@ _FLAT_WITH_PID = {
     "financials",
     "tasks",
     "promotions",
+    "account_rates",
 }
 # Tables keyed only by id (no property_id column). `properties` is itself the
 # tenant root; `contract_templates`/`cxl_reasons` are id-keyed payload-only.
@@ -81,16 +117,14 @@ def _broadcast_change(event_type: str, entity_type: str, data: dict, property_id
         "data": data,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
-    
-    # Run broadcast in a background thread (sync-safe)
-    def _do_broadcast():
-        try:
-            asyncio.run(ws_manager.broadcast(message, property_id))
-        except Exception as e:
-            logging.warning(f"WebSocket broadcast failed: {e}")
-    
-    thread = threading.Thread(target=_do_broadcast, daemon=True)
-    thread.start()
+
+    # Sync routes run in a threadpool, so schedule the broadcast onto the
+    # uvicorn event loop that owns the websockets (avoids the "attached to a
+    # different loop" failure of spawning a fresh loop via asyncio.run).
+    try:
+        ws_manager.broadcast_threadsafe(message, property_id)
+    except Exception as e:
+        logging.warning(f"WebSocket broadcast failed: {e}")
 
 
 # --------------------------------------------------------------------------- #
@@ -187,8 +221,21 @@ def _list_doc(table: str, property_id: Optional[str]) -> list:
                 )
             rows = cur.fetchall()
     out = [r["payload"] for r in rows if isinstance(r.get("payload"), dict)]
-    if table in _FLAT_BY_ID:
-        out = _filter_by_tenant(out, _tenant_scope())  # scope on payload.propertyId
+    scope = _tenant_scope()
+    if table == "properties":
+        # Property documents are tenant roots: their own `id` is the property key
+        # (unlike child entities that carry payload.propertyId).
+        if scope is not None:
+            out = [p for p in out if str(p.get("id") or "") in scope]
+    elif table in _FLAT_WITH_PID:
+        # Match accounts/requests: never return another tenant's rows.
+        # Cross-property query with a foreign propertyId → empty list (not 403),
+        # consistent with list_accounts / list_requests.
+        if property_id and scope is not None and str(property_id) not in scope:
+            return []
+        out = _filter_by_tenant(out, scope)
+    elif table in _FLAT_BY_ID:
+        out = _filter_by_tenant(out, scope)  # scope on payload.propertyId
     return out
 
 
@@ -227,6 +274,7 @@ def _delete_doc(table: str, row_id: str, property_id: Optional[str] = None):
 # Flat entity adapters (extract typed columns from the full document)
 # --------------------------------------------------------------------------- #
 def _extract_properties(p: dict) -> dict:
+    assigned = p.get("assignedUserIds")
     return {
         "name": p.get("name"),
         "city": p.get("city"),
@@ -235,6 +283,7 @@ def _extract_properties(p: dict) -> dict:
         "phone": p.get("phone"),
         "logo_url": p.get("logoUrl"),
         "total_rooms": _as_int(p.get("totalRooms")),
+        "assigned_user_ids": Json(assigned) if isinstance(assigned, list) else assigned,
     }
 
 
@@ -298,6 +347,16 @@ def _extract_promotions(p: dict) -> dict:
     }
 
 
+def _extract_account_rates(p: dict) -> dict:
+    segs = p.get("segments")
+    return {
+        "account_id": str(p.get("accountId") or "").strip() or None,
+        "start_date": _as_date(p.get("startDate")),
+        "end_date": _as_date(p.get("endDate")),
+        "segments": Json(segs) if isinstance(segs, list) else segs,
+    }
+
+
 _EXTRACTORS = {
     "properties": _extract_properties,
     "rooms": _extract_rooms,
@@ -306,6 +365,7 @@ _EXTRACTORS = {
     "financials": _extract_financials,
     "tasks": _extract_tasks,
     "promotions": _extract_promotions,
+    "account_rates": _extract_account_rates,
 }
 
 
@@ -323,13 +383,31 @@ def upsert_flat(table: str, data: dict, id_prefix: str = "X") -> dict:
     row_id = str(item.get("id") or _gen_id(id_prefix))
     item["id"] = row_id
     property_id = str(item.get("propertyId") or "").strip() or None
+    if table in _FLAT_WITH_PID:
+        existing = _get_doc(table, row_id)
+        existing_pid = None
+        if existing:
+            existing_pid = str(existing.get("propertyId") or "").strip() or None
+        _assert_upsert_write_access(existing_pid, property_id, row_exists=bool(existing))
+    else:
+        _assert_write_access(property_id)
     typed = _EXTRACTORS.get(table, lambda _: {})(item)
     _upsert_doc(table, row_id, property_id, item, typed)
+    _broadcast_change("updated", table, item, property_id)
     return item
 
 
 def delete_flat(table: str, row_id: str, property_id: Optional[str] = None):
+    # If the caller didn't pass a property, resolve the row's own property so the
+    # tenant check can't be bypassed by deleting-by-id.
+    effective_pid = str(property_id or "").strip() or None
+    if effective_pid is None and table in _FLAT_WITH_PID:
+        existing = _get_doc(table, row_id)
+        if existing:
+            effective_pid = str(existing.get("propertyId") or "").strip() or None
+    _assert_write_access(effective_pid)
     _delete_doc(table, row_id, property_id)
+    _broadcast_change("deleted", table, {"id": row_id}, effective_pid)
 
 
 # contract_templates / cxl_reasons: id-keyed, payload-only -------------------- #
@@ -338,12 +416,17 @@ def upsert_payload_only(table: str, data: dict, id_prefix: str = "T") -> dict:
     row_id = str(item.get("id") or _gen_id(id_prefix))
     item["id"] = row_id
     _upsert_doc(table, row_id, None, item, {})
+    _broadcast_change("updated", table, item, None)
     return item
 
 
 # crm_state: keyed by property_id -------------------------------------------- #
 def get_crm_state(property_id: str) -> Optional[dict]:
     pid = str(property_id or "global").strip() or "global"
+    # Tenant isolation: a scoped user may only read their properties' pipeline.
+    scope = _tenant_scope()
+    if scope is not None and pid != "global" and pid not in scope:
+        return None
     pool = _get_pool()
     with pool.connection() as conn:
         with conn.cursor() as cur:
@@ -354,6 +437,7 @@ def get_crm_state(property_id: str) -> Optional[dict]:
 
 def upsert_crm_state(property_id: str, leads: dict) -> dict:
     pid = str(property_id or "global").strip() or "global"
+    _assert_write_access(pid if pid != "global" else None)
     pool = _get_pool()
     with pool.connection() as conn:
         with conn.cursor() as cur:
@@ -366,6 +450,7 @@ def upsert_crm_state(property_id: str, leads: dict) -> dict:
                 (pid, Json(leads)),
             )
             conn.commit()
+    _broadcast_change("updated", "crm_state", {"propertyId": pid}, pid if pid != "global" else None)
     return leads
 
 
@@ -400,7 +485,9 @@ def list_requests(property_id: Optional[str] = None) -> list:
                 )
             else:
                 cur.execute("SELECT * FROM requests ORDER BY updated_at DESC, id ASC;")
-            out = [_row_to_request_dict(r, cur) for r in cur.fetchall()]
+            parents = cur.fetchall()
+            children = _load_request_children_maps(cur, [r["id"] for r in parents])
+            out = [_request_dict_from_row(r, children) for r in parents]
     return _filter_by_tenant(out, _tenant_scope())
 
 
@@ -410,8 +497,131 @@ def get_request(req_id: str) -> Optional[dict]:
         with conn.cursor() as cur:
             cur.execute("SELECT * FROM requests WHERE id = %s;", (str(req_id),))
             r = cur.fetchone()
-            return _row_to_request_dict(r, cur) if r else None
+            if not r:
+                return None
+            children = _load_request_children_maps(cur, [r["id"]])
+            return _request_dict_from_row(r, children)
 
+
+_REQUEST_ARRAY_CHILD_TABLES = (
+    ("rooms", "request_rooms"),
+    ("agenda", "request_agenda"),
+    ("logs", "request_logs"),
+    ("payments", "request_payments"),
+    ("alerts", "request_alerts"),
+    ("transportation", "request_transportation"),
+)
+
+_REQUEST_ARRAY_EMPTY_AS_LIST = frozenset({"rooms", "agenda", "logs", "payments", "transportation"})
+
+
+def _load_request_children_maps(cur, request_ids: list) -> dict:
+    """Prefetch all request children in O(tables) queries. Returns maps keyed by request_id."""
+    empty = {
+        "rooms": {},
+        "agenda": {},
+        "logs": {},
+        "payments": {},
+        "alerts": {},
+        "transportation": {},
+        "invoices": {},
+        "feedback": {},
+    }
+    if not request_ids:
+        return empty
+
+    ids = [str(x) for x in request_ids]
+    out = {k: {} for k in empty}
+
+    for key, table in _REQUEST_ARRAY_CHILD_TABLES:
+        cur.execute(
+            sql.SQL(
+                "SELECT request_id, payload FROM {} WHERE request_id = ANY(%s) ORDER BY request_id, idx"
+            ).format(sql.Identifier(table)),
+            (ids,),
+        )
+        bucket = out[key]
+        for row in cur.fetchall():
+            rid = row["request_id"]
+            bucket.setdefault(rid, []).append(row["payload"])
+
+    cur.execute(
+        "SELECT request_id, payload FROM request_invoices WHERE request_id = ANY(%s) ORDER BY request_id, idx",
+        (ids,),
+    )
+    for row in cur.fetchall():
+        rid = row["request_id"]
+        if rid in out["invoices"]:
+            continue
+        payload = row["payload"]
+        if payload is not None:
+            out["invoices"][rid] = {k: v for k, v in payload.items() if k != "request_id"}
+
+    cur.execute(
+        "SELECT request_id, payload FROM request_feedback WHERE request_id = ANY(%s) ORDER BY request_id, idx",
+        (ids,),
+    )
+    for row in cur.fetchall():
+        rid = row["request_id"]
+        if rid in out["feedback"]:
+            continue
+        payload = row["payload"]
+        if payload is not None:
+            out["feedback"][rid] = {k: v for k, v in payload.items() if k != "request_id"}
+
+    return out
+
+
+def _request_dict_from_row(r, children: dict) -> dict:
+    def iso(ts):
+        return ts.isoformat() if ts is not None else None
+
+    def norm(v):
+        return None if (v == "" or v == []) else v
+
+    rid = r["id"]
+
+    def child_arr(key: str):
+        rows = children.get(key, {}).get(rid)
+        if not rows:
+            return [] if key in _REQUEST_ARRAY_EMPTY_AS_LIST else None
+        return rows
+
+    return {
+        "id": rid, "accountId": norm(r["account_id"]), "accountName": norm(r["account_name"]),
+        "account": norm(r["account_name"]), "propertyId": r["property_id"], "createdByUserId": norm(r["created_by_user_id"]),
+        "requestName": norm(r["request_name"]), "requestType": norm(r["request_type"]), "segment": norm(r["segment"]),
+        "status": norm(r["status"]), "paymentStatus": norm(r["payment_status"]),
+        "checkIn": iso(r["check_in"]) if r["check_in"] else None, "checkOut": iso(r["check_out"]) if r["check_out"] else None,
+        "eventStart": iso(r["event_start"]), "eventEnd": iso(r["event_end"]),
+        "nights": r["nights"], "totalRooms": r["total_rooms"],
+        "adr": float(r["adr"]) if r["adr"] is not None else None,
+        "totalCost": str(r["total_cost"]) if r["total_cost"] is not None else None,
+        "grandTotalNoTax": float(r["grand_total_no_tax"]) if r["grand_total_no_tax"] is not None else None,
+        "receivedDate": str(r["received_date"]) if r["received_date"] else None,
+        "offerDeadline": norm(str(r["offer_deadline"])) if r["offer_deadline"] else None,
+        "depositDeadline": norm(str(r["deposit_deadline"])) if r["deposit_deadline"] else None,
+        "paymentDeadline": norm(str(r["payment_deadline"])) if r["payment_deadline"] else None,
+        "mealPlan": norm(r["meal_plan"]), "bookerName": norm(r["booker_name"]),
+        "bookerContactId": norm(r["booker_contact_id"]), "promotionId": norm(r["promotion_id"]),
+        "confirmationNo": norm(r["confirmation_no"]), "note": norm(r["note"]),
+        "cancelReason": norm(r["cancel_reason"]), "cancelNote": norm(r["cancel_note"]),
+        "createdAt": iso(r["created_at"]), "updatedAt": iso(r["updated_at"]),
+        "paidAmount": str(r["paid_amount"]) if r["paid_amount"] is not None else None,
+        "beoNotes": norm(r["beo_notes"]), "gisBillingInstructions": norm(r["gis_billing_instructions"]),
+        "gisExpectedArrivalTime": norm(r["gis_expected_arrival_time"]), "gisOperationalNotes": norm(r["gis_operational_notes"]),
+        "rooms": child_arr("rooms"), "agenda": child_arr("agenda"),
+        "logs": child_arr("logs"), "payments": child_arr("payments"),
+        "alerts": child_arr("alerts"), "transportation": child_arr("transportation"),
+        "invoices": children.get("invoices", {}).get(rid),
+        "feedback": children.get("feedback", {}).get(rid),
+    }
+
+
+def _row_to_request_dict(r, cur):
+    """Single-row hydrate (kept for any callers); uses the same batched child loader."""
+    children = _load_request_children_maps(cur, [r["id"]])
+    return _request_dict_from_row(r, children)
 
 def upsert_request(data: dict) -> dict:
     item = {**(data if isinstance(data, dict) else {})}
@@ -423,12 +633,19 @@ def upsert_request(data: dict) -> dict:
 
     # Collision guard: explicit id that already exists must be an explicit
     # update, otherwise it's a duplicate-create -> 409 (mirrors legacy behavior).
+    # Also load existing property_id so write authz cannot be bypassed by
+    # sending a body with an allowed propertyId (same IDOR class as upsert_flat).
     pool = _get_pool()
     with pool.connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT id, created_at, created_by_user_id FROM requests WHERE id = %s;", (req_id,))
+            cur.execute(
+                "SELECT id, property_id, created_at, created_by_user_id FROM requests WHERE id = %s;",
+                (req_id,),
+            )
             row = cur.fetchone()
             if row and row.get("id"):
+                existing_pid = str(row.get("property_id") or "").strip() or None
+                _assert_upsert_write_access(existing_pid, property_id, row_exists=True)
                 prev = {
                     "id": row["id"],
                     "createdAt": row["created_at"].isoformat() if row["created_at"] else None,
@@ -440,6 +657,8 @@ def upsert_request(data: dict) -> dict:
                     item["createdAt"] = prev["createdAt"]
                 if item.get("createdByUserId") is None and prev.get("createdByUserId") is not None:
                     item["createdByUserId"] = prev["createdByUserId"]
+            else:
+                _assert_write_access(property_id)
 
     typed = {
         "account_id": account_id,
@@ -668,6 +887,7 @@ def delete_request(req_id: str):
             cur.execute("SELECT property_id FROM requests WHERE id = %s;", (str(req_id),))
             row = cur.fetchone()
             property_id = row["property_id"] if row else None
+            _assert_write_access(property_id)
             
             for child in _CHILD_DEFS:
                 cur.execute(
@@ -727,57 +947,6 @@ def _row_to_account_dict(a, cur):
         "contacts": contacts, "activities": activities,
     }
 
-def _row_to_request_dict(r, cur):
-    def iso(ts):
-        return ts.isoformat() if ts is not None else None
-    def norm(v):
-        return None if (v == "" or v == []) else v
-    def child_arr(key, table):
-        cur.execute(sql.SQL("SELECT payload FROM {} WHERE request_id=%s ORDER BY idx").format(sql.Identifier(table)), (r["id"],))
-        rows = [x["payload"] for x in cur.fetchall()]
-        if not rows:
-            return [] if key in ("rooms", "agenda", "logs", "payments", "transportation") else None
-        return rows
-    invoices = None
-    cur.execute("SELECT payload FROM request_invoices WHERE request_id=%s ORDER BY idx", (r["id"],))
-    inv = cur.fetchall()
-    if inv and inv[0]["payload"] is not None:
-        # strip the injected request_id FK so the object matches the legacy shape
-        invoices = {k: v for k, v in inv[0]["payload"].items() if k != "request_id"}
-    feedback = None
-    cur.execute("SELECT payload FROM request_feedback WHERE request_id=%s ORDER BY idx", (r["id"],))
-    fb = cur.fetchall()
-    if fb and fb[0]["payload"] is not None:
-        feedback = {k: v for k, v in fb[0]["payload"].items() if k != "request_id"}
-    return {
-        "id": r["id"], "accountId": norm(r["account_id"]), "accountName": norm(r["account_name"]),
-        "account": norm(r["account_name"]), "propertyId": r["property_id"], "createdByUserId": norm(r["created_by_user_id"]),
-        "requestName": norm(r["request_name"]), "requestType": norm(r["request_type"]), "segment": norm(r["segment"]),
-        "status": norm(r["status"]), "paymentStatus": norm(r["payment_status"]),
-        "checkIn": iso(r["check_in"]) if r["check_in"] else None, "checkOut": iso(r["check_out"]) if r["check_out"] else None,
-        "eventStart": iso(r["event_start"]), "eventEnd": iso(r["event_end"]),
-        "nights": r["nights"], "totalRooms": r["total_rooms"],
-        "adr": float(r["adr"]) if r["adr"] is not None else None,
-        "totalCost": str(r["total_cost"]) if r["total_cost"] is not None else None,
-        "grandTotalNoTax": float(r["grand_total_no_tax"]) if r["grand_total_no_tax"] is not None else None,
-        "receivedDate": str(r["received_date"]) if r["received_date"] else None,
-        "offerDeadline": norm(str(r["offer_deadline"])) if r["offer_deadline"] else None,
-        "depositDeadline": norm(str(r["deposit_deadline"])) if r["deposit_deadline"] else None,
-        "paymentDeadline": norm(str(r["payment_deadline"])) if r["payment_deadline"] else None,
-        "mealPlan": norm(r["meal_plan"]), "bookerName": norm(r["booker_name"]),
-        "bookerContactId": norm(r["booker_contact_id"]), "promotionId": norm(r["promotion_id"]),
-        "confirmationNo": norm(r["confirmation_no"]), "note": norm(r["note"]),
-        "cancelReason": norm(r["cancel_reason"]), "cancelNote": norm(r["cancel_note"]),
-        "createdAt": iso(r["created_at"]), "updatedAt": iso(r["updated_at"]),
-        "paidAmount": str(r["paid_amount"]) if r["paid_amount"] is not None else None,
-        "beoNotes": norm(r["beo_notes"]), "gisBillingInstructions": norm(r["gis_billing_instructions"]),
-        "gisExpectedArrivalTime": norm(r["gis_expected_arrival_time"]), "gisOperationalNotes": norm(r["gis_operational_notes"]),
-        "rooms": child_arr("rooms", "request_rooms"), "agenda": child_arr("agenda", "request_agenda"),
-        "logs": child_arr("logs", "request_logs"), "payments": child_arr("payments", "request_payments"),
-        "alerts": child_arr("alerts", "request_alerts"), "transportation": child_arr("transportation", "request_transportation"),
-        "invoices": invoices, "feedback": feedback,
-    }
-
 def list_accounts(property_id: Optional[str] = None) -> list:
     pool = _get_pool()
     with pool.connection() as conn:
@@ -804,7 +973,34 @@ def get_account(account_id: str) -> Optional[dict]:
         with conn.cursor() as cur:
             cur.execute("SELECT * FROM accounts WHERE id = %s;", (str(account_id),))
             r = cur.fetchone()
-            return _row_to_account_dict(r, cur) if r else None
+            if not r:
+                return None
+            acc = _row_to_account_dict(r, cur)
+    # Tenant isolation: hide accounts outside the caller's property scope (IDOR).
+    scope = _tenant_scope()
+    if scope is not None:
+        pid = str(acc.get("propertyId") or "").strip()
+        if pid and pid not in scope:
+            return None
+    return acc
+
+
+def _cascade_account_rename_to_requests(cur, acc_id: str, new_name) -> int:
+    """When an account is renamed, propagate the new name onto the denormalized
+    `account_name` column of every linked request. Returns the number of affected
+    requests so the caller can emit a single live-refresh signal. Runs inside the
+    caller's transaction/cursor; a no-op (0 rows) when the name is unchanged."""
+    cur.execute(
+        """
+        UPDATE requests
+           SET account_name = %s, updated_at = NOW()
+         WHERE account_id = %s
+           AND account_name IS DISTINCT FROM %s
+        RETURNING id;
+        """,
+        (new_name, acc_id, new_name),
+    )
+    return len(cur.fetchall())
 
 
 def upsert_account(data: dict) -> dict:
@@ -833,6 +1029,13 @@ def upsert_account(data: dict) -> dict:
     pool = _get_pool()
     with pool.connection() as conn:
         with conn.cursor() as cur:
+            cur.execute("SELECT property_id FROM accounts WHERE id = %s;", (acc_id,))
+            existing = cur.fetchone()
+            if existing:
+                existing_pid = str(existing.get("property_id") or "").strip() or None
+                _assert_upsert_write_access(existing_pid, property_id, row_exists=True)
+            else:
+                _assert_write_access(property_id)
             cur.execute(
                 """
                 INSERT INTO accounts (
@@ -877,11 +1080,19 @@ def upsert_account(data: dict) -> dict:
             for a in item.get("activities") or []:
                 if isinstance(a, dict):
                     _insert_account_activity(cur, acc_id, a)
+            # Keep the denormalized account_name on linked requests in sync so the
+            # requests list / reports reflect a rename without re-editing each request.
+            renamed_count = _cascade_account_rename_to_requests(cur, acc_id, item.get("name"))
             conn.commit()
     item["updatedAt"] = _NOW().isoformat()
     
     # Broadcast real-time change event
     _broadcast_change("updated", "account", item, property_id)
+    # If a rename touched linked requests, emit ONE lightweight refresh signal so
+    # every open list (requests, dashboard, CRM) refetches — instead of one event
+    # per request, which would flood the socket for large accounts.
+    if renamed_count:
+        _broadcast_change("refresh", "request", {"reason": "account_rename", "accountId": acc_id}, property_id)
     
     return item
 
@@ -950,9 +1161,14 @@ def delete_account(account_id: str):
             cur.execute("SELECT property_id FROM accounts WHERE id = %s;", (str(account_id),))
             row = cur.fetchone()
             property_id = row["property_id"] if row else None
+            _assert_write_access(property_id)
             
             cur.execute("DELETE FROM account_contacts WHERE account_id = %s;", (str(account_id),))
             cur.execute("DELETE FROM account_activities WHERE account_id = %s;", (str(account_id),))
+            # Rates cascade via FK when present; explicit delete covers DBs before 011 migration.
+            cur.execute("SELECT to_regclass('public.account_rates') AS t;")
+            if cur.fetchone().get("t"):
+                cur.execute("DELETE FROM account_rates WHERE account_id = %s;", (str(account_id),))
             cur.execute("DELETE FROM accounts WHERE id = %s;", (str(account_id),))
             conn.commit()
     

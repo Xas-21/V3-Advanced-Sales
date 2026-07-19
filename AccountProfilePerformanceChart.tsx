@@ -92,7 +92,7 @@ export default function AccountProfilePerformanceChart({
         return rows;
     }, [chartData, chartTab]);
     const roomsChartYDomains = useMemo(() => {
-        if (chartTab !== 'Rooms') return { maxRooms: 1, maxNights: 1 };
+        if (chartTab !== 'Rooms') return { maxRooms: 1, maxNights: 1, maxCount: 1 };
         const rows = chartDataForTab || [];
         let maxR = 0;
         let maxN = 0;
@@ -105,7 +105,10 @@ export default function AccountProfilePerformanceChart({
             if (c <= 0) return 1;
             return Math.max(c, Math.ceil(c * 1.06));
         };
-        return { maxRooms: head(maxR), maxNights: head(maxN) };
+        const maxRooms = head(maxR);
+        const maxNights = head(maxN);
+        /** Single left scale (landing-style) so night/revenue lines don’t collide with dual-axis peripherals. */
+        return { maxRooms, maxNights, maxCount: Math.max(maxRooms, maxNights) };
     }, [chartTab, chartDataForTab, vsOn]);
     const moneyTickFormatter = (v: any) => formatCompactCurrency(Number(v || 0), selectedCurrency);
     const isMoneySeries = (dataKey: string, displayName: string) => {
@@ -367,33 +370,23 @@ export default function AccountProfilePerformanceChart({
                     ) : null}
                 </BarChart>
             ) : chartTab === 'Rooms' ? (
-                <ComposedChart data={chartDataForTab} margin={{ top: 10, right: 10, left: 4, bottom: 0 }}>
+                <ComposedChart data={chartDataForTab} margin={{ top: 10, right: 12, left: 4, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={colors.border} vertical={false} />
                     <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: colors.textMuted, fontSize: 10 }} />
                     <YAxis
                         yAxisId="rooms"
                         orientation="left"
-                        width={34}
+                        width={40}
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: colors.cyan, fontSize: 9 }}
+                        tick={{ fill: colors.textMuted, fontSize: 9 }}
                         allowDecimals={false}
-                        domain={[0, roomsChartYDomains.maxRooms]}
-                    />
-                    <YAxis
-                        yAxisId="nights"
-                        orientation="left"
-                        width={34}
-                        offset={36}
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: colors.blue, fontSize: 9 }}
-                        allowDecimals={false}
-                        domain={[0, roomsChartYDomains.maxNights]}
+                        domain={[0, roomsChartYDomains.maxCount]}
                     />
                     <YAxis
                         yAxisId="right"
                         orientation="right"
+                        width={52}
                         axisLine={false}
                         tickLine={false}
                         tick={{ fill: colors.textMuted, fontSize: 10 }}
@@ -416,20 +409,39 @@ export default function AccountProfilePerformanceChart({
                             barSize={12}
                         />
                     ) : null}
-                    <Line yAxisId="nights" type="monotone" dataKey="roomNights" name="Room Nights" stroke={colors.blue} strokeWidth={2} dot={{ r: 2 }} />
+                    <Line
+                        yAxisId="rooms"
+                        type="monotone"
+                        dataKey="roomNights"
+                        name="Room Nights"
+                        stroke={colors.blue}
+                        strokeWidth={2}
+                        dot={{ r: 3, fill: colors.card, stroke: colors.blue, strokeWidth: 2 }}
+                        activeDot={{ r: 5 }}
+                    />
                     {vsOn ? (
                         <Line
-                            yAxisId="nights"
+                            yAxisId="rooms"
                             type="monotone"
                             dataKey="roomNightsLy"
                             name={`Room Nights${lySuffix}`}
                             stroke={LY_COLORS.lineAlt}
                             strokeWidth={2}
                             strokeDasharray={LY_LINE_DASH}
-                            dot={{ r: 2, fill: LY_COLORS.lineAlt }}
+                            dot={{ r: 3, fill: colors.card, stroke: LY_COLORS.lineAlt, strokeWidth: 2 }}
+                            activeDot={{ r: 5 }}
                         />
                     ) : null}
-                    <Line yAxisId="right" type="monotone" dataKey="roomsRevenue" name="Rooms Revenue" stroke={colors.green} strokeWidth={2} dot={{ r: 3 }} />
+                    <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="roomsRevenue"
+                        name="Rooms Revenue"
+                        stroke={colors.green}
+                        strokeWidth={2}
+                        dot={{ r: 3, fill: colors.card, stroke: colors.green, strokeWidth: 2 }}
+                        activeDot={{ r: 5 }}
+                    />
                     {vsOn ? (
                         <Line
                             yAxisId="right"
@@ -439,23 +451,33 @@ export default function AccountProfilePerformanceChart({
                             stroke={LY_COLORS.revenue}
                             strokeWidth={2}
                             strokeDasharray={LY_LINE_DASH}
-                            dot={{ r: 2, fill: LY_COLORS.revenue }}
+                            dot={{ r: 3, fill: colors.card, stroke: LY_COLORS.revenue, strokeWidth: 2 }}
+                            activeDot={{ r: 5 }}
                         />
                     ) : null}
                 </ComposedChart>
             ) : chartTab === 'MICE' ? (
-                <ComposedChart data={chartDataForTab} margin={{ top: 10, right: 10, left: -15, bottom: 0 }} barGap={vsOn ? 2 : undefined}>
+                <ComposedChart data={chartDataForTab} margin={{ top: 10, right: 12, left: 4, bottom: 0 }} barGap={vsOn ? 2 : undefined}>
                     <CartesianGrid strokeDasharray="3 3" stroke={colors.border} vertical={false} />
                     <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: colors.textMuted, fontSize: 10 }} />
                     <YAxis
                         yAxisId="left"
+                        width={40}
                         axisLine={false}
                         tickLine={false}
                         tick={{ fill: colors.textMuted, fontSize: 10 }}
                         allowDecimals={false}
                         domain={[0, 'dataMax']}
                     />
-                    <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fill: colors.textMuted, fontSize: 10 }} tickFormatter={moneyTickFormatter} />
+                    <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        width={52}
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: colors.textMuted, fontSize: 10 }}
+                        tickFormatter={moneyTickFormatter}
+                    />
                     <Tooltip
                         {...(vsOn
                             ? { content: comparisonTooltipContent, cursor: { fill: colors.border } }
@@ -473,7 +495,16 @@ export default function AccountProfilePerformanceChart({
                             barSize={14}
                         />
                     ) : null}
-                    <Line yAxisId="right" type="monotone" dataKey="miceRoomsRevenue" name="Rooms Revenue" stroke={colors.cyan} strokeWidth={2} dot={{ r: 3 }} />
+                    <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="miceRoomsRevenue"
+                        name="Rooms Revenue"
+                        stroke={colors.cyan}
+                        strokeWidth={2}
+                        dot={{ r: 3, fill: colors.card, stroke: colors.cyan, strokeWidth: 2 }}
+                        activeDot={{ r: 5 }}
+                    />
                     {vsOn ? (
                         <Line
                             yAxisId="right"
@@ -483,10 +514,20 @@ export default function AccountProfilePerformanceChart({
                             stroke={LY_COLORS.lineAlt}
                             strokeWidth={2}
                             strokeDasharray={LY_LINE_DASH}
-                            dot={{ r: 2, fill: LY_COLORS.lineAlt }}
+                            dot={{ r: 3, fill: colors.card, stroke: LY_COLORS.lineAlt, strokeWidth: 2 }}
+                            activeDot={{ r: 5 }}
                         />
                     ) : null}
-                    <Line yAxisId="right" type="monotone" dataKey="miceRevenue" name="Event Revenue" stroke={colors.green} strokeWidth={2} dot={{ r: 3 }} />
+                    <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="miceRevenue"
+                        name="Event Revenue"
+                        stroke={colors.green}
+                        strokeWidth={2}
+                        dot={{ r: 3, fill: colors.card, stroke: colors.green, strokeWidth: 2 }}
+                        activeDot={{ r: 5 }}
+                    />
                     {vsOn ? (
                         <Line
                             yAxisId="right"
@@ -496,7 +537,8 @@ export default function AccountProfilePerformanceChart({
                             stroke={LY_COLORS.revenue}
                             strokeWidth={2}
                             strokeDasharray={LY_LINE_DASH}
-                            dot={{ r: 2, fill: LY_COLORS.revenue }}
+                            dot={{ r: 3, fill: colors.card, stroke: LY_COLORS.revenue, strokeWidth: 2 }}
+                            activeDot={{ r: 5 }}
                         />
                     ) : null}
                 </ComposedChart>

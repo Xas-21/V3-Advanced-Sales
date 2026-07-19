@@ -1,0 +1,48 @@
+flowchart LR
+  subgraph actors["Actors"]
+    Sales["Sales / CRM users"]
+    Admin["Admin / DOS"]
+  end
+
+  subgraph client["Client :5173"]
+    SPA["React SPA<br/>AS.tsx shell"]
+    Mods["Hub · CRM · Requests<br/>Feed · Messenger<br/>Contracts · Settings"]
+  end
+
+  subgraph stack["Docker Compose"]
+    FE["as-frontend"]
+    BE["as-backend<br/>FastAPI :8000"]
+    PG["as-postgres-V2<br/>PostgreSQL 18"]
+  end
+
+  subgraph apis["API + realtime"]
+    REST["REST routers<br/>auth · feed · chat<br/>uploads · accounts · reqs<br/>contracts · rooms · more"]
+    WS["WebSocket<br/>presence · chat · feed"]
+  end
+
+  subgraph store["Persistent volumes"]
+    DB[("as-postgres-v2-data")]
+    UP[("as-uploads-data<br/>feed + chat media")]
+  end
+
+  Sales --> SPA
+  Admin --> SPA
+  SPA --> Mods
+  FE -.->|"dev mount"| SPA
+  Mods -->|"HTTPS /api"| BE
+  Mods -->|"WS"| WS
+  BE --> REST
+  BE --> WS
+  REST --> PG
+  REST -->|"local files"| UP
+  PG --> DB
+
+  classDef actor fill:#083F75,stroke:#06315C,color:#fff
+  classDef ui fill:#dae8fc,stroke:#6c8ebf,color:#000
+  classDef svc fill:#23A2D9,stroke:#0E7DAD,color:#fff
+  classDef db fill:#d5e8d4,stroke:#82b366,color:#000
+
+  class Sales,Admin actor
+  class SPA,Mods,FE ui
+  class BE,REST,WS,PG svc
+  class DB,UP db

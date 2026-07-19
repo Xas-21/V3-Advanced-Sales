@@ -1,0 +1,84 @@
+flowchart TB
+  subgraph L1["Layer 1 — Entry"]
+    Login["Login.tsx"]
+    Landing["LandingPage.tsx"]
+    Feedback["RequestFeedbackPublicPage"]
+  end
+
+  subgraph L2["Layer 2 — App shell"]
+    AS["AS.tsx AdvancedSalesDashboard"]
+    Perms["userPermissions.ts"]
+    Themes["Themes Luxury Light Desert"]
+  end
+
+  subgraph L3["Layer 3 — Feature modules"]
+    Dash["Dashboard Hub"]
+    Cal["Calendar"]
+    Todo["To-Do"]
+    Events["Events and Catering"]
+    Reqs["RequestsManager"]
+    CRM["CRM"]
+    Contracts["Contracts"]
+    Accounts["Accounts"]
+    Promo["Promotions"]
+    Reports["Reports"]
+    Settings["Settings"]
+    Msg["MessengerWidget"]
+  end
+
+  subgraph L4["Layer 4 — Client services"]
+    API["backendApi.ts"]
+    LocalUp["localUpload.ts"]
+    HubCtx["HubDataContext"]
+    MsgCtx["MessengerContext"]
+    WSBridge["WebSocket bridge"]
+  end
+
+  subgraph L5["Layer 5 — Backend"]
+    FastAPI["main.py FastAPI :8000"]
+    Routers["20 API routers"]
+    WS["websocket_manager"]
+    Sec["security auth_db dependencies"]
+    DA["data_access.py"]
+  end
+
+  subgraph L6["Layer 6 — Data"]
+    PG[("PostgreSQL")]
+    VolUp[("as-uploads-data")]
+  end
+
+  Landing --> Login
+  Login --> AS
+  AS --> Perms
+  AS --> Themes
+  AS --> Dash
+  AS --> Cal
+  AS --> Todo
+  AS --> Events
+  AS --> Reqs
+  AS --> CRM
+  AS --> Contracts
+  AS --> Accounts
+  AS --> Promo
+  AS --> Reports
+  AS --> Settings
+  AS --> Msg
+  Dash --> HubCtx
+  Msg --> MsgCtx
+  Dash --> API
+  Reqs --> API
+  CRM --> API
+  Msg --> API
+  Dash --> LocalUp
+  Msg --> LocalUp
+  Reqs --> LocalUp
+  Contracts --> LocalUp
+  API --> FastAPI
+  WSBridge --> WS
+  Msg --> WSBridge
+  FastAPI --> Routers
+  FastAPI --> Sec
+  Routers --> DA
+  DA --> PG
+  LocalUp --> VolUp
+  FastAPI --> WS

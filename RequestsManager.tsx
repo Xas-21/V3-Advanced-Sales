@@ -70,7 +70,8 @@ import { requestOperationalDatesOverlapRange } from './operationalSegmentRevenue
 import { refreshRequestsWithDefiniteToActual } from './requestStatusAutomation';
 import { requestMatchesAccount } from './accountProfileData';
 import { formatCurrencyAmount, resolveCurrencyCode, type CurrencyCode } from './currency';
-import { deleteFileFromCloudinary, uploadFileToCloudinary } from './cloudinaryUpload';
+import { contrastOn } from './dashboardHub/analyticsKit';
+import { deleteFileLocal, mediaUrl, uploadFileLocal } from './localUpload';
 import { collectRequestFormViolations } from './formConfigurations';
 import {
     clearNewRequestDraft,
@@ -89,6 +90,7 @@ import {
     type FeedbackAnswerValue,
     type FeedbackQuestion,
 } from './requestFeedbackConfig';
+import { lookupAccountRoomRate, type AccountRatePeriod } from './accountRates';
 
 const REQUEST_SEARCH_STATUS_OPTIONS = [
     'Inquiry',
@@ -201,6 +203,8 @@ interface RequestsManagerProps {
     onAfterRequestsMutate?: () => void;
     /** Parent-held requests (AS sharedRequests) — merged after fetch so saves are not lost on remount. */
     sharedRequestsSeed?: any[];
+    /** Bumped by the parent on every live request WebSocket event; triggers a debounced refetch. */
+    liveUpdateSignal?: number;
     /** When true, only the new-request wizard is shown (for modal overlay from Events page). */
     embedded?: boolean;
     onEmbeddedComplete?: () => void;
@@ -364,6 +368,7 @@ export default function RequestsManager({
     onConsumedPendingOpenOpts,
     onAfterRequestsMutate,
     sharedRequestsSeed = [],
+    liveUpdateSignal = 0,
     embedded = false,
     onEmbeddedComplete,
     onEmbeddedCancel,
@@ -513,6 +518,12 @@ export default function RequestsManager({
     }, [accounts, activeProperty?.id]);
 
     const [requests, setRequests] = useState<any[]>([]);
+    // Ids deleted in this session. Excluded from the sharedRequestsSeed merge in
+    // fetchRequests so a just-deleted request is never resurrected from the
+    // parent's (possibly stale) seed before the parent state catches up.
+    const deletedRequestIdsRef = useRef<Set<string>>(new Set());
+    // Tracks prior sharedRequestsSeed ids so we can drop rows removed by delete events.
+    const prevSeedIdsRef = useRef<Set<string>>(new Set());
     const [taxesList, setTaxesList] = useState<any[]>([]);
     const [propertyVenues, setPropertyVenues] = useState<any[]>([]);
     const [propertyRoomNames, setPropertyRoomNames] = useState<string[]>([]);
@@ -728,6 +739,7 @@ export default function RequestsManager({
     const [feedbackCopyState, setFeedbackCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
     const [activeOptionsMenu, setActiveOptionsMenu] = useState<number | null>(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [accountRatePeriods, setAccountRatePeriods] = useState<AccountRatePeriod[]>([]);
     const skipNewRequestResetRef = useRef(false);
     const prevSubViewForNewRequestResetRef = useRef(subView);
 
@@ -1278,6 +1290,33 @@ export default function RequestsManager({
     }, [subView, embedded, optsHeadless, detailHeadless, onRequestWizardFinished]);
 
     // Fetch Requests from Backend
+    const applyRequestsPayload = (data: any[]) => {
+        const serverIds = new Set(data.map((r: any) => String(r?.id || '')));
+        // Locally-deleted rows must never be re-added by an authoritative refetch that
+        // raced ahead of the backend commit. Filter tombstoned ids out of the server
+        // list itself (not just the seed) to prevent the delete "flicker".
+        let next = deletedRequestIdsRef.current.size
+            ? data.filter((r: any) => !deletedRequestIdsRef.current.has(String(r?.id || '')))
+            : data;
+        if (Array.isArray(sharedRequestsSeed) && sharedRequestsSeed.length > 0) {
+            const pid = String(activeProperty?.id || '').trim();
+            const extras = sharedRequestsSeed.filter((r: any) => {
+                const id = String(r?.id || '');
+                if (!id || serverIds.has(id) || deletedRequestIdsRef.current.has(id)) return false;
+                const rp = String(r?.propertyId || '').trim();
+                return !pid || !rp || rp === pid;
+            });
+            if (extras.length) next = [...extras, ...next];
+        }
+        // Retire a tombstone only once the server confirms the row is truly gone.
+        if (deletedRequestIdsRef.current.size) {
+            deletedRequestIdsRef.current.forEach((id) => {
+                if (!serverIds.has(id)) deletedRequestIdsRef.current.delete(id);
+            });
+        }
+        setRequests(next);
+    };
+
     const fetchRequests = async () => {
         setIsLoading(true);
         try {
@@ -1288,25 +1327,26 @@ export default function RequestsManager({
                 readOnly: readOnlyOperational,
                 requestLogUser,
             });
-            if (Array.isArray(data)) {
-                let next = data;
-                if (Array.isArray(sharedRequestsSeed) && sharedRequestsSeed.length > 0) {
-                    const pid = String(activeProperty?.id || '').trim();
-                    const ids = new Set(next.map((r: any) => String(r?.id || '')));
-                    const extras = sharedRequestsSeed.filter((r: any) => {
-                        const id = String(r?.id || '');
-                        if (!id || ids.has(id)) return false;
-                        const rp = String(r?.propertyId || '').trim();
-                        return !pid || !rp || rp === pid;
-                    });
-                    if (extras.length) next = [...extras, ...next];
-                }
-                setRequests(next);
-            }
+            if (Array.isArray(data)) applyRequestsPayload(data);
         } catch (err) {
             console.error("Error fetching requests:", err);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    /** Lightweight refetch for live updates — skips Definite→Actual promotion loop. */
+    const fetchRequestsLive = async () => {
+        try {
+            const url = activeProperty?.id
+                ? apiUrl(`/api/requests?propertyId=${activeProperty.id}`)
+                : apiUrl('/api/requests');
+            const res = await fetch(url);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (Array.isArray(data)) applyRequestsPayload(data);
+        } catch (err) {
+            console.error('Error live-fetching requests:', err);
         }
     };
 
@@ -1328,6 +1368,32 @@ export default function RequestsManager({
         fetchTaxes();
     }, [subView, activeProperty?.id]);
 
+    // Instant list sync: mirror parent sharedRequests (updated immediately by WebSocket
+    // and by local delete/save handlers) into this component's requests state.
+    useEffect(() => {
+        if (!Array.isArray(sharedRequestsSeed)) return;
+        const pid = String(activeProperty?.id || '').trim();
+        const seedForProp = sharedRequestsSeed.filter((r: any) => {
+            const id = String(r?.id || '');
+            if (!id || deletedRequestIdsRef.current.has(id)) return false;
+            const rp = String(r?.propertyId || '').trim();
+            return !pid || !rp || rp === pid;
+        });
+        const seedIds = new Set(seedForProp.map((r: any) => String(r.id)));
+
+        setRequests((prev) => {
+            const byId = new Map(prev.map((r) => [String(r.id), r]));
+            for (const row of seedForProp) {
+                byId.set(String(row.id), row);
+            }
+            for (const id of prevSeedIdsRef.current) {
+                if (!seedIds.has(id)) byId.delete(id);
+            }
+            return Array.from(byId.values());
+        });
+        prevSeedIdsRef.current = seedIds;
+    }, [sharedRequestsSeed, activeProperty?.id]);
+
     useEffect(() => {
         const onVis = () => {
             if (document.visibilityState === 'visible') fetchRequests();
@@ -1335,6 +1401,21 @@ export default function RequestsManager({
         document.addEventListener('visibilitychange', onVis);
         return () => document.removeEventListener('visibilitychange', onVis);
     }, [activeProperty?.id]);
+
+    // Live updates: refetch authoritative server data (fast path, no automation loop).
+    const liveRefetchTimerRef = useRef<number | null>(null);
+    const lastLiveSignalRef = useRef(liveUpdateSignal);
+    useEffect(() => {
+        if (liveUpdateSignal === lastLiveSignalRef.current) return;
+        lastLiveSignalRef.current = liveUpdateSignal;
+        if (liveRefetchTimerRef.current) clearTimeout(liveRefetchTimerRef.current);
+        liveRefetchTimerRef.current = window.setTimeout(() => {
+            fetchRequestsLive();
+        }, 150);
+        return () => {
+            if (liveRefetchTimerRef.current) clearTimeout(liveRefetchTimerRef.current);
+        };
+    }, [liveUpdateSignal]);
 
     useEffect(() => {
         if (searchResults === null) return;
@@ -1371,6 +1452,85 @@ export default function RequestsManager({
         };
         loadVenuesRooms();
     }, [activeProperty?.id]);
+
+    // Catalog rates for new drafts only (existing/edit/duplicate keep snapshotted room rates).
+    const allowAccountRateAutofill =
+        !isEditing && !searchParams?.editRequestId && !searchParams?.duplicateFromRequestId;
+
+    useEffect(() => {
+        if (!allowAccountRateAutofill) {
+            setAccountRatePeriods([]);
+            return;
+        }
+        const pid = String(activeProperty?.id || '').trim();
+        const aid = String(accForm.accountId || '').trim();
+        if (!pid || !aid) {
+            setAccountRatePeriods([]);
+            return;
+        }
+        let cancelled = false;
+        fetch(
+            apiUrl(
+                `/api/account-rates?propertyId=${encodeURIComponent(pid)}&accountId=${encodeURIComponent(aid)}`
+            )
+        )
+            .then((r) => (r.ok ? r.json() : []))
+            .then((data) => {
+                if (cancelled) return;
+                setAccountRatePeriods(Array.isArray(data) ? data : []);
+            })
+            .catch(() => {
+                if (!cancelled) setAccountRatePeriods([]);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [allowAccountRateAutofill, activeProperty?.id, accForm.accountId]);
+
+    useEffect(() => {
+        if (!allowAccountRateAutofill) return;
+        if (requestType !== 'accommodation' && requestType !== 'series' && requestType !== 'event_rooms') {
+            return;
+        }
+        const stayStart = String(accForm.checkIn || '').slice(0, 10);
+        const stayEnd = String(accForm.checkOut || stayStart).slice(0, 10);
+        const segment = String(accForm.segment || '').trim();
+        const accountId = String(accForm.accountId || '').trim();
+        if (!accountId || !segment || !stayStart) return;
+
+        setAccForm((prev) => {
+            const rooms = Array.isArray(prev.rooms) ? prev.rooms : [];
+            let changed = false;
+            const nextRooms = rooms.map((room: any) => {
+                const looked = lookupAccountRoomRate({
+                    periods: accountRatePeriods,
+                    accountId,
+                    segment,
+                    stayStart,
+                    stayEnd,
+                    roomType: String(room?.type || ''),
+                    occupancy: String(room?.occupancy || ''),
+                });
+                const nextRate = looked == null ? 0 : looked;
+                if (Number(room?.rate || 0) === nextRate) return room;
+                changed = true;
+                return { ...room, rate: nextRate };
+            });
+            return changed ? { ...prev, rooms: nextRooms } : prev;
+        });
+    }, [
+        allowAccountRateAutofill,
+        requestType,
+        accountRatePeriods,
+        accForm.accountId,
+        accForm.segment,
+        accForm.checkIn,
+        accForm.checkOut,
+        // Re-run when room type/occupancy identity set changes (not when user types rate).
+        JSON.stringify(
+            (accForm.rooms || []).map((r: any) => `${r?.id}|${r?.type}|${r?.occupancy}`)
+        ),
+    ]);
 
     useEffect(() => {
         const loadCxlReasons = async () => {
@@ -2249,37 +2409,44 @@ export default function RequestsManager({
 
     const deleteRequest = async (id: string) => {
         if (readOnlyOperational) return;
-        setIsLoading(true);
+        const rid = String(id);
+        const snapshot = requests.find((r: any) => String(r.id) === rid);
+        if (!snapshot) return;
+
+        // Optimistic remove — match dashboard KPI speed (sharedRequests updates instantly).
+        deletedRequestIdsRef.current.add(rid);
+        setRequests((prev) => prev.filter((r: any) => String(r.id) !== rid));
+        onRequestDeleted?.(rid);
+        if (selectedRequest && String(selectedRequest.id) === rid) {
+            setSelectedRequest(null);
+        }
+
         try {
-            const req = requests.find((r: any) => String(r.id) === String(id));
-            const publicIds = extractRequestDocPublicIds(req);
-            for (const pid of publicIds) {
-                try {
-                    await deleteFileFromCloudinary({
-                        publicId: pid,
-                        resourceType: 'raw',
-                        deliveryType: 'upload',
-                        invalidate: true,
-                    });
-                } catch {
-                    /* continue deleting request even if cloud cleanup fails */
-                }
-            }
             const res = await fetch(apiUrl(`/api/requests/${id}`), {
-                method: 'DELETE'
+                method: 'DELETE',
             });
-            if (res.ok) {
-                await fetchRequests();
-                onRequestDeleted?.(String(id));
-                onAfterRequestsMutate?.();
-            } else {
-                showSystemNotice('Delete failed', 'Failed to delete. Status: ' + res.status);
+            if (!res.ok) {
+                throw new Error(`Delete failed (${res.status})`);
             }
+
+            // Local volume cleanup after DB delete — do not block list UI.
+            const publicIds = extractRequestDocPublicIds(snapshot);
+            if (publicIds.length) {
+                void Promise.all(
+                    publicIds.map((pid) => deleteFileLocal(pid).catch(() => undefined))
+                );
+            }
+
+            void fetchRequestsLive();
         } catch (err) {
-            console.error("Error deleting request:", err);
-            showSystemNotice('Delete error', 'Error deleting request.');
-        } finally {
-            setIsLoading(false);
+            console.error('Error deleting request:', err);
+            deletedRequestIdsRef.current.delete(rid);
+            setRequests((prev) => {
+                if (prev.some((r: any) => String(r.id) === rid)) return prev;
+                return [snapshot, ...prev];
+            });
+            onAfterRequestsMutate?.();
+            showSystemNotice('Delete error', 'Could not delete the request. It was restored to the list.');
         }
     };
 
@@ -2771,14 +2938,9 @@ export default function RequestsManager({
             const current = getRequestDocMeta(docId);
             if (current?.publicId) {
                 try {
-                    await deleteFileFromCloudinary({
-                        publicId: current.publicId,
-                        resourceType: 'raw',
-                        deliveryType: 'upload',
-                        invalidate: true,
-                    });
+                    await deleteFileLocal(current.publicId);
                 } catch {
-                    /* keep system cleanup even if cloud delete fails */
+                    /* keep system cleanup even if file delete fails */
                 }
             }
             setAccForm((prev: any) => ({
@@ -2796,19 +2958,12 @@ export default function RequestsManager({
                 const current = getRequestDocMeta(docId);
                 if (current?.publicId) {
                     try {
-                        await deleteFileFromCloudinary({
-                            publicId: current.publicId,
-                            resourceType: 'raw',
-                            deliveryType: 'upload',
-                            invalidate: true,
-                        });
+                        await deleteFileLocal(current.publicId);
                     } catch {
                         /* continue with new upload */
                     }
                 }
-                const uploaded = await uploadFileToCloudinary(file, {
-                    folder: `visatour/requests/${activeProperty?.id || 'global'}`,
-                });
+                const uploaded = await uploadFileLocal(file, { folder: 'requests' });
                 setAccForm((prev: any) => ({
                     ...prev,
                     invoices: {
@@ -2822,7 +2977,7 @@ export default function RequestsManager({
                     },
                 }));
             } catch (e: any) {
-                showSystemNotice('Upload failed', e?.message || 'Failed to upload file to Cloudinary.');
+                showSystemNotice('Upload failed', e?.message || 'Failed to upload file.');
             } finally {
                 setUploadingDocs((prev) => ({ ...prev, [docId]: false }));
             }
@@ -3589,7 +3744,7 @@ export default function RequestsManager({
                                             </p>
                                             <div className="flex items-center gap-2">
                                                 <a
-                                                    href={docMeta.url || '#'}
+                                                    href={mediaUrl(docMeta.url) || '#'}
                                                     target="_blank"
                                                     rel="noreferrer"
                                                     className="px-2 py-0.5 rounded border"
@@ -5041,7 +5196,8 @@ export default function RequestsManager({
                                                 type="button"
                                                 onClick={handleSaveFeedback}
                                                 disabled={feedbackSaving}
-                                                className="px-4 py-2 rounded-xl bg-primary text-black font-black text-xs uppercase tracking-wider disabled:opacity-60"
+                                                className="px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider disabled:opacity-60"
+                                                style={{ backgroundColor: colors.primary, color: contrastOn(colors.primary) }}
                                             >
                                                 {feedbackSaving ? 'Saving...' : feedbackSubmittedAt ? 'Save edits' : 'Save feedback'}
                                             </button>
@@ -5086,7 +5242,13 @@ export default function RequestsManager({
                                     onClick={() => {
                                         openRequestForEdit(request);
                                     }}
-                                    className="px-12 py-3 rounded-xl bg-primary text-black font-black uppercase tracking-wider shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
+                                    className="px-12 py-3 rounded-xl font-black uppercase tracking-wider shadow-lg hover:scale-105 active:scale-95 transition-all"
+                                    style={{
+                                        backgroundColor: colors.primary,
+                                        color: contrastOn(colors.primary),
+                                        boxShadow: `0 10px 25px ${colors.primary}33`,
+                                    }}
+                                >
                                     Edit Request
                                 </button>
                             </div>
@@ -5967,11 +6129,12 @@ export default function RequestsManager({
                     }
                     confirmLabel="Delete Request"
                     danger
-                    onConfirm={async () => {
+                    onConfirm={() => {
                         if (!pendingDeleteRequest) return;
-                        await deleteRequest(pendingDeleteRequest.id);
+                        const id = pendingDeleteRequest.id;
                         setPendingDeleteRequest(null);
                         setShowDeleteRequestConfirm(false);
+                        void deleteRequest(id);
                     }}
                     onCancel={() => {
                         setPendingDeleteRequest(null);
@@ -6119,7 +6282,9 @@ export default function RequestsManager({
                                             <button
                                                 type="button"
                                                 onClick={() => printBeoDocument(beoReq, beoFin, beoNotesDraft, accounts, activeProperty)}
-                                                className="px-4 py-2 rounded-xl bg-primary text-black font-bold text-xs flex items-center gap-2">
+                                                className="px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2"
+                                                style={{ backgroundColor: colors.primary, color: contrastOn(colors.primary) }}
+                                            >
                                                 <Printer size={14} /> Print
                                             </button>
                                             <button
@@ -6461,7 +6626,8 @@ export default function RequestsManager({
                                                 popup.focus();
                                                 popup.print();
                                             }}
-                                            className="px-4 py-2 rounded-xl bg-primary text-black font-bold text-xs flex items-center gap-2"
+                                            className="px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2"
+                                            style={{ backgroundColor: colors.primary, color: contrastOn(colors.primary) }}
                                         >
                                             <Printer size={14} /> Print
                                         </button>

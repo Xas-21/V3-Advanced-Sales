@@ -24,3 +24,6 @@ backend/scripts/mk_env.*
 scripts/
 .env.bak
 PRODUCTION_DEPLOYMENT_2026-07-12.md
+backend/uploads/
+**/uploads/.gitkeep
+

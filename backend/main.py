@@ -1,6 +1,6 @@
 import sys
 import os
-print("VisaTour Backend: LOADING MAIN APP...")
+print("Advanced Sales Backend: LOADING MAIN APP...")
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
@@ -14,7 +14,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
 load_dotenv(os.path.join(BASE_DIR, ".env"), override=True)
 
-from routers import auth, users, properties, rooms, venues, taxes, financials, reqs, crm_state, contact, accounts, tasks, uploads, contracts, cxl_reasons, promotions, feed
+from routers import auth, users, properties, rooms, venues, taxes, financials, reqs, crm_state, contact, accounts, tasks, uploads, contracts, cxl_reasons, promotions, account_rates, feed, chat, presence
 from routers import ws
 from utils import close_database, get_database_url, init_database, storage_mode, check_database_health
 
@@ -26,7 +26,7 @@ def _database_host() -> str | None:
     return url.split("@", 1)[1].split("/", 1)[0]
 
 
-app = FastAPI(title="VisaTour ERP Backend", version="2.0.0", redirect_slashes=False)
+app = FastAPI(title="Advanced Sales Backend", version="2.0.0", redirect_slashes=False)
 
 
 @app.middleware("http")
@@ -68,6 +68,11 @@ app.add_middleware(
 
 # Global exception handler — sanitize 500 errors, log internal details
 import logging
+@app.exception_handler(PermissionError)
+async def permission_error_handler(request: Request, exc: PermissionError):
+    # Tenant/authorization violations raised by the data layer -> 403 (not 500).
+    return JSONResponse(status_code=403, content={"detail": str(exc) or "Access denied."})
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logging.error(f"Unhandled error on {request.method} {request.url.path}: {exc}", exc_info=True)
@@ -83,6 +88,8 @@ app.include_router(auth.router)
 # User management + feed require auth (already have their own dependencies)
 app.include_router(users.router)
 app.include_router(feed.router)
+app.include_router(chat.router)
+app.include_router(presence.router)
 
 # Data routers — require authentication for ALL endpoints
 _auth_required = [Depends(require_user)]
@@ -98,20 +105,19 @@ app.include_router(tasks.router, dependencies=_auth_required)
 app.include_router(contracts.router, dependencies=_auth_required)
 app.include_router(cxl_reasons.router, dependencies=_auth_required)
 app.include_router(promotions.router, dependencies=_auth_required)
+app.include_router(account_rates.router, dependencies=_auth_required)
 
-# Contact and uploads routers — keep unauthenticated for now (Abdullah will secure separately)
+# Contact form stays public (marketing/subscribe). Uploads require auth so
+# anonymous callers cannot write to the shared uploads volume.
 app.include_router(contact.router)
-app.include_router(uploads.router)
+app.include_router(uploads.router, dependencies=_auth_required)
 
-# WebSocket endpoint for real-time live updates
-app.include_router(ws.router)
-
-# Also add WebSocket route directly to ensure registration
-from fastapi.routing import APIWebSocketRoute
-for route in ws.router.routes:
-    if isinstance(route, APIWebSocketRoute):
-        app.routes.append(route)
-        print(f"VisaTour Backend: Registered WebSocket route {route.path}")
+# WebSocket endpoint for real-time live updates.
+# Registered directly on the app (not via include_router): in this FastAPI
+# build included routers are wrapped as _IncludedRouter mounts that do not match
+# websocket handshakes, so the /ws upgrade would 404. add_api_websocket_route
+# places the route at the top level where it is matched reliably.
+app.add_api_websocket_route("/ws", ws.websocket_endpoint)
 
 
 @app.on_event("startup")
@@ -126,15 +132,31 @@ def on_shutdown():
 
 @app.get("/api/health")
 def health():
-    db_ok = check_database_health() if storage_mode() == "postgres" else None
-    return {
-        "status": "ok" if db_ok is not False else "degraded",
+    # Ops probe: always 200 when ready; 503 when Postgres is required and down
+    # (Compose urlopen already fails on non-2xx — no healthcheck change needed).
+    mode = storage_mode()
+    version = os.getenv("APP_VERSION") or app.version
+    if mode == "postgres":
+        db_ok = check_database_health()
+        ready = db_ok
+        status = "ok" if db_ok else "degraded"
+    else:
+        db_ok = None
+        ready = False
+        status = "error"
+    body = {
+        "status": status,
+        "live": True,
+        "ready": ready,
         "database_connected": db_ok,
+        "storage_mode": mode,
+        "version": version,
     }
+    return JSONResponse(content=body, status_code=200 if ready else 503)
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to the VisaTour Backend API"}
+    return {"message": "Welcome to the Advanced Sales Backend API"}
 
 if __name__ == "__main__":
     import uvicorn

@@ -46,8 +46,8 @@ def verify_password(pwd: str, hashed: str) -> bool:
 
 def check_password_policy(pwd: str) -> Tuple[bool, str]:
     """Minimum bar for a production multi-tenant system."""
-    if not pwd or len(pwd) < 10:
-        return False, "Password must be at least 10 characters."
+    if not pwd or len(pwd) < 8:
+        return False, "Password must be at least 8 characters."
     lower = any(c.islower() for c in pwd)
     upper = any(c.isupper() for c in pwd)
     digit = any(c.isdigit() for c in pwd)

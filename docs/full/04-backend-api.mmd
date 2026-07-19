@@ -1,0 +1,50 @@
+flowchart TB
+  Main["backend/main.py"]
+
+  subgraph AuthN["Auth and users"]
+    Auth["auth.py"]
+    Users["users.py"]
+    Contact["contact.py"]
+  end
+
+  subgraph Collab["Collaboration"]
+    Feed["feed.py"]
+    Chat["chat.py"]
+    Presence["presence.py"]
+    WS["ws.py + websocket_manager"]
+    Uploads["uploads.py local files"]
+  end
+
+  subgraph Ops["Operations"]
+    Reqs["reqs.py"]
+    Accounts["accounts.py"]
+    CrmState["crm_state.py"]
+    Tasks["tasks.py"]
+    Contracts["contracts.py"]
+    Promos["promotions.py"]
+  end
+
+  subgraph Property["Property config"]
+    Props["properties.py"]
+    Rooms["rooms.py"]
+    Venues["venues.py"]
+    Taxes["taxes.py"]
+    Fin["financials.py"]
+    Cxl["cxl_reasons.py"]
+  end
+
+  subgraph Core["Shared backend core"]
+    Deps["dependencies.py require_user"]
+    Sec["security.py"]
+    AuthDB["auth_db.py"]
+    DA["data_access.py"]
+    Utils["utils.py"]
+  end
+
+  Main --> AuthN & Collab & Ops & Property
+  AuthN & Collab & Ops & Property --> Deps
+  Deps --> Sec & AuthDB
+  Ops & Collab & Property --> DA
+  DA --> Utils
+  Chat & Feed & Presence --> WS
+  Feed & Chat --> Uploads

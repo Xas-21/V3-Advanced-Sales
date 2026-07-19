@@ -1,0 +1,25 @@
+---
+description: Project-local taste-skill pack for UI/frontend design work
+alwaysApply: true
+---
+
+# Taste skills (project)
+
+This project includes the Leonxlnx/taste-skill pack under `.cursor/skills/` and `.agents/skills/`.
+
+When the user asks for landing-page design, portfolio UI, visual polish, anti-generic “AI slop” frontend work, redesign of marketing surfaces, brandkit, image-to-code, or a named style (minimalist, high-end, brutalist, stitch) — read and follow the matching skill before coding:
+
+| Ask / vibe | Skill |
+|---|---|
+| Default anti-slop frontend / landing / portfolio | `design-taste-frontend` |
+| Upgrade an existing UI without rewrite | `redesign-existing-projects` |
+| Clean editorial minimal | `minimalist-ui` |
+| Premium / Awwwards-tier | `high-end-visual-design` |
+| Industrial brutalist | `industrial-brutalist-ui` |
+| Brand tokens / kit | `brandkit` |
+| Screenshot → code | `image-to-code` |
+| Gen UI from image (web / mobile) | `imagegen-frontend-web` / `imagegen-frontend-mobile` |
+| Stitch / GPT-oriented taste | `stitch-design-taste` / `gpt-taste` |
+| Force complete UI output | `full-output-enforcement` |
+
+Do **not** auto-apply these to normal dashboard/CRM bugfixes or backend work unless the user asks for a visual redesign. Prefer matching the existing Advanced Sales theme (Luxury / Light / Desert) when editing product UI inside the app.

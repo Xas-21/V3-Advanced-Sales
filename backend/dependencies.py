@@ -26,12 +26,20 @@ def get_current_user_ctx() -> Optional[dict]:
     return _current_user_ctx.get()
 
 
-def get_current_user(session_id: Optional[str] = Cookie(default=None, alias=SESSION_COOKIE_NAME)) -> Optional[dict[str, Any]]:
+def _user_from_ctx_or_session(session_id: Optional[str]) -> Optional[dict[str, Any]]:
+    """Prefer middleware-set context; fall back to resolve_session for rare paths without middleware."""
+    user = get_current_user_ctx()
+    if user is not None:
+        return user
     return resolve_session(session_id)
 
 
+def get_current_user(session_id: Optional[str] = Cookie(default=None, alias=SESSION_COOKIE_NAME)) -> Optional[dict[str, Any]]:
+    return _user_from_ctx_or_session(session_id)
+
+
 def require_user(session_id: Optional[str] = Cookie(default=None, alias=SESSION_COOKIE_NAME)) -> dict[str, Any]:
-    user = resolve_session(session_id)
+    user = _user_from_ctx_or_session(session_id)
     if not user:
         raise HTTPException(status_code=401, detail="Authentication required")
     return user

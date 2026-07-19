@@ -1,17 +1,19 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
 import {
     Users, Upload, List, TrendingUp, Phone, User, CheckSquare, Zap, FileText,
     MapPin, CheckCircle2, Download, Clock, Building, Mail, X,
 } from 'lucide-react';
 import {
     PROFILE_MONTH_LABELS,
+    PROFILE_ACTIVITY_PREVIEW_CAP,
+    PROFILE_ACTIVITY_MODAL_CAP,
     buildProfileActivityLog,
     countCallsAllTime,
     countCallsInMonth,
     countCallsInYear,
-    countOpenPipeline,
-    countOpenPipelineInYmdRange,
-    countRequestsInYmdRange,
+    countOpenPipelineAttributed,
+    countOpenPipelineInYmdRangeAttributed,
+    countRequestsInYmdRangeAttributed,
     filterUserAccounts,
     filterUserCrmLeads,
     getProfileRecentRequests,
@@ -19,12 +21,13 @@ import {
     recordVisibleOnProperty,
     requestAttributedToUser,
     requestInProperty,
-    sumRevenueInYmdRange,
+    sumRevenueInYmdRangeAttributed,
     taskAssignedToUser,
     userAttributedOperationalDateBounds,
     ymdBoundsForCalendarMonth,
     ymdBoundsForCalendarYear,
     computeProfileRequestPreTax,
+    type ProfileActivityRow,
 } from './userProfileMetrics';
 import { buildAccountProfileChartData } from './accountProfileChartData';
 import ChartVsCompareControls, { defaultChartVsYear } from './ChartVsCompareControls';
@@ -33,7 +36,9 @@ import {
     mergeChartRowsWithLyComparison,
     shiftRangeToComparisonYear,
 } from './chartVsYearCompare';
-import AccountProfilePerformanceChart, { type AccountProfileChartTab } from './AccountProfilePerformanceChart';
+import type { AccountProfileChartTab } from './AccountProfilePerformanceChart';
+
+const AccountProfilePerformanceChart = lazy(() => import('./AccountProfilePerformanceChart'));
 
 type UserPerformanceChartTabKey = 'revenue' | 'requests' | 'rooms' | 'mice' | 'status';
 
@@ -137,6 +142,11 @@ export function UserPerformanceDashboard({
 
         const [revenueDateRange, setRevenueDateRange] = useState(() => defaultCalendarYearRange());
         const [activityDayFilter, setActivityDayFilter] = useState('');
+        const [activityModalOpen, setActivityModalOpen] = useState(false);
+        const [activityModalLoading, setActivityModalLoading] = useState(false);
+        const [activityModalLogs, setActivityModalLogs] = useState<ProfileActivityRow[] | null>(null);
+        const [activitySearch, setActivitySearch] = useState('');
+        const [activitySearchApplied, setActivitySearchApplied] = useState('');
         const [viewMode, setViewMode] = useState<'month' | 'year' | 'full'>('year');
         const [performanceChartTab, setPerformanceChartTab] = useState<UserPerformanceChartTabKey>('revenue');
         const [perfChartVsEnabled, setPerfChartVsEnabled] = useState(false);
@@ -228,27 +238,33 @@ export function UserPerformanceDashboard({
             return { ...ymdBoundsForCalendarYear(y), year: y, monthIndex: mi };
         }, [viewMode]);
 
+        /** One property + attribution filter; KPIs / chart / recent list reuse this (Plan 011). */
+        const userAttributedRequests = useMemo(
+            () =>
+                (sharedRequests || []).filter(
+                    (r) => requestInProperty(r, scopePropId) && requestAttributedToUser(r, mergedUser)
+                ),
+            [sharedRequests, scopePropId, mergedUser]
+        );
+
         const monthRevenue = useMemo(
             () =>
-                sumRevenueInYmdRange(sharedRequests, scopePropId, mergedUser, periodBounds.start, periodBounds.end),
-            [sharedRequests, scopePropId, mergedUser, periodBounds.start, periodBounds.end]
+                sumRevenueInYmdRangeAttributed(userAttributedRequests, periodBounds.start, periodBounds.end),
+            [userAttributedRequests, periodBounds.start, periodBounds.end]
         );
         const monthReqCount = useMemo(
             () =>
-                countRequestsInYmdRange(sharedRequests, scopePropId, mergedUser, periodBounds.start, periodBounds.end),
-            [sharedRequests, scopePropId, mergedUser, periodBounds.start, periodBounds.end]
+                countRequestsInYmdRangeAttributed(userAttributedRequests, periodBounds.start, periodBounds.end),
+            [userAttributedRequests, periodBounds.start, periodBounds.end]
         );
         const activePipeInPeriod = useMemo(() => {
-            if (viewMode === 'full')
-                return countOpenPipeline(sharedRequests, scopePropId, mergedUser);
-            return countOpenPipelineInYmdRange(
-                sharedRequests,
-                scopePropId,
-                mergedUser,
+            if (viewMode === 'full') return countOpenPipelineAttributed(userAttributedRequests);
+            return countOpenPipelineInYmdRangeAttributed(
+                userAttributedRequests,
                 periodBounds.start,
                 periodBounds.end
             );
-        }, [sharedRequests, scopePropId, mergedUser, periodBounds.start, periodBounds.end, viewMode]);
+        }, [userAttributedRequests, periodBounds.start, periodBounds.end, viewMode]);
         const ymPrefix = `${periodBounds.year}-${String(periodBounds.monthIndex + 1).padStart(2, '0')}`;
         const monthCalls = useMemo(() => countCallsInMonth(userLeads, ymPrefix), [userLeads, ymPrefix]);
         const yearCalls = useMemo(() => countCallsInYear(userLeads, periodBounds.year), [userLeads, periodBounds.year]);
@@ -314,7 +330,7 @@ export function UserPerformanceDashboard({
         /** Same operational date window as the chart date pickers / full-history mode; drives account-style series. */
         const profileOperationalChartRange = useMemo(() => {
             if (viewMode === 'full') {
-                const b = userAttributedOperationalDateBounds(sharedRequests, scopePropId, mergedUser);
+                const b = userAttributedOperationalDateBounds(userAttributedRequests, scopePropId, mergedUser);
                 if (!b) {
                     const y = new Date().getFullYear();
                     return { start: `${y}-01-01`, end: `${y}-12-31` };
@@ -337,7 +353,7 @@ export function UserPerformanceDashboard({
             return { start, end };
         }, [
             viewMode,
-            sharedRequests,
+            userAttributedRequests,
             scopePropId,
             mergedUser,
             revenueDateRange.fromMonth,
@@ -346,18 +362,33 @@ export function UserPerformanceDashboard({
             revenueDateRange.toYear,
         ]);
 
-        const userAttributedRequests = useMemo(
-            () =>
-                (sharedRequests || []).filter(
-                    (r) => requestInProperty(r, scopePropId) && requestAttributedToUser(r, mergedUser)
-                ),
-            [sharedRequests, scopePropId, mergedUser]
-        );
+        /** Defer night-proration chart series so KPI cards paint first (Plan 011). */
+        const [chartSeriesReady, setChartSeriesReady] = useState(false);
+        useEffect(() => {
+            let cancelled = false;
+            const enable = () => {
+                if (!cancelled) setChartSeriesReady(true);
+            };
+            let idleHandle: number | undefined;
+            let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+            if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+                idleHandle = window.requestIdleCallback(enable, { timeout: 500 });
+            } else {
+                timeoutHandle = setTimeout(enable, 0);
+            }
+            return () => {
+                cancelled = true;
+                if (idleHandle != null && typeof window.cancelIdleCallback === 'function') {
+                    window.cancelIdleCallback(idleHandle);
+                }
+                if (timeoutHandle != null) clearTimeout(timeoutHandle);
+            };
+        }, []);
 
-        const accountChartData = useMemo(
-            () => buildAccountProfileChartData(userAttributedRequests, profileOperationalChartRange),
-            [userAttributedRequests, profileOperationalChartRange]
-        );
+        const accountChartData = useMemo(() => {
+            if (!chartSeriesReady) return [];
+            return buildAccountProfileChartData(userAttributedRequests, profileOperationalChartRange);
+        }, [chartSeriesReady, userAttributedRequests, profileOperationalChartRange]);
 
         const perfChartVsRange = useMemo(() => {
             if (!perfChartVsEnabled) return null;
@@ -365,9 +396,9 @@ export function UserPerformanceDashboard({
         }, [perfChartVsEnabled, perfChartVsYear, profileOperationalChartRange]);
 
         const accountChartDataLy = useMemo(() => {
-            if (!perfChartVsRange) return [];
+            if (!chartSeriesReady || !perfChartVsRange) return [];
             return buildAccountProfileChartData(userAttributedRequests, perfChartVsRange);
-        }, [userAttributedRequests, perfChartVsRange]);
+        }, [chartSeriesReady, userAttributedRequests, perfChartVsRange]);
 
         const accountChartDataDisplay = useMemo(() => {
             if (!perfChartVsEnabled) return accountChartData;
@@ -379,25 +410,81 @@ export function UserPerformanceDashboard({
         const recentRequestsList = useMemo(
             () =>
                 getProfileRecentRequests(
-                    sharedRequests,
+                    userAttributedRequests,
                     scopePropId,
                     mergedUser,
                     recentReqFrom,
                     recentReqTo,
                     10
                 ),
-            [sharedRequests, scopePropId, mergedUser, recentReqFrom, recentReqTo]
+            [userAttributedRequests, scopePropId, mergedUser, recentReqFrom, recentReqTo]
         );
 
         const SIXTY_DAYS_MS = 60 * 86400000;
-        const activityAll = useMemo(
-            () => buildProfileActivityLog(sharedRequests, accounts, tasks, mergedUser, scopePropId, SIXTY_DAYS_MS),
-            [sharedRequests, accounts, tasks, mergedUser, scopePropId]
+        /** Profile strip only — never builds the modal-sized list on open. */
+        const previewLogs = useMemo(
+            () =>
+                buildProfileActivityLog(
+                    sharedRequests,
+                    accounts,
+                    tasks,
+                    mergedUser,
+                    scopePropId,
+                    SIXTY_DAYS_MS,
+                    PROFILE_ACTIVITY_PREVIEW_CAP,
+                    undefined,
+                    activityDayFilter || undefined
+                ),
+            [sharedRequests, accounts, tasks, mergedUser, scopePropId, activityDayFilter]
         );
-        const displayedLogs = useMemo(() => {
-            if (!activityDayFilter) return activityAll;
-            return activityAll.filter((row) => row.date.startsWith(activityDayFilter));
-        }, [activityAll, activityDayFilter]);
+
+        useEffect(() => {
+            if (!activityModalOpen) return;
+            const t = setTimeout(() => setActivitySearchApplied(activitySearch), 250);
+            return () => clearTimeout(t);
+        }, [activitySearch, activityModalOpen]);
+
+        useEffect(() => {
+            if (!activityModalOpen) return;
+            let cancelled = false;
+            setActivityModalLoading(true);
+            setActivityModalLogs(null);
+            const t = setTimeout(() => {
+                if (cancelled) return;
+                const rows = buildProfileActivityLog(
+                    sharedRequests,
+                    accounts,
+                    tasks,
+                    mergedUser,
+                    scopePropId,
+                    SIXTY_DAYS_MS,
+                    PROFILE_ACTIVITY_MODAL_CAP,
+                    activitySearchApplied.trim() || undefined
+                );
+                setActivityModalLogs(rows);
+                setActivityModalLoading(false);
+            }, 0);
+            return () => {
+                cancelled = true;
+                clearTimeout(t);
+            };
+        }, [
+            activityModalOpen,
+            activitySearchApplied,
+            sharedRequests,
+            accounts,
+            tasks,
+            mergedUser,
+            scopePropId,
+        ]);
+
+        const closeActivityModal = () => {
+            setActivityModalOpen(false);
+            setActivityModalLogs(null);
+            setActivityModalLoading(false);
+            setActivitySearch('');
+            setActivitySearchApplied('');
+        };
 
         const logIcon = (kind: string) => {
             if (kind === 'account') return MapPin;
@@ -443,7 +530,8 @@ export function UserPerformanceDashboard({
         const initialLetter = displayName.trim().charAt(0).toUpperCase() || '?';
 
         const handleExportCSV = () => {
-            const rows = displayedLogs.map(
+            const source = activityModalOpen && activityModalLogs ? activityModalLogs : previewLogs;
+            const rows = source.map(
                 (l) => `${l.date},"${String(l.title).replace(/"/g, '""')}","${String(l.desc).replace(/"/g, '""')}"`
             );
             const csv = 'Date,Activity,Description\n' + rows.join('\n');
@@ -451,7 +539,7 @@ export function UserPerformanceDashboard({
             link.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv));
             link.setAttribute(
                 'download',
-                `activity_${displayName.replace(/\s+/g, '_')}_${activityDayFilter || 'last60d'}.csv`
+                `activity_${displayName.replace(/\s+/g, '_')}_${activitySearchApplied || activityDayFilter || 'recent'}.csv`
             );
             document.body.appendChild(link);
             link.click();
@@ -779,13 +867,33 @@ export function UserPerformanceDashboard({
                             )}
                         </div>
                         <div className="h-[155px] w-full">
-                            <AccountProfilePerformanceChart
-                                chartTab={PERF_TAB_TO_ACCOUNT[performanceChartTab]}
-                                chartData={accountChartDataDisplay}
-                                colors={colors}
-                                chartVsEnabled={perfChartVsEnabled}
-                                chartVsYear={perfChartVsYear}
-                            />
+                            {!chartSeriesReady ? (
+                                <div
+                                    className="h-full w-full flex items-center justify-center text-[10px] font-bold uppercase tracking-widest opacity-40"
+                                    style={{ color: colors.textMain }}
+                                >
+                                    Loading chart…
+                                </div>
+                            ) : (
+                                <Suspense
+                                    fallback={
+                                        <div
+                                            className="h-full w-full flex items-center justify-center text-[10px] font-bold uppercase tracking-widest opacity-40"
+                                            style={{ color: colors.textMain }}
+                                        >
+                                            Loading chart…
+                                        </div>
+                                    }
+                                >
+                                    <AccountProfilePerformanceChart
+                                        chartTab={PERF_TAB_TO_ACCOUNT[performanceChartTab]}
+                                        chartData={accountChartDataDisplay}
+                                        colors={colors}
+                                        chartVsEnabled={perfChartVsEnabled}
+                                        chartVsYear={perfChartVsYear}
+                                    />
+                                </Suspense>
+                            )}
                         </div>
                     </div>
 
@@ -882,31 +990,43 @@ export function UserPerformanceDashboard({
                         <div className="flex items-center justify-between mb-4">
                             <div>
                                 <h3 className="text-xs font-bold italic" style={{ color: colors.textMain }}>RECENT ACTIVITY LOG</h3>
-                                <p className="text-[8px] uppercase tracking-widest opacity-40" style={{ color: colors.textMain }}>System history & User logs</p>
+                                <p className="text-[8px] uppercase tracking-widest opacity-40" style={{ color: colors.textMain }}>
+                                    Latest {PROFILE_ACTIVITY_PREVIEW_CAP} · last 60 days
+                                </p>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap justify-end">
                                 <input
                                     type="date"
                                     className="p-1 px-2 bg-black/10 border border-white/10 rounded-lg text-[9px] font-bold outline-none"
                                     style={{ color: colors.textMain }}
                                     value={activityDayFilter}
                                     onChange={(e) => setActivityDayFilter(e.target.value)}
-                                    title="Leave empty to show last 60 days on this profile"
+                                    title="Filter the preview strip by day"
                                 />
-                                <button onClick={handleExportCSV} className="p-1.5 px-3 rounded-lg bg-primary text-black hover:scale-105 transition-transform flex items-center gap-1.5">
+                                <button
+                                    type="button"
+                                    onClick={() => setActivityModalOpen(true)}
+                                    className="p-1.5 px-3 rounded-lg bg-primary text-black hover:scale-105 transition-transform flex items-center gap-1.5"
+                                    title={`Open up to ${PROFILE_ACTIVITY_MODAL_CAP} recent activities`}
+                                >
+                                    <List size={12} />
+                                    <span className="text-[9px] font-black uppercase">View all</span>
+                                </button>
+                                <button onClick={handleExportCSV} className="p-1.5 px-3 rounded-lg border border-white/10 hover:bg-black/10 transition-colors flex items-center gap-1.5" style={{ color: colors.primary }}>
                                     <Download size={12} />
                                     <span className="text-[9px] font-black uppercase">CSV</span>
                                 </button>
                             </div>
                         </div>
                         <p className="text-[8px] opacity-40 mb-2" style={{ color: colors.textMain }}>
-                            Showing your actions only (last 60 days on this profile). Clear the date to see the full window.
+                            Showing {previewLogs.length} newest
+                            {activityDayFilter ? ` on ${activityDayFilter}` : ''} (max {PROFILE_ACTIVITY_PREVIEW_CAP}). Use View all for search + up to {PROFILE_ACTIVITY_MODAL_CAP}.
                         </p>
                         <div className="space-y-0.5 max-h-[180px] overflow-auto custom-scrollbar pr-2">
-                            {displayedLogs.length === 0 ? (
+                            {previewLogs.length === 0 ? (
                                 <p className="text-[10px] opacity-50 py-4 text-center" style={{ color: colors.textMuted }}>No activity in this range.</p>
                             ) : (
-                                displayedLogs.map((log) => {
+                                previewLogs.slice(0, PROFILE_ACTIVITY_PREVIEW_CAP).map((log) => {
                                     const Icon = logIcon(log.kind);
                                     const col = logColor(log.kind);
                                     return (
@@ -1047,6 +1167,103 @@ export function UserPerformanceDashboard({
                         </table>
                     </div>
                 </div>
+
+                {/* Activity log — loads up to 90 only after View all */}
+                {activityModalOpen && (
+                    <div
+                        className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+                        onClick={closeActivityModal}
+                        role="presentation"
+                    >
+                        <div
+                            role="dialog"
+                            aria-modal="true"
+                            aria-label="Activity log"
+                            className="w-full max-w-lg max-h-[80vh] flex flex-col rounded-[24px] border shadow-2xl"
+                            style={{ backgroundColor: colors.card, borderColor: colors.border }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between gap-3 p-4 border-b" style={{ borderColor: colors.border }}>
+                                <div>
+                                    <h3 className="text-sm font-bold italic" style={{ color: colors.textMain }}>Activity log</h3>
+                                    <p className="text-[8px] uppercase tracking-widest opacity-40" style={{ color: colors.textMain }}>
+                                        Up to {PROFILE_ACTIVITY_MODAL_CAP} · last 60 days
+                                    </p>
+                                </div>
+                                <button type="button" onClick={closeActivityModal} style={{ color: colors.textMuted }} aria-label="Close">
+                                    <X size={20} />
+                                </button>
+                            </div>
+                            <div className="p-3 border-b flex items-center gap-2" style={{ borderColor: colors.border }}>
+                                <input
+                                    type="search"
+                                    placeholder="Search activity…"
+                                    className="flex-1 p-2 px-3 bg-black/10 border border-white/10 rounded-xl text-[11px] font-medium outline-none"
+                                    style={{ color: colors.textMain }}
+                                    value={activitySearch}
+                                    onChange={(e) => setActivitySearch(e.target.value)}
+                                    autoFocus
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleExportCSV}
+                                    className="p-2 px-3 rounded-xl bg-primary text-black flex items-center gap-1.5 shrink-0"
+                                >
+                                    <Download size={12} />
+                                    <span className="text-[9px] font-black uppercase">CSV</span>
+                                </button>
+                            </div>
+                            <div className="flex-1 overflow-auto custom-scrollbar p-3 space-y-0.5 min-h-[200px]">
+                                {activityModalLoading || activityModalLogs == null ? (
+                                    <p className="text-[10px] opacity-50 py-10 text-center uppercase tracking-widest" style={{ color: colors.textMuted }}>
+                                        Loading…
+                                    </p>
+                                ) : activityModalLogs.length === 0 ? (
+                                    <p className="text-[10px] opacity-50 py-10 text-center" style={{ color: colors.textMuted }}>
+                                        {activitySearchApplied.trim() ? 'No matches for that search.' : 'No activity in the last 60 days.'}
+                                    </p>
+                                ) : (
+                                    activityModalLogs.map((log) => {
+                                        const Icon = logIcon(log.kind);
+                                        const col = logColor(log.kind);
+                                        return (
+                                            <div
+                                                key={log.id}
+                                                className="flex items-center gap-3 p-2 rounded-xl hover:bg-black/5 border border-transparent hover:border-white/5 transition-all"
+                                            >
+                                                <div
+                                                    className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                                                    style={{ backgroundColor: col + '15', color: col }}
+                                                >
+                                                    <Icon size={12} />
+                                                </div>
+                                                <div className="flex-1 overflow-hidden min-w-0">
+                                                    <div className="flex justify-between items-center mb-0 gap-2">
+                                                        <h4
+                                                            className="text-[10px] font-bold uppercase tracking-tight truncate"
+                                                            style={{ color: colors.textMain }}
+                                                        >
+                                                            {log.title}
+                                                        </h4>
+                                                        <span
+                                                            className="text-[8px] font-mono opacity-40 flex items-center gap-1 shrink-0"
+                                                            style={{ color: colors.textMain }}
+                                                        >
+                                                            <Clock size={8} /> {log.date}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-[9px] opacity-50 break-words" style={{ color: colors.textMain }}>
+                                                        {log.desc}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Reset Password Form overlay */}
                 {showResetPassword && isOwnProfile && (

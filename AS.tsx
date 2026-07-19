@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback, memo } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback, memo, Suspense, lazy } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard,
     CalendarDays,
@@ -78,19 +79,9 @@ import {
     RadialBar
 } from 'recharts';
 import Login from './Login';
-import LandingPage from './LandingPage';
-import RequestFeedbackPublicPage from './RequestFeedbackPublicPage';
 import { useWebSocket, type WebSocketMessage } from './websocket-client';
-import CRM, { CRM_QUARTER_MONTH_BLOCKS, type CrmSalesPeriod } from './CRM';
-import Contracts from './Contracts';
-import Reports from './Reports';
-import SettingsPage from './Settings';
-import RequestsManager from './RequestsManager';
-import AddSalesCallModal from './AddSalesCallModal';
-import AddAccountModal from './AddAccountModal';
-import AccountsPage from './AccountsPage';
-import DashboardHubShell from './dashboardHub/DashboardHubShell';
-import PromotionsPage from './PromotionsPage';
+import { CRM_QUARTER_MONTH_BLOCKS, type CrmSalesPeriod } from './crmActivitiesUtils';
+import { dispatchChatWs } from './messenger/chatWsBridge';
 import { collectSalesCallFormViolations, FORM_CONFIGURATION_CHANGED_EVENT } from './formConfigurations';
 import { flattenCrmLeads, filterRequestsForAccount, computeAccountMetrics } from './accountProfileData';
 import {
@@ -159,6 +150,7 @@ import { MEALS_PACKAGES_CHANGED_EVENT } from './propertyMealsPackages';
 import { OCCUPANCY_TYPES_CHANGED_EVENT } from './propertyOccupancyTypes';
 import { PAYMENT_METHODS_CHANGED_EVENT } from './propertyPaymentMethods';
 import { bucketRequestDistribution, REQUEST_DISTRIBUTION_META } from './requestTypeUtils';
+import { StatusBadge, KPICard, Card, MiniStatCard } from './dashboardHub/dashboardChrome';
 import {
     addProratedRequestFinancialsToDashboardBuckets,
     buildReportSegmentsForRequest,
@@ -190,6 +182,35 @@ import {
     canDeleteRequests,
     canDeleteRequestPayments,
 } from './userPermissions';
+import { normalizePathname, parseAppPath, viewToPath } from './appShellRoutes';
+import type { DashboardHubTabId } from './dashboardHub/dashboardHubTabs';
+
+function normalizeComparePath(pathname: string): string {
+    return normalizePathname(pathname);
+}
+
+const LandingPage = lazy(() => import('./LandingPage'));
+const LandingPageTasteMotionPreview = lazy(() => import('./landingPreviews/LandingPageTasteMotionPreview'));
+const RequestFeedbackPublicPage = lazy(() => import('./RequestFeedbackPublicPage'));
+const CRM = lazy(() => import('./CRM'));
+const Contracts = lazy(() => import('./Contracts'));
+const Reports = lazy(() => import('./Reports'));
+const SettingsPage = lazy(() => import('./Settings'));
+const RequestsManager = lazy(() => import('./RequestsManager'));
+const AddSalesCallModal = lazy(() => import('./AddSalesCallModal'));
+const AddAccountModal = lazy(() => import('./AddAccountModal'));
+const AccountsPage = lazy(() => import('./AccountsPage'));
+const DashboardHubShell = lazy(() => import('./dashboardHub/DashboardHubShell'));
+const MessengerWidget = lazy(() => import('./messenger/MessengerWidget'));
+const PromotionsPage = lazy(() => import('./PromotionsPage'));
+
+function PageLoadFallback({ label = 'Loading…' }: { label?: string }) {
+    return (
+        <div className="flex items-center justify-center min-h-[40vh] w-full text-sm opacity-60" aria-busy="true">
+            {label}
+        </div>
+    );
+}
 
 /**
  * Advanced Sales v20
@@ -835,72 +856,6 @@ function requestToKanbanCard(req: any, _taxes: any[] = []) {
         type: req.requestType || 'Event',
     };
 }
-
-// --- Helper Components ---
-
-const StatusBadge = ({ status, theme }: any) => {
-    const styles: Record<string, any> = {
-        Actual: { bg: theme.colors.green + '20', text: theme.colors.green },
-        Confirmed: { bg: theme.colors.green + '20', text: theme.colors.green },
-        Paid: { bg: theme.colors.blue + '20', text: theme.colors.blue },
-        Pending: { bg: theme.colors.yellow + '20', text: theme.colors.yellow },
-        Tentative: { bg: theme.colors.yellow + '20', text: theme.colors.yellow },
-        Inquiry: { bg: theme.colors.textMuted + '20', text: theme.colors.textMuted },
-        Accepted: { bg: theme.colors.yellow + '20', text: theme.colors.yellow },
-        Definite: { bg: theme.colors.green + '20', text: theme.colors.green },
-        Draft: { bg: theme.colors.textMuted + '20', text: theme.colors.textMuted },
-        Cancelled: { bg: theme.colors.red + '20', text: theme.colors.red },
-        Positive: { bg: theme.colors.green + '20', text: theme.colors.green },
-        Ongoing: { bg: theme.colors.blue + '20', text: theme.colors.blue },
-        High: { bg: theme.colors.red + '20', text: theme.colors.red },
-        Medium: { bg: theme.colors.yellow + '20', text: theme.colors.yellow },
-        Low: { bg: theme.colors.blue + '20', text: theme.colors.blue },
-        Inspection: { bg: theme.colors.purple + '20', text: theme.colors.purple },
-        Blocked: { bg: theme.colors.red + '20', text: theme.colors.red },
-    };
-    const style = (styles[status] || styles.Draft) as any;
-
-    return (
-        <span
-            className="px-1.5 py-0.5 rounded text-[9px] font-medium border"
-            style={{ backgroundColor: style.bg, color: style.text, borderColor: style.text + '40' }}
-        >
-            {status}
-        </span>
-    );
-};
-
-const KPICard = ({ label, value, subtext, icon: Icon, colorKey, isPrimary, theme }: any) => {
-    const colors = theme.colors;
-    const iconColor = isPrimary ? colors.primary : colors[colorKey];
-    return (
-        <div className="border-2 p-3 rounded-xl relative group hover:border-opacity-100 transition-all duration-300 shadow-md hover:shadow-xl hover:scale-[1.03] hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-4"
-            style={{
-                backgroundColor: colors.card,
-                borderColor: isPrimary ? colors.primary + '60' : colors.border,
-                boxShadow: `0 2px 8px ${colors.bg}80, inset 0 1px 0 ${colors.border}40`
-            }}>
-            {/* Subtle gradient overlay for depth */}
-            <div className="absolute inset-0 rounded-xl opacity-30 pointer-events-none"
-                style={{
-                    background: `linear-gradient(135deg, ${iconColor}10 0%, transparent 50%)`
-                }}>
-            </div>
-            <div className={`absolute top-3 right-3 p-1.5 rounded-lg shadow-sm`}
-                style={{
-                    backgroundColor: iconColor + '25',
-                    border: `1px solid ${iconColor}40`
-                }}>
-                <Icon size={16} style={{ color: iconColor }} />
-            </div>
-            <p className="text-[9px] uppercase tracking-wider font-medium mb-1 relative z-10" style={{ color: colors.textMuted }}>{label}</p>
-            <h2 className="text-xl font-bold tracking-tight relative z-10" style={{ color: isPrimary ? colors.primary : colors.textMain }}>{value}</h2>
-            <p className="text-[9px] font-medium mt-1 flex items-center gap-1 relative z-10" style={{ color: isPrimary ? colors.primary : iconColor }}>
-                {subtext}
-            </p>
-        </div>
-    );
-};
 
 // --- View Components ---
 
@@ -2848,98 +2803,6 @@ const RequestsView = ({ theme, subView, setSubView, searchParams, setSearchParam
 
 // --- Extracted Components (Memoization Optimization) ---
 
-const Card = ({
-    children,
-    className = '',
-    title,
-    tabs,
-    activeTab,
-    onTabChange,
-    actionIcon: ActionIcon,
-    onActionIconClick,
-    headerSearch,
-    extraHeaderAction,
-    colors,
-}: any) => (
-    <div className={`flex flex-col overflow-hidden rounded-xl shadow-lg border transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-6 ${className}`}
-        style={{ backgroundColor: colors.card, borderColor: colors.border }}>
-        <div className="flex items-center justify-between px-3 py-2 border-b shrink-0 gap-2" style={{ backgroundColor: colors.card, borderColor: colors.border }}>
-            <div className="flex items-center gap-4 overflow-x-auto scrollbar-none w-full md:w-auto min-w-0">
-                {title && <h3 className="text-[10px] uppercase tracking-[0.15em] font-semibold whitespace-nowrap" style={{ color: colors.textMuted }}>{title}</h3>}
-                {tabs && (
-                    <div className="flex gap-1">
-                        {tabs.map((tab: any) => (
-                            <button
-                                key={tab}
-                                onClick={() => onTabChange(tab)}
-                                className={`text-[9px] px-2 py-0.5 rounded transition-colors uppercase tracking-wide font-medium whitespace-nowrap border flex-shrink-0`}
-                                style={activeTab === tab ? {
-                                    backgroundColor: colors.primaryDim,
-                                    color: colors.primary,
-                                    borderColor: colors.primary + '40'
-                                } : {
-                                    color: colors.textMuted,
-                                    borderColor: 'transparent'
-                                }}
-                            >
-                                {tab}
-                            </button>
-                        ))}
-                    </div>
-                )}
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-                {headerSearch?.open && (
-                    <input
-                        type="search"
-                        value={headerSearch.value}
-                        onChange={(e) => headerSearch.onChange(e.target.value)}
-                        placeholder={headerSearch.placeholder || 'Search…'}
-                        className="text-[10px] px-2 py-1 rounded border max-w-[140px] sm:max-w-[200px] md:max-w-[240px] min-w-0"
-                        style={{ backgroundColor: colors.bg, borderColor: colors.border, color: colors.textMain }}
-                        autoComplete="off"
-                        aria-label={headerSearch.placeholder || 'Search'}
-                    />
-                )}
-                {extraHeaderAction}
-                {ActionIcon && (onActionIconClick ? (
-                    <button
-                        type="button"
-                        onClick={onActionIconClick}
-                        className="p-0.5 rounded transition-opacity hover:opacity-90 cursor-pointer"
-                        style={{ color: colors.textMuted }}
-                        aria-label="Search"
-                    >
-                        <ActionIcon size={14} className="block" />
-                    </button>
-                ) : (
-                    <ActionIcon size={14} style={{ color: colors.textMuted }} className="hover:opacity-80 hidden md:block" />
-                ))}
-            </div>
-        </div>
-        <div className="flex-1 min-h-0 relative">
-            {children}
-        </div>
-    </div>
-);
-
-const MiniStatCard = ({ label, value, colorKey, colors }: any) => {
-    const baseColor = colors[colorKey] || colorKey;
-    return (
-        <div className="px-3 py-2 rounded-lg flex flex-col justify-center transition-all duration-300 hover:scale-[1.08] hover:-translate-y-1 shadow-sm border-0 relative overflow-hidden group animate-in fade-in zoom-in duration-500"
-            style={{
-                background: `linear-gradient(135deg, ${baseColor}, ${baseColor})`,
-                boxShadow: `0 4px 12px ${baseColor}30`
-            }}>
-            {/* Subtle gloss effect */}
-            <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-
-            <span className="text-[9px] uppercase tracking-wider truncate font-bold relative z-10" style={{ color: 'rgba(255,255,255,0.85)' }}>{label}</span>
-            <span className="text-sm font-bold font-mono relative z-10" style={{ color: '#FFFFFF' }}>{value}</span>
-        </div>
-    );
-};
-
 const MainChart = ({
     chartTab,
     chartData,
@@ -3260,33 +3123,23 @@ const MainChart = ({
                     <Bar dataKey="totalRequests" name="Total Requests" fill={colors.blue} radius={[4, 4, 0, 0]} barSize={20} />
                 </BarChart>
             ) : chartTab === 'Rooms' ? (
-                <ComposedChart data={chartDataForCurrentTab} margin={{ top: 10, right: 10, left: 4, bottom: 0 }}>
+                <ComposedChart data={chartDataForCurrentTab} margin={{ top: 10, right: 12, left: 4, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={colors.border} vertical={false} />
                     <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: colors.textMuted, fontSize: 10 }} />
                     <YAxis
                         yAxisId="rooms"
                         orientation="left"
-                        width={34}
+                        width={40}
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: colors.cyan, fontSize: 9 }}
+                        tick={{ fill: colors.textMuted, fontSize: 9 }}
                         allowDecimals={false}
-                        domain={[0, roomsChartYDomains.maxRooms]}
-                    />
-                    <YAxis
-                        yAxisId="nights"
-                        orientation="left"
-                        width={34}
-                        offset={36}
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: colors.blue, fontSize: 9 }}
-                        allowDecimals={false}
-                        domain={[0, roomsChartYDomains.maxNights]}
+                        domain={[0, Math.max(roomsChartYDomains.maxRooms, roomsChartYDomains.maxNights)]}
                     />
                     <YAxis
                         yAxisId="right"
                         orientation="right"
+                        width={52}
                         axisLine={false}
                         tickLine={false}
                         tick={{ fill: colors.textMuted, fontSize: 10 }}
@@ -3295,27 +3148,72 @@ const MainChart = ({
                     <Tooltip {...rechartsTooltipThemeProps(colors)} formatter={moneyTooltipFormatter} />
                     <Legend payload={roomsLegendPayload} iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px', color: colors.textMuted }} />
                     <Bar yAxisId="rooms" dataKey="rooms" name="Rooms" fill={colors.cyan} radius={[4, 4, 0, 0]} barSize={16} />
-                    <Line yAxisId="nights" type="monotone" dataKey="roomNights" name="Room Nights" stroke={colors.blue} strokeWidth={2} dot={{ r: 2 }} />
-                    <Line yAxisId="right" type="monotone" dataKey="roomsRevenue" name="Rooms Revenue" stroke={colors.green} strokeWidth={2} dot={{ r: 3 }} />
+                    <Line
+                        yAxisId="rooms"
+                        type="monotone"
+                        dataKey="roomNights"
+                        name="Room Nights"
+                        stroke={colors.blue}
+                        strokeWidth={2}
+                        dot={{ r: 3, fill: colors.card, stroke: colors.blue, strokeWidth: 2 }}
+                        activeDot={{ r: 5 }}
+                    />
+                    <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="roomsRevenue"
+                        name="Rooms Revenue"
+                        stroke={colors.green}
+                        strokeWidth={2}
+                        dot={{ r: 3, fill: colors.card, stroke: colors.green, strokeWidth: 2 }}
+                        activeDot={{ r: 5 }}
+                    />
                 </ComposedChart>
             ) : chartTab === 'Events' || chartTab === 'MICE' ? (
-                <ComposedChart data={chartDataForCurrentTab} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                <ComposedChart data={chartDataForCurrentTab} margin={{ top: 10, right: 12, left: 4, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={colors.border} vertical={false} />
                     <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: colors.textMuted, fontSize: 10 }} />
                     <YAxis
                         yAxisId="left"
+                        width={40}
                         axisLine={false}
                         tickLine={false}
                         tick={{ fill: colors.textMuted, fontSize: 10 }}
                         allowDecimals={false}
                         domain={[0, 'dataMax']}
                     />
-                    <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fill: colors.textMuted, fontSize: 10 }} tickFormatter={moneyTickFormatter} />
+                    <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        width={52}
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: colors.textMuted, fontSize: 10 }}
+                        tickFormatter={moneyTickFormatter}
+                    />
                     <Tooltip {...rechartsTooltipThemeProps(colors)} formatter={moneyTooltipFormatter} />
                     <Legend payload={miceLegendPayload} iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px', color: colors.textMuted }} />
                     <Bar yAxisId="left" dataKey="miceRequests" name="MICE Requests" fill={colors.purple} radius={[4, 4, 0, 0]} barSize={20} />
-                    <Line yAxisId="right" type="monotone" dataKey="miceRoomsRevenue" name="Rooms Revenue" stroke={colors.cyan} strokeWidth={2} dot={{ r: 3 }} />
-                    <Line yAxisId="right" type="monotone" dataKey="miceRevenue" name="Event Revenue" stroke={colors.green} strokeWidth={2} dot={{ r: 3 }} />
+                    <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="miceRoomsRevenue"
+                        name="Rooms Revenue"
+                        stroke={colors.cyan}
+                        strokeWidth={2}
+                        dot={{ r: 3, fill: colors.card, stroke: colors.cyan, strokeWidth: 2 }}
+                        activeDot={{ r: 5 }}
+                    />
+                    <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="miceRevenue"
+                        name="Event Revenue"
+                        stroke={colors.green}
+                        strokeWidth={2}
+                        dot={{ r: 3, fill: colors.card, stroke: colors.green, strokeWidth: 2 }}
+                        activeDot={{ r: 5 }}
+                    />
                 </ComposedChart>
             ) : (
                 <BarChart data={chartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
@@ -3652,14 +3550,15 @@ const ToDoView = ({
 };
 
 const DIST_BAR_PALETTE_KEYS = ['blue', 'cyan', 'green', 'yellow', 'purple', 'red', 'orange'] as const;
-const DIST_PIE_PALETTE_KEYS = ['blue', 'cyan', 'green', 'yellow', 'purple', 'orange'] as const;
 
 const DistributionChart = ({ distTab, segmentData, accountTypeData, colors }: any) => {
     const barFills = DIST_BAR_PALETTE_KEYS.map((k) => colors[k]);
-    const pieFills = DIST_PIE_PALETTE_KEYS.map((k) => colors[k]);
-    return (
-        <ResponsiveContainer width="100%" height="100%">
-            {distTab === 'Segments' ? (
+    /** Types with zero accounts are already stripped from `accountTypeData`. */
+    const typeRows = Array.isArray(accountTypeData) ? accountTypeData : [];
+
+    if (distTab === 'Segments') {
+        return (
+            <ResponsiveContainer width="100%" height="100%">
                 <BarChart layout="vertical" data={segmentData} margin={{ top: 5, right: 30, left: 72, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={colors.border} horizontal={false} />
                     <XAxis type="number" allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: colors.textMuted, fontSize: 9 }} />
@@ -3680,41 +3579,54 @@ const DistributionChart = ({ distTab, segmentData, accountTypeData, colors }: an
                         ))}
                     </Bar>
                 </BarChart>
-            ) : (
-                <PieChart>
-                    <Pie
-                        data={accountTypeData}
-                        cx="50%"
-                        cy="48%"
-                        innerRadius={40}
-                        outerRadius={60}
-                        paddingAngle={5}
-                        dataKey="value"
-                        label={false}
-                    >
-                        {(accountTypeData || []).map((entry: any, index: number) => (
-                            <Cell key={`${entry.name}-${index}`} fill={pieFills[index % pieFills.length]} />
-                        ))}
-                    </Pie>
-                    <Tooltip
-                        {...rechartsTooltipThemeProps(colors)}
-                        formatter={(value: any, _n: any, item: any) => [
-                            `${value} account${value === 1 ? '' : 's'}`,
-                            item?.payload?.name ?? 'Type',
-                        ]}
-                    />
-                    <Legend
-                        verticalAlign="bottom"
-                        height={44}
-                        iconType="circle"
-                        wrapperStyle={{ fontSize: '10px', color: colors.textMuted }}
-                        formatter={(value: any, entry: any) => {
-                            const pct = Number(entry?.payload?.percent ?? 0);
-                            return `${value} ${pct}%`;
-                        }}
-                    />
-                </PieChart>
-            )}
+            </ResponsiveContainer>
+        );
+    }
+
+    if (!typeRows.length) {
+        return (
+            <div className="flex h-full w-full items-center justify-center text-xs" style={{ color: colors.textMuted }}>
+                No accounts with a type yet
+            </div>
+        );
+    }
+
+    return (
+        <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={typeRows} margin={{ top: 8, right: 12, left: 4, bottom: 28 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={colors.border} vertical={false} />
+                <XAxis
+                    dataKey="name"
+                    interval={0}
+                    angle={-28}
+                    textAnchor="end"
+                    height={52}
+                    tick={{ fill: colors.textMuted, fontSize: 9 }}
+                    axisLine={false}
+                    tickLine={false}
+                />
+                <YAxis
+                    allowDecimals={false}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: colors.textMuted, fontSize: 9 }}
+                    width={28}
+                />
+                <Tooltip
+                    {...rechartsTooltipThemeProps(colors)}
+                    cursor={{ fill: colors.border, fillOpacity: 0.12 }}
+                    formatter={(value: any, _n: any, item: any) => {
+                        const n = Number(value) || 0;
+                        const pct = Number(item?.payload?.percent ?? 0);
+                        return [`${n} account${n === 1 ? '' : 's'} · ${pct}%`, item?.payload?.name ?? 'Type'];
+                    }}
+                />
+                <Bar dataKey="value" name="Accounts" radius={[6, 6, 0, 0]} barSize={22} maxBarSize={36}>
+                    {typeRows.map((entry: any, index: number) => (
+                        <Cell key={`${entry.name}-${index}`} fill={barFills[index % barFills.length]} />
+                    ))}
+                </Bar>
+            </BarChart>
         </ResponsiveContainer>
     );
 };
@@ -3901,6 +3813,11 @@ const APP_SHELL_VIEW_IDS = new Set<string>([
 
 function readInitialShellView(): string {
     try {
+        // Prefer URL (shareable / refreshable) over legacy localStorage.
+        if (typeof window !== 'undefined') {
+            const fromUrl = parseAppPath(window.location.pathname);
+            if (fromUrl.view && APP_SHELL_VIEW_IDS.has(fromUrl.view)) return fromUrl.view;
+        }
         const raw = localStorage.getItem('as_currentView');
         if (raw && APP_SHELL_VIEW_IDS.has(raw)) return raw;
         if (raw) localStorage.removeItem('as_currentView');
@@ -3910,7 +3827,20 @@ function readInitialShellView(): string {
     return 'dashboard';
 }
 
+function readInitialHubTab(): DashboardHubTabId {
+    try {
+        if (typeof window !== 'undefined') {
+            return parseAppPath(window.location.pathname).hubTab;
+        }
+    } catch {
+        /* ignore */
+    }
+    return 'dashboard';
+}
+
 export default function AdvancedSalesDashboard() {
+    const location = useLocation();
+    const navigate = useNavigate();
     const [currentThemeId, setCurrentThemeId] = useState(() => {
         try {
             const raw = localStorage.getItem('as_themeId');
@@ -3922,7 +3852,42 @@ export default function AdvancedSalesDashboard() {
         return 'light';
     });
     const [isSidebarPinned, setIsSidebarPinned] = useState(false);
-    const [currentView, setCurrentView] = useState(() => readInitialShellView());
+    const [currentView, setCurrentViewState] = useState(() => readInitialShellView());
+    const [hubTab, setHubTabState] = useState<DashboardHubTabId>(() => readInitialHubTab());
+    const hubTabRef = useRef(hubTab);
+    hubTabRef.current = hubTab;
+
+    const navigatePreservingSearch = useCallback(
+        (nextPath: string) => {
+            if (normalizeComparePath(location.pathname) === normalizeComparePath(nextPath)) return;
+            // Keep ?joinChat= and other query params across module navigations.
+            navigate({ pathname: nextPath, search: location.search });
+        },
+        [navigate, location.pathname, location.search],
+    );
+
+    const setCurrentView = useCallback(
+        (view: string) => {
+            // Sidebar "Dashboard" always opens the KPI home (not the last hub analytics tab).
+            if (view === 'dashboard') {
+                setHubTabState('dashboard');
+                hubTabRef.current = 'dashboard';
+            }
+            setCurrentViewState(view);
+            navigatePreservingSearch(viewToPath(view, 'dashboard'));
+        },
+        [navigatePreservingSearch],
+    );
+
+    const setHubTab = useCallback(
+        (tab: DashboardHubTabId) => {
+            setHubTabState(tab);
+            hubTabRef.current = tab;
+            setCurrentViewState('dashboard');
+            navigatePreservingSearch(viewToPath('dashboard', tab));
+        },
+        [navigatePreservingSearch],
+    );
 
     // Authentication State
     const [currentUser, setCurrentUser] = useState<any>(() => {
@@ -3954,6 +3919,7 @@ export default function AdvancedSalesDashboard() {
         }
     });
     const [showLoginPage, setShowLoginPage] = useState(false);
+    const [showLandingPreview, setShowLandingPreview] = useState(false);
     const currentCurrency = resolveCurrencyCode(currentUser?.preferredCurrency || 'SAR');
     const theme = (THEMES as any)[currentThemeId] || (THEMES as any).light;
     const colors = theme.colors;
@@ -3999,6 +3965,14 @@ export default function AdvancedSalesDashboard() {
         localStorage.setItem('as_currentView', currentView);
     }, [currentView]);
 
+    // URL → shell state (back/forward + refresh + shared links)
+    useEffect(() => {
+        const parsed = parseAppPath(location.pathname);
+        if (parsed.view !== currentView) setCurrentViewState(parsed.view);
+        if (parsed.hubTab !== hubTab) setHubTabState(parsed.hubTab);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: drive from location only
+    }, [location.pathname]);
+
     useEffect(() => {
         if (currentUser) {
             localStorage.setItem('as_currentUser', JSON.stringify(currentUser));
@@ -4032,7 +4006,7 @@ export default function AdvancedSalesDashboard() {
                 'settings';
             setCurrentView(fallback);
         }
-    }, [currentView, currentUser, isAuthenticated]);
+    }, [currentView, currentUser, isAuthenticated, setCurrentView]);
 
     // Events Sub-View State: 'pipeline' (default), 'calendar', 'availability', 'beo'
     const [eventsSubView, setEventsSubView] = useState('pipeline');
@@ -4156,6 +4130,36 @@ export default function AdvancedSalesDashboard() {
     const promotionsLoadPropertyRef = useRef<string | null>(null);
 
     const [accounts, setAccounts] = useState<any[]>([]);
+    // Per-entity live signals: any WebSocket broadcast for an entity bumps its
+    // counter, and the owning loader effect refetches. This mirrors the
+    // dashboard/requests pattern and is loop-safe (the loader sets the
+    // sync-skip guard so the refetch never re-POSTs and re-broadcasts).
+    const [accountsLiveVersion, setAccountsLiveVersion] = useState(0);
+    const [promotionsLiveVersion, setPromotionsLiveVersion] = useState(0);
+    const [tasksLiveVersion, setTasksLiveVersion] = useState(0);
+    const [financialsLiveVersion, setFinancialsLiveVersion] = useState(0);
+    const [taxesLiveVersion, setTaxesLiveVersion] = useState(0);
+    const [crmLiveVersion, setCrmLiveVersion] = useState(0);
+    const [feedLiveVersion, setFeedLiveVersion] = useState(0);
+    const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
+    const activePropertyIdRef = useRef<string | undefined>(undefined);
+
+    const refreshPresence = useCallback(async () => {
+        const pid = activePropertyIdRef.current;
+        if (!pid) {
+            setOnlineUsers([]);
+            return;
+        }
+        try {
+            const res = await fetch(apiUrl(`/api/presence?property_id=${encodeURIComponent(pid)}`), { credentials: 'include' });
+            if (res.ok) {
+                const data = await res.json();
+                setOnlineUsers(Array.isArray(data) ? data : []);
+            }
+        } catch {
+            /* ignore */
+        }
+    }, []);
 
     const fetchAccountsForProperty = useCallback(async (propertyId: string): Promise<any[]> => {
         try {
@@ -4238,6 +4242,7 @@ export default function AdvancedSalesDashboard() {
     const handleCrmRequestDeleted = useCallback((requestId: string) => {
         const rid = String(requestId || '').trim();
         if (!rid) return;
+        setSharedRequests((prev) => prev.filter((r: any) => String(r.id) !== rid));
         setCrmState((prev) => ({
             ...prev,
             pipeline: clearPipelineLinkForDeletedRequest(prev.pipeline, rid),
@@ -4326,23 +4331,63 @@ export default function AdvancedSalesDashboard() {
     /** Per-property tax config from `/api/taxes` (Reports, dashboard-caliber with-tax figures). */
     const [propertyTaxes, setPropertyTaxes] = useState<any[]>([]);
 
+    useEffect(() => {
+        activePropertyIdRef.current = activeProperty?.id ? String(activeProperty.id) : undefined;
+        if (isAuthenticated) void refreshPresence();
+    }, [activeProperty?.id, isAuthenticated, refreshPresence]);
+
     const [systemUsers, setSystemUsers] = useState<any[]>([]);
+    // Points at terminateSessionAndShowLogin (declared below) so callbacks defined
+    // earlier can trigger logout without a forward reference.
+    const terminateSessionRef = useRef<() => void>(() => {});
 
     const refreshSystemUsers = useCallback(() => {
+        // Landing / login are unauthenticated — do not hit /api/users or a 401 will
+        // call terminateSessionAndShowLogin and yank the user onto the login screen.
+        if (!isAuthenticated) return;
         fetch(apiUrl('/api/users'))
-            .then((res) => (res.ok ? res.json() : []))
+            .then((res) => {
+                // Session expired/revoked while the app was open -> drop to login
+                // instead of silently showing empty data.
+                if (res.status === 401 || res.status === 403) {
+                    terminateSessionRef.current();
+                    return [];
+                }
+                return res.ok ? res.json() : [];
+            })
             .then((data) => {
                 if (Array.isArray(data)) setSystemUsers(data);
             })
             .catch(() => {});
-    }, []);
+    }, [isAuthenticated]);
 
     const terminateSessionAndShowLogin = useCallback(() => {
         setCurrentUser(null);
         setIsAuthenticated(false);
+        setShowLandingPreview(false);
         setShowLoginPage(true);
         setCurrentView('dashboard');
-    }, []);
+    }, [setCurrentView]);
+
+    useEffect(() => {
+        terminateSessionRef.current = terminateSessionAndShowLogin;
+    }, [terminateSessionAndShowLogin]);
+
+    // Validate a persisted (localStorage) session against the server cookie once
+    // on boot. If the cookie is missing/expired, show the login screen rather
+    // than a logged-in-looking UI full of empty data.
+    const sessionValidatedRef = useRef(false);
+    useEffect(() => {
+        if (sessionValidatedRef.current || !isAuthenticated) return;
+        sessionValidatedRef.current = true;
+        fetch(apiUrl('/api/auth/me'))
+            .then((res) => {
+                if (res.status === 401 || res.status === 403) terminateSessionAndShowLogin();
+            })
+            .catch(() => {
+                /* network hiccup: keep the optimistic session, don't force logout */
+            });
+    }, [isAuthenticated, terminateSessionAndShowLogin]);
 
     useEffect(() => {
         refreshSystemUsers();
@@ -4516,6 +4561,25 @@ export default function AdvancedSalesDashboard() {
         return () => clearTimeout(t);
     }, [accounts, activeProperty?.id]);
 
+    // Live refetch for accounts on WebSocket signal. Does NOT clear the list
+    // first (no flicker) and sets skipNextAccountsSync so the incoming data is
+    // not re-POSTed back to the server (prevents cross-client sync ping-pong).
+    useEffect(() => {
+        if (accountsLiveVersion === 0) return;
+        const pid = activeProperty?.id;
+        if (!pid) return;
+        let cancelled = false;
+        fetchAccountsForProperty(String(pid)).then((list) => {
+            if (cancelled) return;
+            skipNextAccountsSync.current = true;
+            accountsHydratedForPropertyId.current = String(pid);
+            setAccounts(list);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [accountsLiveVersion, activeProperty?.id, fetchAccountsForProperty]);
+
     useEffect(() => {
         const pid = activeProperty?.id;
         tasksHydratedForPropertyId.current = null;
@@ -4541,7 +4605,7 @@ export default function AdvancedSalesDashboard() {
         return () => {
             cancelled = true;
         };
-    }, [activeProperty?.id]);
+    }, [activeProperty?.id, tasksLiveVersion]);
 
     useEffect(() => {
         const pid = activeProperty?.id;
@@ -4562,10 +4626,41 @@ export default function AdvancedSalesDashboard() {
     }, [tasks, activeProperty?.id]);
 
     const [sharedRequests, setSharedRequests] = useState<any[]>([]);
+    // Bumped on every live request event so list views (RequestsManager) can
+    // refetch authoritative data from the server (refetch-on-notify pattern).
+    const [requestsLiveVersion, setRequestsLiveVersion] = useState(0);
+    // Bumped when a bulk request change (e.g. account rename cascade) requires
+    // the dashboard's shared requests to be refetched from the server.
+    const [sharedRequestsLiveVersion, setSharedRequestsLiveVersion] = useState(0);
+
+    // Coalesces bursts of live signals into a single refetch. A flood of N
+    // broadcasts (e.g. a bulk sync emitting one event per row) collapses into one
+    // version bump per entity, preventing refetch storms.
+    const liveBumpTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+    const debouncedBump = useCallback(
+        (key: string, setter: React.Dispatch<React.SetStateAction<number>>) => {
+            const timers = liveBumpTimersRef.current;
+            if (timers[key]) clearTimeout(timers[key]);
+            timers[key] = setTimeout(() => {
+                delete timers[key];
+                setter((v) => v + 1);
+            }, 250);
+        },
+        []
+    );
 
     // Real-time live updates via WebSocket (placed after state declarations to avoid TDZ)
     const handleLiveUpdate = useCallback((msg: WebSocketMessage) => {
-        if (msg.entity === 'request') {
+        const entity = String(msg?.entity || '');
+        if (entity === 'request') {
+            // Bulk change signal (e.g. account rename): refetch lists once, do not merge.
+            if (msg.type === 'refresh') {
+                debouncedBump('request', setRequestsLiveVersion);
+                debouncedBump('sharedRequests', setSharedRequestsLiveVersion);
+                return;
+            }
+            // Notify list views to refetch (covers create/update/delete uniformly).
+            debouncedBump('request', setRequestsLiveVersion);
             if (msg.type === 'created' || msg.type === 'updated') {
                 setSharedRequests((prev) => {
                     const idx = prev.findIndex((r: any) => String(r.id) === String(msg.data.id));
@@ -4589,28 +4684,48 @@ export default function AdvancedSalesDashboard() {
                     pipeline: clearPipelineLinkForDeletedRequest(prev.pipeline, String(msg.data.id)),
                 }));
             }
+            return;
         }
 
-        if (msg.entity === 'account') {
-            if (msg.type === 'created' || msg.type === 'updated') {
-                setAccounts((prev) => {
-                    const idx = prev.findIndex((a: any) => String(a.id) === String(msg.data.id));
-                    if (idx >= 0) {
-                        const updated = [...prev];
-                        updated[idx] = msg.data;
-                        return updated;
-                    } else {
-                        return [...prev, msg.data];
-                    }
-                });
-            } else if (msg.type === 'deleted') {
-                setAccounts((prev) => prev.filter((a: any) => String(a.id) !== String(msg.data.id)));
-            }
+        // All other entities use the loop-safe, debounced refetch-on-signal pattern.
+        switch (entity) {
+            case 'account':
+                debouncedBump('account', setAccountsLiveVersion);
+                break;
+            case 'promotions':
+                debouncedBump('promotions', setPromotionsLiveVersion);
+                break;
+            case 'tasks':
+                debouncedBump('tasks', setTasksLiveVersion);
+                break;
+            case 'financials':
+                debouncedBump('financials', setFinancialsLiveVersion);
+                break;
+            case 'taxes':
+                debouncedBump('taxes', setTaxesLiveVersion);
+                break;
+            case 'crm_state':
+                debouncedBump('crm_state', setCrmLiveVersion);
+                break;
+            case 'feed':
+                debouncedBump('feed', setFeedLiveVersion);
+                break;
+            case 'chat':
+                dispatchChatWs(msg);
+                break;
+            case 'presence':
+                if (!msg.data?.propertyId || String(msg.data.propertyId) === String(activePropertyIdRef.current || '')) {
+                    void refreshPresence();
+                }
+                break;
+            default:
+                break;
         }
-    }, [crmRequestRevenue, syncAllPipelineCardsFromRequests, clearPipelineLinkForDeletedRequest]);
+    }, [debouncedBump, crmRequestRevenue, syncAllPipelineCardsFromRequests, clearPipelineLinkForDeletedRequest, refreshPresence]);
 
-    // Connect to WebSocket when user is authenticated
-    useWebSocket(handleLiveUpdate);
+    // Connect to WebSocket only when authenticated (avoids 4401 on login page
+    // which previously prevented reconnect after successful login).
+    useWebSocket(handleLiveUpdate, isAuthenticated);
 
     const [promotions, setPromotions] = useState<any[]>([]);
     const [propertyFinancialKpis, setPropertyFinancialKpis] = useState<any[]>([]);
@@ -4722,7 +4837,7 @@ export default function AdvancedSalesDashboard() {
     useEffect(() => {
         if (!activeProperty?.id) return;
         refreshSharedRequests();
-    }, [activeProperty?.id]);
+    }, [activeProperty?.id, sharedRequestsLiveVersion]);
 
     useEffect(() => {
         let cancelled = false;
@@ -4744,7 +4859,7 @@ export default function AdvancedSalesDashboard() {
         return () => {
             cancelled = true;
         };
-    }, [activeProperty?.id]);
+    }, [activeProperty?.id, promotionsLiveVersion]);
 
     useEffect(() => {
         let cancelled = false;
@@ -4771,7 +4886,7 @@ export default function AdvancedSalesDashboard() {
         return () => {
             cancelled = true;
         };
-    }, [activeProperty?.id, currentView]);
+    }, [activeProperty?.id, currentView, financialsLiveVersion]);
 
     useEffect(() => {
         let cancelled = false;
@@ -4792,7 +4907,7 @@ export default function AdvancedSalesDashboard() {
         return () => {
             cancelled = true;
         };
-    }, [activeProperty?.id]);
+    }, [activeProperty?.id, taxesLiveVersion]);
 
     useEffect(() => {
         let cancelled = false;
@@ -4873,7 +4988,7 @@ export default function AdvancedSalesDashboard() {
         return () => {
             cancelled = true;
         };
-    }, [activeProperty?.id, fetchAccountsForProperty]);
+    }, [activeProperty?.id, fetchAccountsForProperty, crmLiveVersion]);
 
     useEffect(() => {
         const pid = activeProperty?.id;
@@ -5080,12 +5195,17 @@ export default function AdvancedSalesDashboard() {
     }, [sharedRequests, activeProperty?.id, propertySegmentLabels, dashboardCurrentRange]);
 
     const dashboardAccountTypeChartData = useMemo(() => {
-        const rows = propertyAccountTypeLabels.map((name) => ({
-            name,
-            value: (accounts || []).filter((a: any) => String(a.type || '').trim() === name).length,
-        }));
+        const rows = propertyAccountTypeLabels
+            .map((name) => ({
+                name,
+                value: (accounts || []).filter((a: any) => String(a.type || '').trim() === name).length,
+            }))
+            .filter((d) => d.value > 0);
         const sum = rows.reduce((s, d) => s + d.value, 0);
-        return rows.map((d) => ({ ...d, percent: (sum || 1) > 0 ? Math.round((d.value / (sum || 1)) * 100) : 0 }));
+        return rows.map((d) => ({
+            ...d,
+            percent: sum > 0 ? Math.round((d.value / sum) * 100) : 0,
+        }));
     }, [accounts, propertyAccountTypeLabels]);
 
     const dashboardRequestDistributionData = useMemo(() => {
@@ -5931,6 +6051,8 @@ export default function AdvancedSalesDashboard() {
     };
 
     const handleLogout = () => {
+        // Revoke the server-side session (cookie) so it can't be reused; best-effort.
+        fetch(apiUrl('/api/logout'), { method: 'POST' }).catch(() => {});
         setCurrentUser(null);
         setIsAuthenticated(false);
         setShowLoginPage(false);
@@ -5998,19 +6120,40 @@ export default function AdvancedSalesDashboard() {
     );
 
     if (feedbackPublicToken) {
-        return <RequestFeedbackPublicPage token={feedbackPublicToken} />;
+        return (
+            <Suspense fallback={<PageLoadFallback label="Loading feedback…" />}>
+                <RequestFeedbackPublicPage token={feedbackPublicToken} />
+            </Suspense>
+        );
     }
 
     // Show Login page if not authenticated
     if (!isAuthenticated) {
         if (!showLoginPage) {
+            if (showLandingPreview) {
+                return (
+                    <Suspense fallback={<PageLoadFallback label="Loading…" />}>
+                        <LandingPage
+                            themes={THEMES}
+                            currentThemeId={currentThemeId}
+                            onOpenLogin={() => setShowLoginPage(true)}
+                            onThemeChange={cycleTheme}
+                            onOpenRedesignPreview={() => setShowLandingPreview(false)}
+                        />
+                    </Suspense>
+                );
+            }
             return (
-                <LandingPage
-                    themes={THEMES}
-                    currentThemeId={currentThemeId}
-                    onOpenLogin={() => setShowLoginPage(true)}
-                    onThemeChange={cycleTheme}
-                />
+                <Suspense fallback={<PageLoadFallback label="Loading…" />}>
+                    <LandingPageTasteMotionPreview
+                        themes={THEMES}
+                        currentThemeId={currentThemeId}
+                        onOpenLogin={() => setShowLoginPage(true)}
+                        onThemeChange={cycleTheme}
+                        onBackToLanding={() => setShowLandingPreview(true)}
+                        embedded
+                    />
+                </Suspense>
             );
         }
         return (
@@ -6019,7 +6162,7 @@ export default function AdvancedSalesDashboard() {
                 themes={THEMES}
                 currentThemeId={currentThemeId}
                 onThemeChange={cycleTheme}
-                onBackToLanding={() => setShowLoginPage(false)}
+                onBackToLanding={() => { setShowLoginPage(false); setShowLandingPreview(false); }}
             />
         );
     }
@@ -7116,6 +7259,7 @@ export default function AdvancedSalesDashboard() {
                             currentView === 'calendar' ? 'flex-1 flex flex-col min-h-0 h-full' : 'h-auto'
                         }`}
                     >
+                    <Suspense fallback={<PageLoadFallback />}>
                     {currentView === 'calendar' ? (
                         <CalendarView
                             theme={theme}
@@ -7355,11 +7499,31 @@ export default function AdvancedSalesDashboard() {
                                 setPendingContractsAccountId(aid);
                                 setCurrentView('contracts');
                             }
-                        }} activeProperty={activeProperty} accounts={accounts} setAccounts={setAccounts} sharedRequestsSeed={sharedRequests} pendingOpenRequestId={pendingOpenRequestId} onConsumedPendingOpenRequest={() => setPendingOpenRequestId(null)} onAfterRequestsMutate={refreshSharedRequests} segmentOptions={propertySegmentLabels} accountTypeOptions={propertyAccountTypeLabels} canDeleteRequest={canDeleteRequests(currentUser)} canDeleteRequestPayments={canDeleteRequestPayments(currentUser)} readOnlyOperational={!canMutateOperational(currentUser)} currentUser={currentUser} currency={currentCurrency} assignableUsersForProperty={taskAssignableUsers} promotionOptions={promotions} canLinkRequestPromotions={canLinkRequestPromotions(currentUser)} />
+                        }} activeProperty={activeProperty} accounts={accounts} setAccounts={setAccounts} sharedRequestsSeed={sharedRequests} liveUpdateSignal={requestsLiveVersion} pendingOpenRequestId={pendingOpenRequestId} onConsumedPendingOpenRequest={() => setPendingOpenRequestId(null)} onAfterRequestsMutate={refreshSharedRequests} segmentOptions={propertySegmentLabels} accountTypeOptions={propertyAccountTypeLabels} canDeleteRequest={canDeleteRequests(currentUser)} canDeleteRequestPayments={canDeleteRequestPayments(currentUser)} readOnlyOperational={!canMutateOperational(currentUser)} currentUser={currentUser} currency={currentCurrency} assignableUsersForProperty={taskAssignableUsers} promotionOptions={promotions} canLinkRequestPromotions={canLinkRequestPromotions(currentUser)} />
                     ) : (
                         /* DASHBOARD VIEW */
                         <div className="grid grid-cols-1 md:grid-cols-12 auto-rows-min gap-3 pb-4">
-                            <DashboardHubShell colors={colors}>
+                            <DashboardHubShell
+                                key={String(currentUser?.id ?? currentUser?.username ?? 'anon')}
+                                colors={colors}
+                                activeTab={hubTab}
+                                onTabChange={setHubTab}
+                                data={{
+                                    currency: currentCurrency,
+                                    activeProperty: activeProperty ? { id: activeProperty.id, name: (activeProperty as any).name } : null,
+                                    properties: properties,
+                                    requests: scopedRequests,
+                                    accounts: accounts,
+                                    crmState: crmState,
+                                    promotions: promotions,
+                                    financials: propertyFinancialKpis,
+                                    taxes: propertyTaxes,
+                                    users: systemUsers,
+                                    currentUser: currentUser,
+                                    feedLiveVersion: feedLiveVersion,
+                                    onlineUsers: onlineUsers,
+                                }}
+                            >
 
                             {/* ROW 1: PRIMARY KPIs */}
                             <div className="col-span-1 md:col-span-12 grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -8050,6 +8214,7 @@ export default function AdvancedSalesDashboard() {
                             </div>
                         </div>
                     )}
+                    </Suspense>
                     </div>
                     <footer
                         role="contentinfo"
@@ -8064,6 +8229,7 @@ export default function AdvancedSalesDashboard() {
             </div>
 
             {/* Events & Catering: embedded MICE request wizard (saves via same API as Requests) */}
+            <Suspense fallback={null}>
             {showEventsRequestModal && eventsEmbeddedRequestType && (
                 <div
                     className="fixed inset-0 z-[210] flex items-center justify-center p-3 md:p-6"
@@ -8582,6 +8748,13 @@ export default function AdvancedSalesDashboard() {
                 })}
                 duplicateCheckPropertyId={activeProperty?.id ? String(activeProperty.id) : undefined}
             />
+
+            <MessengerWidget
+                colors={colors}
+                propertyId={activeProperty?.id ? String(activeProperty.id) : ''}
+                currentUserId={currentUser?.id ? String(currentUser.id) : ''}
+            />
+            </Suspense>
         </div>
     );
 }

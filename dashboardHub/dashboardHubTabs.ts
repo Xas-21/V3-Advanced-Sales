@@ -1,3 +1,5 @@
+import { isSystemAdmin } from '../userPermissions';
+
 export type DashboardHubTabId =
     | 'feed'
     | 'dashboard'
@@ -15,7 +17,7 @@ export type DashboardHubTabId =
 export type DashboardHubTabDef = {
     id: DashboardHubTabId;
     label: string;
-    /** Live analysis page (not coming-soon). */
+    /** Completed for all users. Incomplete tabs stay admin-only until ready. */
     live: boolean;
 };
 
@@ -40,4 +42,21 @@ export function dashboardHubTabLabel(tabId: DashboardHubTabId): string {
 
 export function isDashboardHubTabLive(tabId: DashboardHubTabId): boolean {
     return DASHBOARD_HUB_TABS.find((t) => t.id === tabId)?.live ?? false;
+}
+
+/**
+ * Incomplete hub tabs: system Admin only (not GM / HoS / etc.).
+ * Matches backend auth_db.is_admin + frontend isSystemAdmin.
+ */
+export function isDashboardHubAdmin(user: any): boolean {
+    if (isSystemAdmin(user)) return true;
+    const r = String(user?.role ?? '').trim().toLowerCase();
+    return r === 'admin' || r === 'super_admin' || r === 'administrator';
+}
+
+/** Public tabs for everyone; incomplete tabs only for system admins. */
+export function canOpenDashboardHubTab(tabId: DashboardHubTabId, userOrIsAdmin: any): boolean {
+    if (isDashboardHubTabLive(tabId)) return true;
+    if (typeof userOrIsAdmin === 'boolean') return userOrIsAdmin;
+    return isDashboardHubAdmin(userOrIsAdmin);
 }

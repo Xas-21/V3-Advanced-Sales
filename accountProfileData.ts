@@ -1,3 +1,5 @@
+import { computeRequestRevenueBreakdownNoTax } from './operationalSegmentRevenue';
+
 /** Join requests to an account by stable id, then by normalized account name. */
 export function requestMatchesAccount(req: any, accountId: string | undefined, accountName: string | undefined): boolean {
     const aid = String(accountId || '').trim();
@@ -11,6 +13,53 @@ export function requestMatchesAccount(req: any, accountId: string | undefined, a
 export function filterRequestsForAccount(requests: any[], accountId: string | undefined, accountName: string | undefined): any[] {
     if (!requests?.length) return [];
     return requests.filter((r) => requestMatchesAccount(r, accountId, accountName));
+}
+
+export type AccountRequestStats = { revSar: number; reqCount: number };
+
+/**
+ * One pass over requests → per-account revenue/count (same matching as filterRequestsForAccount).
+ * A request may attribute to multiple accounts when id matches one and name matches another.
+ */
+export function buildRequestStatsByAccount(
+    accounts: any[],
+    sharedRequests: any[] | undefined | null
+): Map<string, AccountRequestStats> {
+    const stats = new Map<string, AccountRequestStats>();
+    const byId = new Map<string, true>();
+    const byName = new Map<string, string[]>();
+
+    for (const a of accounts || []) {
+        const id = String(a?.id ?? '').trim();
+        if (!id) continue;
+        stats.set(id, { revSar: 0, reqCount: 0 });
+        byId.set(id, true);
+        const n = String(a?.name || '').trim().toLowerCase();
+        if (!n) continue;
+        const list = byName.get(n);
+        if (list) list.push(id);
+        else byName.set(n, [id]);
+    }
+
+    for (const r of sharedRequests || []) {
+        const matched = new Set<string>();
+        const rid = String(r?.accountId || '').trim();
+        if (rid && byId.has(rid)) matched.add(rid);
+        const rn = String(r?.account || r?.accountName || '').trim().toLowerCase();
+        if (rn) {
+            for (const aid of byName.get(rn) || []) matched.add(aid);
+        }
+        if (!matched.size) continue;
+        const rev = computeRequestRevenueBreakdownNoTax(r).totalLineNoTax;
+        for (const aid of matched) {
+            const s = stats.get(aid);
+            if (!s) continue;
+            s.revSar += rev;
+            s.reqCount += 1;
+        }
+    }
+
+    return stats;
 }
 
 const WON = new Set(['definite', 'actual']);

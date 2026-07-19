@@ -2562,6 +2562,8 @@ export default function CRM({
                             : undefined
                     }
                     onAssignAccountOwner={allowAccountMergeAndOwner ? handleCrmAssignAccountOwner : undefined}
+                    activeProperty={activeProperty}
+                    segmentOptions={segmentOptions}
                 />
                 <AddAccountModal
                     isOpen={showEditAccountModal}
@@ -4109,6 +4111,8 @@ export default function CRM({
                                       onAssignAccountOwner={
                                           allowAccountMergeAndOwner ? handleCrmAssignAccountOwner : undefined
                                       }
+                                      activeProperty={activeProperty}
+                                      segmentOptions={segmentOptions}
                                   />
                               </div>
                           </div>

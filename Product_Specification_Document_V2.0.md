@@ -1,7 +1,7 @@
 # Product Specification Document (PSD)
 
 ## Document Control
-- Product: Advanced Sales & Tour Management System (VisaTour)
+- Product: Advanced Sales & Tour Management System
 - Version: 2.0 (Updated Full Detail Edition)
 - Date: 2026-04-11
 - Document Owner: Product and Engineering

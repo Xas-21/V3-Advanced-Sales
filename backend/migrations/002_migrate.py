@@ -10,7 +10,7 @@ import uuid
 import psycopg
 from psycopg.rows import dict_row
 
-DSN = os.environ.get("DATABASE_URL") or "postgresql://neondb_owner:***@as-postgres:5432/neondb"
+DSN = os.environ.get("DATABASE_URL") or "postgresql://as_owner:***@as-postgres:5432/as-postgres"
 
 
 def with_id(x, anchor):

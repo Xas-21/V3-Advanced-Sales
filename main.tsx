@@ -1,5 +1,6 @@
 import React, { Component, type ReactNode, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 import AdvancedSalesDashboard from './AS';
 import './index.css';
 
@@ -17,7 +18,7 @@ class RootErrorBoundary extends Component<{ children: ReactNode }, RootBoundaryS
         return { error: normalized };
     }
     componentDidCatch(error: unknown) {
-        // eslint-disable-next-line no-console — intentional for diagnosing white-screen faults
+        // Intentional: surface white-screen faults in the console.
         console.error('[Advanced Sales]', error);
     }
     render() {
@@ -67,7 +68,6 @@ class RootErrorBoundary extends Component<{ children: ReactNode }, RootBoundaryS
 }
 
 window.addEventListener('unhandledrejection', (e) => {
-    // eslint-disable-next-line no-console
     console.error('[Unhandled promise rejection]', e.reason);
 });
 
@@ -88,9 +88,11 @@ function BlockWheelOnFocusedNumberInputs() {
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
-        <BlockWheelOnFocusedNumberInputs />
-        <RootErrorBoundary>
-            <AdvancedSalesDashboard />
-        </RootErrorBoundary>
+        <BrowserRouter>
+            <BlockWheelOnFocusedNumberInputs />
+            <RootErrorBoundary>
+                <AdvancedSalesDashboard />
+            </RootErrorBoundary>
+        </BrowserRouter>
     </React.StrictMode>
 );

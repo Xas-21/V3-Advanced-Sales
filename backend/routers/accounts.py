@@ -1,4 +1,4 @@
-from fastapi import APIRouter, File, Form, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from typing import Optional
 
 from services.business_card_scan import parse_business_card_image
@@ -21,7 +21,7 @@ def upsert_account_endpoint(data: dict):
 def get_account_endpoint(account_id: str):
     acc = get_account(account_id)
     if not acc:
-        return None
+        raise HTTPException(status_code=404, detail="Account not found")
     return acc
 
 

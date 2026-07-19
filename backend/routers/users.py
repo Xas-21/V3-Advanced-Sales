@@ -36,6 +36,27 @@ _SQL_COLS = {
     "avatar": "avatar", "assigned_property_ids": "assigned_property_ids",
 }
 
+# Frontend sends camelCase; normalize before filtering against _USER_PATCH_SAFE.
+_CLIENT_ALIASES = {
+    "propertyId": "property_id",
+    "permissionGrants": "permission_grants",
+    "permissionRevokes": "permission_revokes",
+    "assignedPropertyIds": "assigned_property_ids",
+}
+
+
+def _normalize_user_patch(patch: dict) -> dict:
+    out: dict = {}
+    for k, v in patch.items():
+        key = _CLIENT_ALIASES.get(k, k)
+        if key not in _USER_PATCH_SAFE:
+            continue
+        if key == "property_id" and (v is None or (isinstance(v, str) and not str(v).strip())):
+            out[key] = None
+        else:
+            out[key] = v
+    return out
+
 
 def _row_to_client(row: dict) -> dict:
     grants = row.get("permission_grants") or []
@@ -110,7 +131,7 @@ def patch_user(user_id: str, patch: dict, session_id: str | None = Cookie(defaul
             row = cur.fetchone()
             if not row:
                 raise HTTPException(status_code=404, detail="User not found")
-            updates = {k: v for k, v in patch.items() if k in _USER_PATCH_SAFE}
+            updates = _normalize_user_patch(patch)
             if "assigned_property_ids" in updates and isinstance(updates["assigned_property_ids"], list):
                 updates["assigned_property_ids"] = json.dumps(updates["assigned_property_ids"])
             if not updates:
@@ -126,8 +147,8 @@ def patch_user(user_id: str, patch: dict, session_id: str | None = Cookie(defaul
 @router.post("")
 def create_or_update_user(user_data: dict, session_id: str | None = Cookie(default=None, alias=SESSION_COOKIE_NAME)):
     require_admin(session_id)
-    if not str(user_data.get("username", "")).strip():
-        raise HTTPException(status_code=400, detail="username is required")
+    if not isinstance(user_data, dict):
+        raise HTTPException(status_code=400, detail="Expected JSON object body")
 
     raw_pw = user_data.get("password")
     existing_id = user_data.get("id")
@@ -135,26 +156,50 @@ def create_or_update_user(user_data: dict, session_id: str | None = Cookie(defau
     with pool.connection() as conn:
         with conn.cursor() as cur:
             if existing_id:
-                cur.execute("SELECT * FROM users WHERE id = %s;", (existing_id,))
+                cur.execute("SELECT * FROM users WHERE id = %s;", (str(existing_id),))
                 existing = cur.fetchone()
+                if not existing:
+                    raise HTTPException(status_code=404, detail="User not found")
             else:
                 existing = None
 
             if existing:
-                updates = {k: v for k, v in user_data.items() if k in _USER_PATCH_SAFE}
-                if "assigned_property_ids" in updates and isinstance(updates["assigned_property_ids"], list):
-                    updates["assigned_property_ids"] = json.dumps(updates["assigned_property_ids"])
+                updates = _normalize_user_patch(user_data)
+                # Password is not in _SQL_COLS — handle separately so password-only
+                # admin resets never KeyError / emit an empty SET clause.
+                updates = {k: v for k, v in updates.items() if k in _SQL_COLS}
+                for json_key in ("assigned_property_ids", "permission_grants", "permission_revokes"):
+                    if json_key in updates and isinstance(updates[json_key], (list, dict)):
+                        updates[json_key] = json.dumps(updates[json_key])
+                password_hash = None
                 if raw_pw is not None and str(raw_pw).strip():
                     from security import check_password_policy
                     ok, msg = check_password_policy(str(raw_pw))
                     if not ok:
                         raise HTTPException(status_code=400, detail=msg)
-                    updates["password"] = hash_password(str(raw_pw))
-                set_clause = ", ".join(f"{_SQL_COLS[k]} = %s" for k in updates)
-                params = list(updates.values()) + [existing_id]
-                cur.execute(f"UPDATE users SET {set_clause} WHERE id = %s RETURNING *;", params)
+                    password_hash = hash_password(str(raw_pw))
+                if not updates and password_hash is None:
+                    raise HTTPException(status_code=400, detail="No updatable fields provided")
+                set_parts = [f"{_SQL_COLS[k]} = %s" for k in updates]
+                params: list = list(updates.values())
+                if password_hash is not None:
+                    set_parts.append("password = %s")
+                    params.append(password_hash)
+                params.append(str(existing_id))
+                cur.execute(
+                    f"UPDATE users SET {', '.join(set_parts)} WHERE id = %s RETURNING *;",
+                    params,
+                )
                 new_row = cur.fetchone()
+                conn.commit()
+                if password_hash is not None:
+                    new_ver = auth_db.bump_session_version_and_revoke(str(existing_id))
+                    if new_row is not None:
+                        new_row = dict(new_row)
+                        new_row["session_version"] = new_ver
             else:
+                if not str(user_data.get("username", "")).strip():
+                    raise HTTPException(status_code=400, detail="username is required")
                 if not raw_pw or not str(raw_pw).strip():
                     raise HTTPException(status_code=400, detail="Password is required when creating a user")
                 from security import check_password_policy
@@ -162,9 +207,12 @@ def create_or_update_user(user_data: dict, session_id: str | None = Cookie(defau
                 if not ok:
                     raise HTTPException(status_code=400, detail=msg)
                 uid = f"U-{uuid.uuid4().hex[:10]}"
-                assigned = user_data.get("assigned_property_ids") or []
+                assigned = user_data.get("assigned_property_ids") or user_data.get("assignedPropertyIds") or []
                 if isinstance(assigned, list):
                     assigned = json.dumps(assigned)
+                property_id = user_data.get("property_id")
+                if property_id is None:
+                    property_id = user_data.get("propertyId")
                 cur.execute(
                     """
                     INSERT INTO users (id, username, password, name, email, role, status, property_id,
@@ -177,14 +225,16 @@ def create_or_update_user(user_data: dict, session_id: str | None = Cookie(defau
                         user_data.get("name"), user_data.get("email"),
                         user_data.get("role", "Sales Executive"),
                         user_data.get("status", "active"),
-                        user_data.get("property_id"),
+                        property_id,
                         json.dumps(user_data.get("permissionGrants", [])),
                         json.dumps(user_data.get("permissionRevokes", [])),
                         assigned,
                     ),
                 )
                 new_row = cur.fetchone()
-            conn.commit()
+                conn.commit()
+    if not new_row:
+        raise HTTPException(status_code=500, detail="User save failed")
     return {"message": "User saved successfully", "user": _row_to_client(new_row)}
 
 

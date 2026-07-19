@@ -1,518 +1,709 @@
-import React, { useEffect, useMemo, useState } from 'react';
+/**
+
+ * Accounts preview — portfolio composition lens (types, geography, concentration).
+
+ * Range filters creation & activity consistently. One revenue chart only (labeled).
+
+ */
+
+import React, { useMemo, useState } from 'react';
+
 import {
-    ResponsiveContainer,
-    BarChart,
-    Bar,
-    PieChart,
-    Pie,
-    Cell,
-    XAxis,
-    YAxis,
-    Tooltip,
-    CartesianGrid,
-    Legend,
-    AreaChart,
-    Area,
+
+    ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip,
+
+    CartesianGrid, Legend, ComposedChart, Area, Line,
+
 } from 'recharts';
-import { Users, Building2, FileText, TrendingUp, CalendarDays } from 'lucide-react';
-import { apiUrl } from '../../backendApi';
-import { resolveCurrencyCode, type CurrencyCode } from '../../currency';
 
-const tint = (c: string, a = '22') => `${c}${a}`;
+import { Users, Building2, FileText, TrendingUp, CalendarDays, MapPin, Layers } from 'lucide-react';
 
-function asArr(v: any): any[] {
-    return Array.isArray(v) ? v : [];
-}
-function parseYmd(raw: any): string {
-    if (!raw) return '';
-    const s = String(raw).slice(0, 10);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-    const dt = new Date(raw);
-    if (Number.isNaN(dt.getTime())) return '';
-    return dt.toISOString().slice(0, 10);
-}
-function money(v: any): number {
-    const n = parseFloat(String(v ?? '').replace(/,/g, ''));
-    return Number.isFinite(n) ? n : 0;
-}
-function startOfDay(d: Date): number {
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-}
+import { useHubData } from '../HubDataContext';
 
-const RANGE_OPTIONS = [
-    { label: '7D', days: 7 },
-    { label: '30D', days: 30 },
-    { label: '90D', days: 90 },
-    { label: 'All', days: 0 },
-];
+import {
 
-const CARD_STYLE: React.CSSProperties = {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderStyle: 'solid',
-};
+    hexA, num, fmtInt, fmtMoney, money, fmtPct, delta, tip, legendStyle, palette,
 
-function MiniStat({
-    colors,
-    icon: Icon,
-    label,
-    value,
-    sub,
-    color,
-}: {
-    colors: any;
-    icon: any;
-    label: string;
-    value: React.ReactNode;
-    sub?: React.ReactNode;
-    color: string;
-}) {
-    return (
-        <div
-            style={{
-                ...CARD_STYLE,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 14,
-                padding: 16,
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-            }}
-        >
-            <div
-                style={{
-                    flexShrink: 0,
-                    width: 44,
-                    height: 44,
-                    borderRadius: 12,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color,
-                    backgroundColor: tint(color),
-                }}
-            >
-                <Icon size={22} strokeWidth={2.1} />
-            </div>
-            <div style={{ minWidth: 0 }}>
-                <div style={{ color: colors.textMuted, fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.4 }}>
-                    {label}
-                </div>
-                <div style={{ color: colors.textMain, fontSize: 22, fontWeight: 700, lineHeight: 1.15 }}>{value}</div>
-                {sub != null ? <div style={{ color: colors.textMuted, fontSize: 11 }}>{sub}</div> : null}
-            </div>
-        </div>
-    );
+    Card, MiniStat, RangeTabs, EmptyState, Hero, Meter, PageShell,
+
+    rangeBounds, monthKey, inRange, type RangeKey,
+
+} from '../analyticsKit';
+
+import { requestTime, CHART_H, CHART_H_LG, GRID_2 } from '../hubPreviewShared';
+
+
+
+function asArr(v: any): any[] { return Array.isArray(v) ? v : []; }
+
+
+
+function accountTouchedInPeriod(a: any, start: number, reqAccountIds: Set<string>): boolean {
+
+    if (reqAccountIds.has(String(a.id))) return true;
+
+    return asArr(a.activities).some((act: any) => inRange(act.at || act.date, start));
+
 }
 
-function tooltipProps(colors: any) {
-    return {
-        contentStyle: {
-            backgroundColor: colors.tooltip,
-            borderColor: colors.border,
-            borderRadius: 8,
-            color: colors.textMain,
-        },
-        labelStyle: { color: colors.textMain, fontWeight: 700 },
-        itemStyle: { color: colors.textMain },
-    };
-}
 
-function EmptyState({ colors, label }: { colors: any; label: string }) {
-    return (
-        <div
-            style={{
-                ...CARD_STYLE,
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-                padding: 32,
-                textAlign: 'center',
-                color: colors.textMuted,
-                fontSize: 13,
-            }}
-        >
-            No data available{label ? ` for ${label}` : ''}.
-        </div>
-    );
-}
-
-function RangeFilter({ colors, value, onChange }: { colors: any; value: number; onChange: (d: number) => void }) {
-    return (
-        <div style={{ display: 'inline-flex', borderRadius: 10, border: `1px solid ${colors.border}`, overflow: 'hidden' }}>
-            {RANGE_OPTIONS.map((o) => {
-                const active = o.days === value;
-                return (
-                    <button
-                        key={o.label}
-                        onClick={() => onChange(o.days)}
-                        style={{
-                            border: 'none',
-                            cursor: 'pointer',
-                            padding: '6px 12px',
-                            fontSize: 12,
-                            fontWeight: 600,
-                            color: active ? colors.bg : colors.textMuted,
-                            backgroundColor: active ? colors.primary : 'transparent',
-                        }}
-                    >
-                        {o.label}
-                    </button>
-                );
-            })}
-        </div>
-    );
-}
 
 export default function DashboardHubAccountsPage({ colors }: { colors: any }) {
-    const [accounts, setAccounts] = useState<any[]>([]);
-    const [requests, setRequests] = useState<any[]>([]);
-    const [contracts, setContracts] = useState<any[]>([]);
-    const [range, setRange] = useState<number>(30);
-    const currency = 'SAR' as CurrencyCode;
-    const cc = resolveCurrencyCode(currency);
 
-    useEffect(() => {
-        let alive = true;
-        (async () => {
-            try {
-                const [aR, rR, cR] = await Promise.all([
-                    fetch(apiUrl('/api/accounts')),
-                    fetch(apiUrl('/api/requests')),
-                    fetch(apiUrl('/api/contracts/templates')),
-                ]);
-                const [a, r, c] = await Promise.all([aR.json(), rR.json(), cR.json()]);
-                if (!alive) return;
-                setAccounts(asArr(a));
-                setRequests(asArr(r));
-                setContracts(asArr(c));
-            } catch {
-                /* ignore */
+    const { accounts, requests, currency, activeProperty } = useHubData();
+
+    const [range, setRange] = useState<RangeKey>('90');
+
+    const { start, prevStart, prevEnd } = useMemo(() => rangeBounds(range), [range]);
+
+    const pal = palette(colors);
+
+
+
+    const reqsInPeriod = useMemo(() => {
+
+        if (range === 'all') return requests;
+
+        return requests.filter((r) => {
+
+            const t = requestTime(r);
+
+            return !Number.isNaN(t) && t >= start;
+
+        });
+
+    }, [requests, start, range]);
+
+
+
+    const reqAccountIds = useMemo(() => {
+
+        const s = new Set<string>();
+
+        reqsInPeriod.forEach((r) => {
+
+            const id = String(r.accountId || '').trim();
+
+            if (id) s.add(id);
+
+        });
+
+        return s;
+
+    }, [reqsInPeriod]);
+
+
+
+    const activeInPeriod = useMemo(() => {
+
+        if (range === 'all') {
+
+            const ids = new Set(requests.map((r) => String(r.accountId || '').trim()).filter(Boolean));
+
+            return accounts.filter((a) => ids.has(String(a.id)));
+
+        }
+
+        return accounts.filter((a) => accountTouchedInPeriod(a, start, reqAccountIds));
+
+    }, [accounts, range, start, reqAccountIds, requests]);
+
+
+
+    const newAccounts = useMemo(() => accounts.filter((a) => inRange(a.createdAt, start)), [accounts, start]);
+
+    const newPrev = useMemo(() => accounts.filter((a) => {
+
+        const t = new Date(a.createdAt).getTime();
+
+        return !Number.isNaN(t) && t >= prevStart && t < prevEnd;
+
+    }), [accounts, prevStart, prevEnd]);
+
+
+
+    const activitiesInPeriod = useMemo(() => {
+
+        let n = 0;
+
+        for (const a of accounts) {
+
+            for (const act of asArr(a.activities)) {
+
+                if (inRange(act.at || act.date, start)) n++;
+
             }
-        })();
-        return () => {
-            alive = false;
-        };
-    }, []);
 
-    const cutoff = useMemo(() => {
-        if (!range) return 0;
-        return startOfDay(new Date()) - range * 86400000;
-    }, [range]);
+        }
 
-    const inRange = (dateStr: string) => {
-        if (!range) return true;
-        const d = parseYmd(dateStr);
-        if (!d) return true;
-        const t = startOfDay(new Date(d));
-        return t >= cutoff;
-    };
+        return n;
 
-    const prevCutoff = useMemo(() => {
-        if (!range) return 0;
-        return cutoff - range * 86400000;
-    }, [range, cutoff]);
+    }, [accounts, start]);
 
-    // Derived analytics
-    const newAccounts = useMemo(() => accounts.filter((a) => inRange(a.createdAt)), [accounts, inRange]);
-    const newPrev = useMemo(
-        () => accounts.filter((a) => {
-            const d = parseYmd(a.createdAt);
-            if (!d) return false;
-            const t = startOfDay(new Date(d));
-            return t >= prevCutoff && t < cutoff;
-        }),
-        [accounts, prevCutoff, cutoff, range],
-    );
+
 
     const types = useMemo(() => {
+
         const m = new Map<string, number>();
-        accounts.forEach((a) => {
+
+        activeInPeriod.forEach((a) => {
+
             const k = String(a.type || 'Unspecified').trim() || 'Unspecified';
+
             m.set(k, (m.get(k) || 0) + 1);
+
         });
-        return Array.from(m.entries())
-            .map(([name, value]) => ({ name, value }))
-            .sort((a, b) => b.value - a.value);
-    }, [accounts]);
+
+        return Array.from(m.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+
+    }, [activeInPeriod]);
+
+
 
     const countries = useMemo(() => {
+
         const m = new Map<string, number>();
-        accounts.forEach((a) => {
+
+        activeInPeriod.forEach((a) => {
+
             const k = String(a.country || a.city || 'Unknown').trim() || 'Unknown';
+
             m.set(k, (m.get(k) || 0) + 1);
-        });
-        return Array.from(m.entries())
-            .map(([name, value]) => ({ name, value }))
-            .sort((a, b) => b.value - a.value)
-            .slice(0, 8);
-    }, [accounts]);
 
-    const byAccountReq = useMemo(() => {
-        const m = new Map<string, number>();
-        requests.forEach((r) => {
+        });
+
+        return Array.from(m.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 10);
+
+    }, [activeInPeriod]);
+
+
+
+    const accName = (id: string) => {
+
+        const acc = accounts.find((a) => String(a.id) === id);
+
+        if (acc?.name) return acc.name;
+
+        const r = requests.find((x) => String(x.accountId) === id);
+
+        return r?.account || `Account ${id.slice(0, 6)}`;
+
+    };
+
+
+
+    const byAccountInPeriod = useMemo(() => {
+
+        const m = new Map<string, { count: number; revenue: number }>();
+
+        reqsInPeriod.forEach((r) => {
+
             const id = String(r.accountId || '').trim();
+
             if (!id) return;
-            m.set(id, (m.get(id) || 0) + 1);
-        });
-        const rows = Array.from(m.entries()).map(([id, count]) => {
-            const acc = accounts.find((a) => String(a.id) === id);
-            return { id, name: acc?.name || r_name(requests, id), count };
-        });
-        return rows.sort((a, b) => b.count - a.count).slice(0, 8);
-    }, [accounts, requests]);
 
-    const creationTrend = useMemo(() => {
-        const m = new Map<string, number>();
-        accounts.forEach((a) => {
-            const d = parseYmd(a.createdAt);
-            if (!d) return;
-            const key = d.slice(0, 7);
-            m.set(key, (m.get(key) || 0) + 1);
+            if (!m.has(id)) m.set(id, { count: 0, revenue: 0 });
+
+            const s = m.get(id)!;
+
+            s.count += 1;
+
+            s.revenue += num(r.totalCost);
+
         });
-        return Array.from(m.entries())
-            .map(([month, value]) => ({ month, value }))
-            .sort((a, b) => a.month.localeCompare(b.month))
-            .slice(-12);
-    }, [accounts]);
 
-    const activityTrend = useMemo(() => {
-        const m = new Map<string, number>();
-        accounts.forEach((a) => {
-            asArr(a.activities).forEach((act: any) => {
-                const d = parseYmd(act.at || act.date);
-                if (!d) return;
-                const key = d.slice(0, 7);
-                m.set(key, (m.get(key) || 0) + 1);
-            });
-        });
-        return Array.from(m.entries())
-            .map(([month, value]) => ({ month, value }))
-            .sort((a, b) => a.month.localeCompare(b.month))
-            .slice(-12);
-    }, [accounts]);
+        return Array.from(m.entries()).map(([id, v]) => ({
 
-    const activeAccounts = useMemo(() => {
-        const ids = new Set(requests.map((r) => String(r.accountId || '').trim()).filter(Boolean));
-        return accounts.filter((a) => ids.has(String(a.id))).length;
-    }, [accounts, requests]);
+            id, name: accName(id), count: v.count, revenue: Math.round(v.revenue),
 
-    const totalActivities = useMemo(
-        () => accounts.reduce((s, a) => s + asArr(a.activities).length, 0),
-        [accounts],
+        }));
+
+    }, [reqsInPeriod, accounts, requests]);
+
+
+
+    const topByReq = useMemo(() => [...byAccountInPeriod].sort((a, b) => b.count - a.count).slice(0, 10), [byAccountInPeriod]);
+
+    const topByAttributedRev = useMemo(
+
+        () => [...byAccountInPeriod].filter((a) => a.revenue > 0).sort((a, b) => b.revenue - a.revenue).slice(0, 8),
+
+        [byAccountInPeriod],
+
     );
 
-    const palettes = [colors.blue, colors.green, colors.purple, colors.orange, colors.yellow, colors.cyan, colors.red, colors.primary];
 
-    const deltaPct = (cur: number, prev: number) => {
-        if (!prev) return cur > 0 ? 'new' : '0%';
-        return `${(((cur - prev) / prev) * 100).toFixed(0)}%`;
-    };
+
+    const totalAttributedRev = useMemo(() => byAccountInPeriod.reduce((s, a) => s + a.revenue, 0), [byAccountInPeriod]);
+
+    const top3Share = useMemo(() => {
+
+        if (!totalAttributedRev) return 0;
+
+        const top3 = [...byAccountInPeriod].sort((a, b) => b.revenue - a.revenue).slice(0, 3);
+
+        return top3.reduce((s, a) => s + a.revenue, 0) / totalAttributedRev;
+
+    }, [byAccountInPeriod, totalAttributedRev]);
+
+
+
+    const creationTrend = useMemo(() => {
+
+        const m = new Map<string, number>();
+
+        accounts.forEach((a) => {
+
+            if (!inRange(a.createdAt, start)) return;
+
+            const k = monthKey(a.createdAt);
+
+            if (k) m.set(k, (m.get(k) || 0) + 1);
+
+        });
+
+        return Array.from(m.entries()).map(([month, value]) => ({ month, value })).sort((a, b) => a.month.localeCompare(b.month)).slice(-12);
+
+    }, [accounts, start]);
+
+
+
+    const activityTrend = useMemo(() => {
+
+        const m = new Map<string, number>();
+
+        accounts.forEach((a) => {
+
+            asArr(a.activities).forEach((act: any) => {
+
+                if (!inRange(act.at || act.date, start)) return;
+
+                const k = monthKey(act.at || act.date);
+
+                if (k) m.set(k, (m.get(k) || 0) + 1);
+
+            });
+
+        });
+
+        return Array.from(m.entries()).map(([month, value]) => ({ month, value })).sort((a, b) => a.month.localeCompare(b.month)).slice(-12);
+
+    }, [accounts, start]);
+
+
+
+    const trendData = useMemo(() => {
+
+        const months = new Set([...creationTrend.map((c) => c.month), ...activityTrend.map((a) => a.month)]);
+
+        return Array.from(months).sort().map((month) => ({
+
+            month,
+
+            created: creationTrend.find((c) => c.month === month)?.value || 0,
+
+            activities: activityTrend.find((a) => a.month === month)?.value || 0,
+
+        }));
+
+    }, [creationTrend, activityTrend]);
+
+
+
+    const rangeLabel = range === 'all' ? 'all time' : range === '365' ? 'last year' : `last ${range} days`;
 
     const hasData = accounts.length > 0;
 
+    const periodHasActivity = activeInPeriod.length > 0 || newAccounts.length > 0;
+
+
+
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div
-                        style={{
-                            width: 44,
-                            height: 44,
-                            borderRadius: 12,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: colors.primary,
-                            backgroundColor: tint(colors.primary),
-                        }}
-                    >
-                        <Users size={24} strokeWidth={2.1} />
-                    </div>
-                    <div>
-                        <h2 style={{ margin: 0, color: colors.textMain, fontSize: 20, fontWeight: 700 }}>Account Portfolio</h2>
-                        <div style={{ color: colors.textMuted, fontSize: 12 }}>{accounts.length} accounts tracked</div>
-                    </div>
+
+        <PageShell colors={colors} enterDeps={[range]}>
+
+            <div style={{ padding: 4 }}>
+
+                <div data-hub-animate>
+
+                    <Hero
+
+                        icon={Users}
+
+                        title="Account Portfolio"
+
+                        colors={colors}
+
+                        activeProperty={activeProperty}
+
+                        subtitle={`${accounts.length} accounts · ${activeInPeriod.length} active in ${rangeLabel}`}
+
+                        right={<RangeTabs value={range} onChange={setRange} colors={colors} />}
+
+                    />
+
                 </div>
-                <RangeFilter colors={colors} value={range} onChange={setRange} />
-            </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-                <MiniStat
-                    colors={colors}
-                    icon={Building2}
-                    label="Total Accounts"
-                    value={accounts.length}
-                    color={colors.blue}
-                />
-                <MiniStat
-                    colors={colors}
-                    icon={CalendarDays}
-                    label={`New (${range ? `${range}D` : 'All'})`}
-                    value={newAccounts.length}
-                    sub={`vs ${newPrev.length} prev`}
-                    color={colors.green}
-                />
-                <MiniStat
-                    colors={colors}
-                    icon={Users}
-                    label="Active Accts"
-                    value={activeAccounts}
-                    sub={`${accounts.length ? Math.round((activeAccounts / accounts.length) * 100) : 0}% of base`}
-                    color={colors.purple}
-                />
-                <MiniStat
-                    colors={colors}
-                    icon={FileText}
-                    label="Total Activities"
-                    value={totalActivities}
-                    color={colors.orange}
-                />
-            </div>
 
-            {!hasData ? (
-                <EmptyState colors={colors} label="accounts" />
-            ) : (
-                <>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
-                        <div style={{ ...CARD_STYLE, backgroundColor: colors.card, borderColor: colors.border, padding: 16 }}>
-                            <div style={{ color: colors.textMain, fontWeight: 600, fontSize: 14, marginBottom: 8 }}>By Type</div>
-                            {types.length ? (
-                                <ResponsiveContainer width="100%" height={240}>
-                                    <PieChart>
-                                        <Pie
-                                            data={types}
-                                            dataKey="value"
-                                            nameKey="name"
-                                            cx="50%"
-                                            cy="50%"
-                                            outerRadius={80}
-                                            innerRadius={45}
-                                            paddingAngle={2}
-                                        >
-                                            {types.map((_, i) => (
-                                                <Cell key={i} fill={palettes[i % palettes.length]} />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip {...tooltipProps(colors)} />
-                                        <Legend wrapperStyle={{ fontSize: 11, color: colors.textMuted }} />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                <EmptyState colors={colors} label="types" />
-                            )}
+
+                {!hasData ? (
+
+                    <EmptyState icon={Users} text="No accounts for this property yet." colors={colors} />
+
+                ) : !periodHasActivity ? (
+
+                    <EmptyState icon={Users} text="No account creation or activity in the selected period." colors={colors} />
+
+                ) : (
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+
+                        <div
+
+                            data-hub-animate
+
+                            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 14 }}
+
+                        >
+
+                            <MiniStat
+
+                                label="Portfolio size"
+
+                                value={fmtInt(accounts.length)}
+
+                                sub={`${fmtInt(activeInPeriod.length)} touched in period`}
+
+                                icon={Building2}
+
+                                colorKey="blue"
+
+                                colors={colors}
+
+                            />
+
+                            <MiniStat
+
+                                label={`New (${range === 'all' ? 'all' : `${range}d`})`}
+
+                                value={fmtInt(newAccounts.length)}
+
+                                delta={range !== 'all' ? delta(newAccounts.length, newPrev.length) : undefined}
+
+                                icon={CalendarDays}
+
+                                colorKey="green"
+
+                                colors={colors}
+
+                            />
+
+                            <MiniStat
+
+                                label="Active in period"
+
+                                value={fmtInt(activeInPeriod.length)}
+
+                                sub={`${accounts.length ? fmtPct(activeInPeriod.length / accounts.length) : '0%'} of base`}
+
+                                icon={Users}
+
+                                colorKey="purple"
+
+                                colors={colors}
+
+                            />
+
+                            <MiniStat
+
+                                label="Activities logged"
+
+                                value={fmtInt(activitiesInPeriod)}
+
+                                sub={rangeLabel}
+
+                                icon={FileText}
+
+                                colorKey="orange"
+
+                                colors={colors}
+
+                            />
+
                         </div>
 
-                        <div style={{ ...CARD_STYLE, backgroundColor: colors.card, borderColor: colors.border, padding: 16 }}>
-                            <div style={{ color: colors.textMain, fontWeight: 600, fontSize: 14, marginBottom: 8 }}>Top Countries / Cities</div>
-                            {countries.length ? (
-                                <ResponsiveContainer width="100%" height={240}>
-                                    <BarChart data={countries} layout="vertical" margin={{ left: 8, right: 16 }}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke={colors.border} horizontal={false} />
-                                        <XAxis type="number" tick={{ fill: colors.textMuted, fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                                        <YAxis type="category" dataKey="name" tick={{ fill: colors.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} width={90} />
-                                        <Tooltip {...tooltipProps(colors)} cursor={{ fill: colors.border }} />
-                                        <Bar dataKey="value" name="Accounts" fill={colors.cyan} radius={[0, 4, 4, 0]} barSize={16} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                <EmptyState colors={colors} label="locations" />
-                            )}
-                        </div>
-                    </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
-                        <div style={{ ...CARD_STYLE, backgroundColor: colors.card, borderColor: colors.border, padding: 16 }}>
-                            <div style={{ color: colors.textMain, fontWeight: 600, fontSize: 14, marginBottom: 8 }}>Account Creation Trend</div>
-                            {creationTrend.length ? (
-                                <ResponsiveContainer width="100%" height={220}>
-                                    <AreaChart data={creationTrend} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-                                        <defs>
-                                            <linearGradient id="accCreation" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor={colors.blue} stopOpacity={0.35} />
-                                                <stop offset="95%" stopColor={colors.blue} stopOpacity={0} />
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="3 3" stroke={colors.border} vertical={false} />
-                                        <XAxis dataKey="month" tick={{ fill: colors.textMuted, fontSize: 10 }} axisLine={false} tickLine={false} />
-                                        <YAxis tick={{ fill: colors.textMuted, fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                                        <Tooltip {...tooltipProps(colors)} />
-                                        <Area type="monotone" dataKey="value" name="New Accounts" stroke={colors.blue} fill="url(#accCreation)" />
-                                    </AreaChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                <EmptyState colors={colors} label="creation history" />
-                            )}
-                        </div>
 
-                        <div style={{ ...CARD_STYLE, backgroundColor: colors.card, borderColor: colors.border, padding: 16 }}>
-                            <div style={{ color: colors.textMain, fontWeight: 600, fontSize: 14, marginBottom: 8 }}>Account Activity Trend</div>
-                            {activityTrend.length ? (
-                                <ResponsiveContainer width="100%" height={220}>
-                                    <AreaChart data={activityTrend} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-                                        <defs>
-                                            <linearGradient id="accActivity" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor={colors.orange} stopOpacity={0.35} />
-                                                <stop offset="95%" stopColor={colors.orange} stopOpacity={0} />
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="3 3" stroke={colors.border} vertical={false} />
-                                        <XAxis dataKey="month" tick={{ fill: colors.textMuted, fontSize: 10 }} axisLine={false} tickLine={false} />
-                                        <YAxis tick={{ fill: colors.textMuted, fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                                        <Tooltip {...tooltipProps(colors)} />
-                                        <Area type="monotone" dataKey="value" name="Activities" stroke={colors.orange} fill="url(#accActivity)" />
-                                    </AreaChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                <EmptyState colors={colors} label="activities" />
-                            )}
-                        </div>
-                    </div>
+                        {totalAttributedRev > 0 && (
 
-                    <div style={{ ...CARD_STYLE, backgroundColor: colors.card, borderColor: colors.border, padding: 16 }}>
-                        <div style={{ color: colors.textMain, fontWeight: 600, fontSize: 14, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <TrendingUp size={16} color={colors.green} /> Top Accounts by Request Volume
-                        </div>
-                        {byAccountReq.length ? (
-                            <>
-                                <ResponsiveContainer width="100%" height={Math.max(220, byAccountReq.length * 34)}>
-                                    <BarChart data={byAccountReq} layout="vertical" margin={{ left: 8, right: 16 }}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke={colors.border} horizontal={false} />
-                                        <XAxis type="number" tick={{ fill: colors.textMuted, fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                                        <YAxis type="category" dataKey="name" tick={{ fill: colors.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} width={140} />
-                                        <Tooltip {...tooltipProps(colors)} cursor={{ fill: colors.border }} />
-                                        <Bar dataKey="count" name="Requests" fill={colors.green} radius={[0, 4, 4, 0]} barSize={18} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                                <div style={{ marginTop: 12, overflowX: 'auto' }}>
-                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                                        <thead>
-                                            <tr style={{ color: colors.textMuted, textAlign: 'left' }}>
-                                                <th style={{ padding: '6px 8px' }}>Account</th>
-                                                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Requests</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {byAccountReq.map((r) => (
-                                                <tr key={r.id} style={{ color: colors.textMain, borderTop: `1px solid ${colors.border}` }}>
-                                                    <td style={{ padding: '6px 8px' }}>{r.name}</td>
-                                                    <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600 }}>{r.count}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                            <Card title="Request concentration" icon={Layers} colors={colors}>
+
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 28, alignItems: 'center' }}>
+
+                                    <div style={{ minWidth: 140 }}>
+
+                                        <div style={{ color: colors.textMain, fontSize: 42, fontWeight: 900, lineHeight: 1 }}>
+
+                                            {fmtPct(top3Share, 0)}
+
+                                        </div>
+
+                                        <div style={{ color: colors.textMuted, fontSize: 12, marginTop: 6 }}>
+
+                                            top 3 accounts · account-attributed request revenue
+
+                                        </div>
+
+                                    </div>
+
+                                    <div style={{ flex: 1, minWidth: 220 }}>
+
+                                        <Meter value={top3Share} colors={colors} color={colors.orange} />
+
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, fontSize: 12, fontWeight: 700 }}>
+
+                                            <span style={{ color: colors.orange }}>Top 3 {fmtMoney(
+
+                                                [...byAccountInPeriod].sort((a, b) => b.revenue - a.revenue).slice(0, 3).reduce((s, a) => s + a.revenue, 0),
+
+                                                currency,
+
+                                            )}</span>
+
+                                            <span style={{ color: colors.textMuted }}>Period total {fmtMoney(totalAttributedRev, currency)}</span>
+
+                                        </div>
+
+                                    </div>
+
                                 </div>
-                            </>
-                        ) : (
-                            <EmptyState colors={colors} label="request activity" />
+
+                            </Card>
+
                         )}
+
+
+
+                        {trendData.length > 0 ? (
+
+                            <Card title="Creation vs CRM activity" icon={TrendingUp} colors={colors}>
+
+                                <ResponsiveContainer width="100%" height={CHART_H_LG}>
+
+                                    <ComposedChart data={trendData} margin={{ top: 8, right: 8, left: 4, bottom: 0 }}>
+
+                                        <defs>
+
+                                            <linearGradient id="accPrevCreate" x1="0" y1="0" x2="0" y2="1">
+
+                                                <stop offset="0%" stopColor={colors.blue} stopOpacity={0.35} />
+
+                                                <stop offset="100%" stopColor={colors.blue} stopOpacity={0} />
+
+                                            </linearGradient>
+
+                                        </defs>
+
+                                        <CartesianGrid stroke={colors.grid} vertical={false} />
+
+                                        <XAxis dataKey="month" tick={{ fill: colors.textMuted, fontSize: 11 }} stroke={colors.grid} />
+
+                                        <YAxis tick={{ fill: colors.textMuted, fontSize: 11 }} allowDecimals={false} stroke={colors.grid} />
+
+                                        <Tooltip {...tip(colors)} />
+
+                                        <Area type="monotone" dataKey="created" name="New accounts" stroke={colors.blue} fill="url(#accPrevCreate)" strokeWidth={2} />
+
+                                        <Line type="monotone" dataKey="activities" name="CRM activities" stroke={colors.orange} strokeWidth={2} dot={false} />
+
+                                        <Legend formatter={legendStyle(colors)} />
+
+                                    </ComposedChart>
+
+                                </ResponsiveContainer>
+
+                            </Card>
+
+                        ) : (
+
+                            <EmptyState icon={TrendingUp} text="No creation or activity trend in this period." colors={colors} />
+
+                        )}
+
+
+
+                        <div data-hub-animate style={{ display: 'grid', gridTemplateColumns: GRID_2, gap: 18 }}>
+
+                            <Card title="Type mix (active in period)" icon={Building2} colors={colors}>
+
+                                {types.length ? (
+
+                                    <ResponsiveContainer width="100%" height={CHART_H}>
+
+                                        <PieChart>
+
+                                            <Pie data={types} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} innerRadius={55} paddingAngle={2}>
+
+                                                {types.map((_, i) => <Cell key={i} fill={pal[i % pal.length]} />)}
+
+                                            </Pie>
+
+                                            <Tooltip {...tip(colors)} />
+
+                                            <Legend formatter={legendStyle(colors)} />
+
+                                        </PieChart>
+
+                                    </ResponsiveContainer>
+
+                                ) : <EmptyState icon={Building2} text="No accounts active in period." colors={colors} />}
+
+                            </Card>
+
+
+
+                            <Card title="Geography (active in period)" icon={MapPin} colors={colors}>
+
+                                {countries.length ? (
+
+                                    <ResponsiveContainer width="100%" height={CHART_H}>
+
+                                        <BarChart data={countries} layout="vertical" margin={{ left: 8, right: 16 }}>
+
+                                            <CartesianGrid stroke={colors.grid} horizontal={false} />
+
+                                            <XAxis type="number" tick={{ fill: colors.textMuted, fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} />
+
+                                            <YAxis type="category" dataKey="name" tick={{ fill: colors.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} width={100} />
+
+                                            <Tooltip {...tip(colors)} cursor={{ fill: hexA(colors.primary, '12') }} />
+
+                                            <Bar dataKey="value" name="Accounts" fill={colors.cyan || colors.blue} radius={[0, 6, 6, 0]} barSize={16} />
+
+                                        </BarChart>
+
+                                    </ResponsiveContainer>
+
+                                ) : <EmptyState icon={MapPin} text="No location data for active accounts." colors={colors} />}
+
+                            </Card>
+
+                        </div>
+
+
+
+                        {topByAttributedRev.length > 0 ? (
+
+                            <Card
+
+                                title={`Account-attributed request revenue (${currency})`}
+
+                                icon={FileText}
+
+                                colors={colors}
+
+                                right={<span style={{ color: colors.textMuted, fontSize: 11, fontWeight: 700 }}>{rangeLabel} · not hotel P&amp;L</span>}
+
+                            >
+
+                                <ResponsiveContainer width="100%" height={CHART_H}>
+
+                                    <BarChart data={topByAttributedRev} layout="vertical" margin={{ left: 8, right: 16 }}>
+
+                                        <CartesianGrid stroke={colors.grid} horizontal={false} />
+
+                                        <XAxis type="number" tick={{ fill: colors.textMuted, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v: number) => fmtMoney(v, '').trim()} />
+
+                                        <YAxis type="category" dataKey="name" tick={{ fill: colors.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} width={130} />
+
+                                        <Tooltip {...tip(colors)} formatter={(v: any) => [money(v, currency), 'Attributed revenue']} cursor={{ fill: hexA(colors.primary, '12') }} />
+
+                                        <Bar dataKey="revenue" name="Attributed revenue" radius={[0, 6, 6, 0]} barSize={18}>
+
+                                            {topByAttributedRev.map((_, i) => <Cell key={i} fill={pal[i % pal.length]} />)}
+
+                                        </Bar>
+
+                                    </BarChart>
+
+                                </ResponsiveContainer>
+
+                            </Card>
+
+                        ) : reqsInPeriod.length > 0 ? (
+
+                            <EmptyState icon={FileText} text="Requests in period lack account links for attribution." colors={colors} />
+
+                        ) : null}
+
+
+
+                        <Card title="Top accounts by request volume" icon={FileText} colors={colors}>
+
+                            {topByReq.length ? (
+
+                                <div style={{ overflowX: 'auto' }}>
+
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+
+                                        <thead>
+
+                                            <tr style={{ color: colors.textMuted, textAlign: 'left' }}>
+
+                                                <th style={{ padding: '6px 8px' }}>#</th>
+
+                                                <th style={{ padding: '6px 8px' }}>Account</th>
+
+                                                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Requests</th>
+
+                                                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Share</th>
+
+                                            </tr>
+
+                                        </thead>
+
+                                        <tbody>
+
+                                            {topByReq.map((r, i) => (
+
+                                                <tr key={r.id} style={{ color: colors.textMain, borderTop: `1px solid ${colors.border}` }}>
+
+                                                    <td style={{ padding: '6px 8px', color: i === 0 ? colors.primary : colors.textMuted, fontWeight: 700 }}>{i + 1}</td>
+
+                                                    <td style={{ padding: '6px 8px' }}>{r.name}</td>
+
+                                                    <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600 }}>{fmtInt(r.count)}</td>
+
+                                                    <td style={{ padding: '6px 8px', textAlign: 'right', color: colors.textMuted }}>
+
+                                                        {reqsInPeriod.length ? fmtPct(r.count / reqsInPeriod.length) : '—'}
+
+                                                    </td>
+
+                                                </tr>
+
+                                            ))}
+
+                                        </tbody>
+
+                                    </table>
+
+                                </div>
+
+                            ) : <EmptyState icon={FileText} text="No linked requests in this period." colors={colors} />}
+
+                        </Card>
+
                     </div>
-                </>
-            )}
-        </div>
+
+                )}
+
+            </div>
+
+        </PageShell>
+
     );
+
 }
 
-function r_name(requests: any[], id: string): string {
-    const r = requests.find((x) => String(x.accountId) === id);
-    return r?.account || `Account ${id.slice(0, 6)}`;
-}
+

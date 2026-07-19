@@ -1,4 +1,4 @@
-# Advanced Sales (VisaTour ERP) — Technical Overview for Enterprise Evaluation
+# Advanced Sales — Technical Overview for Enterprise Evaluation
 
 **Audience:** IT architecture, security, and integration teams at large hospitality groups.  
 **Codebase:** React (Vite) SPA + FastAPI (Python) backend; optional PostgreSQL or JSON file storage.  
@@ -10,7 +10,7 @@
 
 | Area | Summary |
 |------|---------|
-| **Purpose** | Sales and operations workspace: properties, users, accommodation/MICE **requests**, **accounts/CRM**, **tasks**, **contracts**, **financials**, calendar/events views, reports, file uploads (Cloudinary). |
+| **Purpose** | Sales and operations workspace: properties, users, accommodation/MICE **requests**, **accounts/CRM**, **tasks**, **contracts**, **financials**, calendar/events views, reports, file uploads (Docker volume). |
 | **Frontend** | **React 18**, **TypeScript** (mixed with JSX), **Vite 5**, **Tailwind CSS**, **Recharts**, client-side document generation (**jsPDF**, **docxtemplater**, **xlsx**). |
 | **Backend** | **Python**, **FastAPI**, **Pydantic**, **Uvicorn**; persistence via **PostgreSQL** (`DATABASE_URL`) or local **JSON files** under `backend/data/`. |
 | **Multi-tenant model** | **Property-scoped** data (`propertyId` on requests, accounts, filters); users assigned to properties; RBAC in the SPA (`userPermissions.ts`). |
@@ -36,18 +36,15 @@ flowchart LR
   end
   subgraph data["Data tier"]
     PG[("PostgreSQL")]
-    FS["JSON files (dev / no DATABASE_URL)")]
-  end
-  subgraph ext["External services"]
-    CL["Cloudinary (signed uploads)"]
+    FS["JSON files (dev / no DATABASE_URL)"]
+    UP["Uploads volume (as-uploads-data)"]
   end
   B --> CDN
   B --> LB
   LB --> API
   API --> PG
   API --> FS
-  B -. optional direct .-> CL
-  API --> CL
+  API --> UP
 ```
 
 - **Development:** Vite serves the SPA (e.g. port **5173**) and proxies `/api` to the API (**127.0.0.1:8000**) per `vite.config.js`.  
@@ -79,7 +76,7 @@ flowchart LR
 | **Uvicorn** | ASGI server. |
 | **psycopg + psycopg-pool** | PostgreSQL driver + connection pool when `DATABASE_URL` is set. |
 | **python-dotenv** | Loads `backend/.env`. |
-| **httpx** | Outbound HTTP (e.g. Cloudinary delete). |
+| **httpx** | Outbound HTTP (e.g. business card scan helpers). |
 
 ---
 
@@ -207,8 +204,9 @@ All paths are rooted at the API host (e.g. `https://api.example.com`). The SPA u
 | GET / POST / PUT / DELETE | `/api/tasks`, `/api/tasks/sync` | List, upsert, bulk sync (body: `propertyId`, `tasks`, optional `allowClear`), delete |
 | GET/POST/DELETE | `/api/contracts/templates` | Contract templates |
 | POST | `/api/contact/subscribe` | Contact / subscription handoff |
-| POST | `/api/uploads/cloudinary/sign` | Signed upload params |
-| POST | `/api/uploads/cloudinary/delete` | Delete asset via Cloudinary API |
+| POST | `/api/uploads/local` | Upload file to Docker volume |
+| GET | `/api/uploads/files/{folder}/{filename}` | Serve uploaded file |
+| DELETE | `/api/uploads/local` | Delete uploaded file by publicId |
 
 **Note:** Router modules live under `backend/routers/`. FastAPI’s interactive **`/docs`** (Swagger UI) is available when the server runs — useful for partner integration workshops.
 
@@ -235,7 +233,7 @@ All paths are rooted at the API host (e.g. `https://api.example.com`). The SPA u
 | **Password storage** | Auth compares **plaintext** passwords against stored user records (`auth.py`). Enterprise standard: **argon2id** or **bcrypt** + unique salt per user. |
 | **Demo / shared password** | `_password_accepted` accepts **`demo123`** as a universal password — **remove** for any production tenant. |
 | **CORS** | `main.py` uses `allow_origins=["*"]` — acceptable only behind a locked gateway; replace with **explicit origins**. |
-| **Secrets** | Cloudinary and DB URLs belong in **secret managers** (Vault, AWS Secrets Manager, etc.), not in repo. |
+| **Secrets** | DB URLs and session secrets belong in **secret managers** (Vault, AWS Secrets Manager, etc.), not in repo. |
 | **RBAC** | Permissions are rich on the **client**; server must **enforce** the same rules for any partner-facing API. |
 | **Rate limiting / abuse** | Not evident in `main.py` — add at API gateway (e.g. Cloudflare, AWS WAF, Kong). |
 

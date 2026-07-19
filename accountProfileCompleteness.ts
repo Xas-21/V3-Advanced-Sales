@@ -1,5 +1,9 @@
 import { contactDisplayName } from './accountLeadMapping';
-import { getResolvedFormSchema, type FormConfigurationPropertySource } from './formConfigurations';
+import {
+    getResolvedFormSchema,
+    type FormConfigurationPropertySource,
+    type FormSchema,
+} from './formConfigurations';
 
 /** True when value is empty or only placeholder punctuation (e.g. ".", "-", "—"). */
 export function isPlaceholderOnlyValue(v: unknown): boolean {
@@ -35,7 +39,9 @@ function pushGap(gaps: string[], seen: Set<string>, label: string, ok: boolean) 
 export function getAccountProfileGaps(
     account: any,
     propertyId?: string | null,
-    property?: FormConfigurationPropertySource
+    property?: FormConfigurationPropertySource,
+    /** When provided, skips getResolvedFormSchema (avoids recloning form config per account). */
+    resolvedSchema?: FormSchema | null
 ): string[] {
     const gaps: string[] = [];
     const seen = new Set<string>();
@@ -48,7 +54,7 @@ export function getAccountProfileGaps(
     pushGap(gaps, seen, 'Phone', meaningfulAccountValue(c0?.phone));
     pushGap(gaps, seen, 'Email', meaningfulAccountValue(c0?.email));
 
-    const schema = getResolvedFormSchema(propertyId, 'account_new', property);
+    const schema = resolvedSchema ?? getResolvedFormSchema(propertyId, 'account_new', property);
     for (const sec of schema.sections) {
         for (const field of sec.fields) {
             if (!field.required) continue;
@@ -112,7 +118,8 @@ export function getAccountProfileGaps(
 export function isAccountProfileIncomplete(
     account: any,
     propertyId?: string | null,
-    property?: FormConfigurationPropertySource
+    property?: FormConfigurationPropertySource,
+    resolvedSchema?: FormSchema | null
 ): boolean {
-    return getAccountProfileGaps(account, propertyId, property).length > 0;
+    return getAccountProfileGaps(account, propertyId, property, resolvedSchema).length > 0;
 }
