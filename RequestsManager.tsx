@@ -73,6 +73,7 @@ import { formatCurrencyAmount, resolveCurrencyCode, type CurrencyCode } from './
 import { contrastOn } from './dashboardHub/analyticsKit';
 import { deleteFileLocal, mediaUrl, uploadFileLocal } from './localUpload';
 import { collectRequestFormViolations } from './formConfigurations';
+import { computeBalance, applicableFromBalance, type LedgerEntry, type LedgerType } from './accountBalance';
 import {
     clearNewRequestDraft,
     readNewRequestDraft,
@@ -769,6 +770,9 @@ export default function RequestsManager({
         amount: 0,
         date: new Date().toISOString().split('T')[0],
     });
+    const [ledgerEntries, setLedgerEntries] = useState<LedgerEntry[]>([]);
+    const [paymentSource, setPaymentSource] = useState<'method' | 'balance' | 'cl'>('method');
+    const [balanceMode, setBalanceMode] = useState<'full' | 'partial'>('full');
 
     useEffect(() => {
         setNewPayment((prev) => {
@@ -781,6 +785,39 @@ export default function RequestsManager({
             };
         });
     }, [paymentMethodOptions, activeProperty]);
+
+    useEffect(() => {
+        if (!showPaymentModal) return;
+        const acctId =
+            paymentModalSource === 'form'
+                ? String(accForm.accountId || '')
+                : String(
+                      selectedRequest?.accountId ||
+                          (activeOptionsMenu !== null ? requests[activeOptionsMenu]?.accountId : '') ||
+                          ''
+                  );
+        if (!acctId) {
+            setLedgerEntries([]);
+            return;
+        }
+        import('./accountLedgerApi')
+            .then(({ fetchLedger }) =>
+                fetchLedger(acctId, String(activeProperty?.id || ''))
+                    .then(setLedgerEntries)
+                    .catch(() => setLedgerEntries([]))
+            )
+            .catch(() => setLedgerEntries([]));
+    }, [
+        showPaymentModal,
+        paymentModalSource,
+        accForm.accountId,
+        selectedRequest,
+        activeOptionsMenu,
+        requests,
+        activeProperty,
+    ]);
+
+    const accountBalance = useMemo(() => computeBalance(ledgerEntries), [ledgerEntries]);
     const [showLogs, setShowLogs] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [searchFormExpanded, setSearchFormExpanded] = useState(true);
@@ -2866,6 +2903,8 @@ export default function RequestsManager({
             });
             setShowPaymentModal(false);
             setNewPayment(emptyNewPayment());
+            setPaymentSource('method');
+            setBalanceMode('full');
         };
 
         const offsetPayment = (payment: any) => {
@@ -3796,6 +3835,17 @@ export default function RequestsManager({
                         </div>
                         <div className="flex flex-col items-end">
                             <span className="text-[10px] font-black uppercase opacity-50 tracking-widest mb-1">Current Status</span>
+                            {(accForm.collectLater || accForm.paymentStatus === 'CL') ? (
+                                <div className="px-4 py-1.5 rounded-full text-xs font-bold border flex items-center gap-2"
+                                    style={{
+                                        backgroundColor: colors.red + '20',
+                                        borderColor: colors.red,
+                                        color: colors.red,
+                                    }}>
+                                    <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'currentColor' }} />
+                                    CL · Collect Later
+                                </div>
+                            ) : (
                             <div className="px-4 py-1.5 rounded-full text-xs font-bold border flex items-center gap-2"
                                 style={{
                                     backgroundColor: fin.paymentStatus === 'Paid' ? colors.green + '20' : (fin.paymentStatus === 'Partially Paid' || fin.paymentStatus === 'Deposit') ? colors.yellow + '20' : colors.red + '20',
@@ -3805,6 +3855,7 @@ export default function RequestsManager({
                                 <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'currentColor' }} />
                                 {fin.paymentStatus === 'Deposit' ? 'Partial / deposit' : fin.paymentStatus}
                             </div>
+                            )}
                         </div>
                     </div>
 
@@ -3992,6 +4043,8 @@ export default function RequestsManager({
                             <h4 className="text-xs font-black uppercase opacity-30 tracking-widest pl-2">Payment Records</h4>
                             <button onClick={() => {
                                 setNewPayment(emptyNewPayment());
+                                setPaymentSource('method');
+                                setBalanceMode('full');
                                 setPaymentModalSource('form');
                                 setShowPaymentModal(true);
                             }}
@@ -4879,6 +4932,17 @@ export default function RequestsManager({
                                     </div>
                                     <div className="flex flex-col items-end">
                                         <span className="text-[10px] font-black uppercase opacity-50 tracking-widest mb-1">Current Status</span>
+                                        {(request.collectLater || request.paymentStatus === 'CL') ? (
+                                            <div className="px-4 py-1.5 rounded-full text-xs font-bold border flex items-center gap-2"
+                                                style={{
+                                                    backgroundColor: colors.red + '20',
+                                                    borderColor: colors.red,
+                                                    color: colors.red,
+                                                }}>
+                                                <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'currentColor' }} />
+                                                CL · Collect Later
+                                            </div>
+                                        ) : (
                                         <div className="px-4 py-1.5 rounded-full text-xs font-bold border flex items-center gap-2"
                                             style={{
                                                 backgroundColor: fin.paymentStatus === 'Paid' ? colors.green + '20' : (fin.paymentStatus === 'Partially Paid' || fin.paymentStatus === 'Deposit') ? colors.yellow + '20' : colors.red + '20',
@@ -4888,6 +4952,7 @@ export default function RequestsManager({
                                             <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'currentColor' }} />
                                             {fin.paymentStatus === 'Deposit' ? 'Partial / deposit' : fin.paymentStatus}
                                         </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -5076,6 +5141,8 @@ export default function RequestsManager({
                                         {!readOnlyOperational && (
                                         <button onClick={() => {
                                             setNewPayment(emptyNewPayment());
+                                            setPaymentSource('method');
+                                            setBalanceMode('full');
                                             setPaymentModalSource('detail');
                                             setShowPaymentModal(true);
                                         }}
@@ -5379,28 +5446,88 @@ export default function RequestsManager({
                     </button>
                 </div>
                 <div className="p-6 space-y-5">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-2">
+                        {(['method', 'balance', 'cl'] as const).map((src) => (
+                            <button
+                                key={src}
+                                type="button"
+                                onClick={() => {
+                                    if (src === 'balance' && accountBalance <= 0) {
+                                        alert(
+                                            'Please choose a valid payment method, or CL if payment will be after the service.'
+                                        );
+                                        return;
+                                    }
+                                    setPaymentSource(src);
+                                }}
+                                className="py-2 rounded-xl border text-xs font-bold uppercase"
+                                style={{
+                                    borderColor: paymentSource === src ? colors.green : colors.border,
+                                    color: paymentSource === src ? colors.green : colors.textMain,
+                                    opacity: src === 'balance' && accountBalance <= 0 ? 0.4 : 1,
+                                }}
+                            >
+                                {src === 'method' ? 'Method' : src === 'balance' ? 'Balance' : 'CL'}
+                            </button>
+                        ))}
+                    </div>
+                    {paymentSource === 'balance' && (
+                        <div className="text-xs" style={{ color: colors.textMuted }}>
+                            Available balance:{' '}
+                            <span style={{ color: colors.green }}>{accountBalance.toLocaleString()}</span> — from
+                            linked account
+                            <div className="mt-2 flex gap-3">
+                                <label className="flex items-center gap-1">
+                                    <input
+                                        type="radio"
+                                        checked={balanceMode === 'full'}
+                                        onChange={() => setBalanceMode('full')}
+                                    />{' '}
+                                    Deduct full request amount
+                                </label>
+                                <label className="flex items-center gap-1">
+                                    <input
+                                        type="radio"
+                                        checked={balanceMode === 'partial'}
+                                        onChange={() => setBalanceMode('partial')}
+                                    />{' '}
+                                    Deposit only
+                                </label>
+                            </div>
+                        </div>
+                    )}
+                    {paymentSource === 'cl' && (
+                        <div className="text-xs" style={{ color: colors.textMuted }}>
+                            Collect Later — charges the full remaining amount to the account balance (may go
+                            negative = owed).
+                        </div>
+                    )}
+                    <div className={`grid gap-4 ${paymentSource === 'method' ? 'grid-cols-2' : 'grid-cols-1'}`}>
                         <div>
                             <label className="text-xs font-black uppercase opacity-40 mb-2 block" style={{ color: colors.textMain }}>Payment Date</label>
                             <input type="date" value={newPayment.date} onChange={e => setNewPayment({ ...newPayment, date: e.target.value })}
                                 className="w-full px-4 py-3 rounded-xl border bg-black/20 outline-none" style={{ borderColor: colors.border, color: colors.textMain }} />
                         </div>
+                        {paymentSource === 'method' && (
+                            <div>
+                                <label className="text-xs font-black uppercase opacity-40 mb-2 block" style={{ color: colors.textMain }}>Method</label>
+                                <select value={newPayment.method} onChange={e => setNewPayment({ ...newPayment, method: e.target.value })}
+                                    className="w-full px-4 py-3 rounded-xl border bg-black/20 outline-none" style={{ borderColor: colors.border, color: colors.textMain }}>
+                                    {paymentMethodOptions.map((m) => (
+                                        <option key={m} value={m}>{m}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                    </div>
+                    {(paymentSource === 'method' || (paymentSource === 'balance' && balanceMode === 'partial')) && (
                         <div>
-                            <label className="text-xs font-black uppercase opacity-40 mb-2 block" style={{ color: colors.textMain }}>Method</label>
-                            <select value={newPayment.method} onChange={e => setNewPayment({ ...newPayment, method: e.target.value })}
-                                className="w-full px-4 py-3 rounded-xl border bg-black/20 outline-none" style={{ borderColor: colors.border, color: colors.textMain }}>
-                                {paymentMethodOptions.map((m) => (
-                                    <option key={m} value={m}>{m}</option>
-                                ))}
-                            </select>
+                            <label className="text-xs font-black uppercase opacity-40 mb-2 block" style={{ color: colors.textMain }}>{`Amount (${selectedCurrency})`}</label>
+                            <input type="number" value={newPayment.amount || ''} onChange={e => setNewPayment({ ...newPayment, amount: Number(e.target.value) })}
+                                className="w-full px-4 py-4 rounded-xl border bg-black/20 outline-none text-2xl font-mono font-black text-center tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                style={{ borderColor: colors.border, color: '#10b981' }} />
                         </div>
-                    </div>
-                    <div>
-                        <label className="text-xs font-black uppercase opacity-40 mb-2 block" style={{ color: colors.textMain }}>{`Amount (${selectedCurrency})`}</label>
-                        <input type="number" value={newPayment.amount || ''} onChange={e => setNewPayment({ ...newPayment, amount: Number(e.target.value) })}
-                            className="w-full px-4 py-4 rounded-xl border bg-black/20 outline-none text-2xl font-mono font-black text-center tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                            style={{ borderColor: colors.border, color: '#10b981' }} />
-                    </div>
+                    )}
                     <div>
                         <label className="text-xs font-black uppercase opacity-40 mb-2 block" style={{ color: colors.textMain }}>Note (Optional)</label>
                         <textarea value={newPayment.note} onChange={e => setNewPayment({ ...newPayment, note: e.target.value })}
@@ -5416,11 +5543,85 @@ export default function RequestsManager({
                     </button>
                     <button
                         onClick={async () => {
-                            const amt = Number(newPayment.amount || 0);
+                            const acctId =
+                                paymentModalSource === 'form'
+                                    ? String(accForm.accountId || '')
+                                    : String(
+                                          selectedRequest?.accountId ||
+                                              (activeOptionsMenu !== null
+                                                  ? requests[activeOptionsMenu]?.accountId
+                                                  : '') ||
+                                              ''
+                                      );
+                            const reqForAmt =
+                                paymentModalSource === 'form'
+                                    ? accForm
+                                    : paymentModalSource === 'detail'
+                                      ? selectedRequest
+                                      : activeOptionsMenu !== null
+                                        ? requests[activeOptionsMenu]
+                                        : null;
+                            const requestTotal =
+                                paymentModalSource === 'form'
+                                    ? Number(
+                                          calculateAccFinancialsForRequest(accForm, taxesList, requestType)
+                                              .grandTotalWithTax || 0
+                                      )
+                                    : parseFloat(
+                                          String(
+                                              reqForAmt?.totalCost ?? reqForAmt?.grandTotalWithTax ?? '0'
+                                          ).replace(/,/g, '')
+                                      ) || 0;
+                            const alreadyPaid = sumPaymentAmounts(reqForAmt?.payments || []);
+                            const requestDue = Math.max(0, requestTotal - alreadyPaid);
+
+                            let effectiveAmt = Number(newPayment.amount || 0);
+                            let effectiveMethod = newPayment.method;
+                            let ledgerType: LedgerType | null = null;
+                            let clFlag = false;
+
+                            if (paymentSource === 'balance') {
+                                effectiveMethod = 'Balance';
+                                effectiveAmt =
+                                    balanceMode === 'full'
+                                        ? applicableFromBalance(accountBalance, requestDue)
+                                        : applicableFromBalance(accountBalance, Number(newPayment.amount || 0));
+                                ledgerType = 'allocation';
+                            } else if (paymentSource === 'cl') {
+                                effectiveMethod = 'CL';
+                                effectiveAmt = requestDue;
+                                ledgerType = 'cl_charge';
+                                clFlag = true;
+                            }
+
+                            if (ledgerType && acctId && effectiveAmt > 0) {
+                                const { postLedgerEntry } = await import('./accountLedgerApi');
+                                await postLedgerEntry({
+                                    type: ledgerType,
+                                    amount: effectiveAmt,
+                                    accountId: acctId,
+                                    propertyId: String(activeProperty?.id || ''),
+                                    requestId: String(reqForAmt?.id || ''),
+                                    method: effectiveMethod,
+                                    note: newPayment.note || '',
+                                    date: newPayment.date,
+                                    user: requestLogUser,
+                                });
+                            }
+
+                            const amt = effectiveAmt;
+                            const postingMethod = effectiveMethod;
+                            const paymentRow = {
+                                ...newPayment,
+                                method: postingMethod,
+                                id: Date.now(),
+                                amount: amt,
+                            };
+
                             if (paymentModalSource === 'form') {
                                 setAccForm((prev: any) => {
                                     const st = String(prev.status || '').trim();
-                                    const newPayments = [...(prev.payments || []), { ...newPayment, id: Date.now(), amount: amt }];
+                                    const newPayments = [...(prev.payments || []), paymentRow];
                                     const paidSum = sumPaymentAmounts(newPayments);
                                     const finAfter = calculateAccFinancialsForRequest(
                                         { ...prev, payments: newPayments },
@@ -5444,7 +5645,7 @@ export default function RequestsManager({
                                         status: 'Definite',
                                         totalCost: total.toFixed(2),
                                         paidAmount: paidSum.toFixed(2),
-                                        paymentStatus: finAfter.paymentStatus,
+                                        paymentStatus: clFlag ? 'CL' : finAfter.paymentStatus,
                                         requestType: requestTypeLabel,
                                     };
                                     let nextStatus = prev.status;
@@ -5484,20 +5685,21 @@ export default function RequestsManager({
                                         ...prev,
                                         payments: newPayments,
                                         status: nextStatus,
+                                        ...(clFlag ? { paymentStatus: 'CL', collectLater: true } : {}),
                                         logs: [
                                             ...(prev.logs || []),
                                             ...autoLog,
                                             {
                                                 date: new Date().toISOString(),
                                                 user: requestLogUser,
-                                                action: `Posted deposit of ${amt} via ${newPayment.method}`,
+                                                action: `Posted deposit of ${amt} via ${postingMethod}`,
                                             },
                                         ],
                                     };
                                 });
                             } else if (paymentModalSource === 'detail' && selectedRequest) {
                                 const req = selectedRequest;
-                                const newPayments = [...(req.payments || []), { ...newPayment, id: Date.now(), amount: amt }];
+                                const newPayments = [...(req.payments || []), paymentRow];
                                 const paidSum = sumPaymentAmounts(newPayments);
                                 const totalCost = parseFloat(String(req.totalCost ?? '0').replace(/,/g, '')) || 0;
                                 let paymentStatus = 'Unpaid';
@@ -5505,6 +5707,7 @@ export default function RequestsManager({
                                     if (paymentsMeetOrExceedTotal(paidSum, totalCost)) paymentStatus = 'Paid';
                                     else if (paidSum > 0) paymentStatus = 'Deposit';
                                 }
+                                if (clFlag) paymentStatus = 'CL';
                                 const st = String(req.status || '').trim();
                                 const fullPayPromotion = paymentsMeetOrExceedTotal(paidSum, totalCost) && canAutoDefiniteFromStatus(st);
                                 const bumpToDefinite = !fullPayPromotion && paidSum > 0 && canAutoDefiniteFromStatus(st);
@@ -5524,19 +5727,22 @@ export default function RequestsManager({
                                     nextStatus = 'Definite';
                                     autoLog = [{ date: new Date().toISOString(), user: requestLogUser, action: 'Status auto-updated', details: `Deposit posted while status was ${st} — set to Definite.` }];
                                 }
-                                const newLogs = [...autoLog, { date: new Date().toISOString(), user: requestLogUser, action: `Posted deposit of ${amt} via ${newPayment.method}` }, ...(req.logs || [])];
+                                const newLogs = [...autoLog, { date: new Date().toISOString(), user: requestLogUser, action: `Posted deposit of ${amt} via ${postingMethod}` }, ...(req.logs || [])];
                                 const updateData: Record<string, unknown> = {
                                     paidAmount: paidSum.toFixed(2), paymentStatus, payments: newPayments,
                                     status: nextStatus, logs: newLogs,
+                                    ...(clFlag ? { collectLater: true } : {}),
                                 };
                                 await updateRequest(req.id, updateData);
                                 setSelectedRequest((prev: any) => prev ? { ...prev, ...updateData } : null);
                                 setShowPaymentModal(false);
                                 setNewPayment(emptyNewPayment());
+                                setPaymentSource('method');
+                                setBalanceMode('full');
                             } else {
                                 const req = activeOptionsMenu !== null ? requests[activeOptionsMenu] : null;
                                 if (req) {
-                                    const newPayments = [...(req.payments || []), { ...newPayment, id: Date.now(), amount: amt }];
+                                    const newPayments = [...(req.payments || []), paymentRow];
                                     const paidSum = sumPaymentAmounts(newPayments);
                                     const totalCost = parseFloat(String(req.totalCost ?? '0').replace(/,/g, '')) || 0;
                                     let paymentStatus = 'Unpaid';
@@ -5544,6 +5750,7 @@ export default function RequestsManager({
                                         if (paymentsMeetOrExceedTotal(paidSum, totalCost)) paymentStatus = 'Paid';
                                         else if (paidSum > 0) paymentStatus = 'Deposit';
                                     }
+                                    if (clFlag) paymentStatus = 'CL';
                                     const st = String(req.status || '').trim();
                                     const fullPayPromotion =
                                         paymentsMeetOrExceedTotal(paidSum, totalCost) &&
@@ -5592,7 +5799,7 @@ export default function RequestsManager({
                                     }
                                     const newLogs = [
                                         ...autoLog,
-                                        { date: new Date().toISOString(), user: requestLogUser, action: `Posted deposit of ${amt} via ${newPayment.method}` },
+                                        { date: new Date().toISOString(), user: requestLogUser, action: `Posted deposit of ${amt} via ${postingMethod}` },
                                         ...(req.logs || []),
                                     ];
                                     const updateData: Record<string, unknown> = {
@@ -5601,6 +5808,7 @@ export default function RequestsManager({
                                         payments: newPayments,
                                         logs: newLogs,
                                         status: nextStatus,
+                                        ...(clFlag ? { collectLater: true } : {}),
                                     };
                                     if (selectedRequest && selectedRequest.id === req.id) {
                                         setSelectedRequest((prev: any) => prev ? { ...prev, ...updateData } : null);
@@ -5611,6 +5819,8 @@ export default function RequestsManager({
                             }
                             setShowPaymentModal(false);
                             setNewPayment(emptyNewPayment());
+                            setPaymentSource('method');
+                            setBalanceMode('full');
                         }}
                         className="flex-1 py-3 rounded-xl font-bold text-sm bg-emerald-500 text-white transition-all hover:bg-emerald-600 active:scale-95">
                         Confirm Deposit
@@ -5723,6 +5933,8 @@ export default function RequestsManager({
                             onClick={(e) => {
                                 e.stopPropagation();
                                 setNewPayment(emptyNewPayment());
+                                setPaymentSource('method');
+                                setBalanceMode('full');
                                 setPaymentModalSource('opts');
                                 setShowPaymentModal(true);
                             }}
