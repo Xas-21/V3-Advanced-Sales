@@ -279,6 +279,36 @@ def _ensure_feed_tables():
             conn.commit()
 
 
+def _ensure_crm_card_comments_table():
+    """CRM kanban card sticky comments (request vs account targets, max 5 enforced in API)."""
+    pool = _get_pool()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS crm_card_comments (
+                    id              TEXT PRIMARY KEY,
+                    property_id     TEXT NOT NULL,
+                    target_type     TEXT NOT NULL,
+                    target_id       TEXT NOT NULL,
+                    body            TEXT NOT NULL,
+                    author_user_id  TEXT NOT NULL,
+                    author_name     TEXT NOT NULL,
+                    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    CONSTRAINT crm_card_comments_target_type_chk
+                        CHECK (target_type IN ('request', 'account'))
+                );
+                """
+            )
+            cur.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_crm_card_comments_target
+                ON crm_card_comments (property_id, target_type, target_id, created_at DESC);
+                """
+            )
+            conn.commit()
+
+
 def _ensure_chat_tables():
     """Property-scoped messenger: conversations, participants, messages."""
     pool = _get_pool()
@@ -806,6 +836,7 @@ def init_database():
         _ensure_special_tables()
         _ensure_special_migration()
         _ensure_feed_tables()
+        _ensure_crm_card_comments_table()
         _ensure_chat_tables()
     except Exception as e:
         set_force_file_storage_after_pg_failure(repr(e))
