@@ -25,6 +25,7 @@ from psycopg.types.json import Json
 from utils import (
     RequestIdCollisionError,
     _get_pool,
+    _is_admin_scope,
     _is_explicit_request_update,
     _tenant_scope,
     _filter_by_tenant,
@@ -44,18 +45,27 @@ def _assert_write_access(property_id: Optional[str]) -> None:
 
     Uses the same request-scoped user + `_tenant_scope()` that filters reads, so
     any user who can SEE a property's data may write it — and no one else:
-      - scope is None  -> admin (or unauthenticated public route; data routers
-                          already require_user) -> allowed.
+      - ADMIN_SCOPE -> admin full access -> allowed.
       - property_id empty/None -> global/unscoped row (e.g. contract templates) ->
-                          allowed (these are not per-tenant).
-      - property_id set but not in scope -> raise PermissionError (403 upstream).
+                          allowed for authenticated users; no auth context -> deny.
+      - property_id set but not in scope (incl. empty set) -> PermissionError.
+
+    Public paths must use dedicated helpers (e.g. get_public_feedback_by_token),
+    not rely on missing auth context.
     """
     scope = _tenant_scope()
-    if scope is None:
+    if _is_admin_scope(scope):
         return
     pid = str(property_id or "").strip()
     if not pid:
-        return
+        # Global/unscoped rows: still require an auth context (fail closed).
+        try:
+            from dependencies import get_current_user_ctx
+            if get_current_user_ctx():
+                return
+        except Exception:
+            pass
+        raise PermissionError("Access denied to this property.")
     if pid not in scope:
         raise PermissionError("Access denied to this property.")
 
@@ -225,13 +235,13 @@ def _list_doc(table: str, property_id: Optional[str]) -> list:
     if table == "properties":
         # Property documents are tenant roots: their own `id` is the property key
         # (unlike child entities that carry payload.propertyId).
-        if scope is not None:
+        if not _is_admin_scope(scope):
             out = [p for p in out if str(p.get("id") or "") in scope]
     elif table in _FLAT_WITH_PID:
         # Match accounts/requests: never return another tenant's rows.
         # Cross-property query with a foreign propertyId → empty list (not 403),
         # consistent with list_accounts / list_requests.
-        if property_id and scope is not None and str(property_id) not in scope:
+        if property_id and not _is_admin_scope(scope) and str(property_id) not in scope:
             return []
         out = _filter_by_tenant(out, scope)
     elif table in _FLAT_BY_ID:
@@ -425,7 +435,7 @@ def get_crm_state(property_id: str) -> Optional[dict]:
     pid = str(property_id or "global").strip() or "global"
     # Tenant isolation: a scoped user may only read their properties' pipeline.
     scope = _tenant_scope()
-    if scope is not None and pid != "global" and pid not in scope:
+    if not _is_admin_scope(scope) and pid != "global" and pid not in scope:
         return None
     pool = _get_pool()
     with pool.connection() as conn:
@@ -501,6 +511,103 @@ def get_request(req_id: str) -> Optional[dict]:
                 return None
             children = _load_request_children_maps(cur, [r["id"]])
             return _request_dict_from_row(r, children)
+
+
+def get_public_feedback_by_token(token: str) -> Optional[dict]:
+    """Explicit public opt-in: load feedback form by publicToken without auth.
+
+    Does not call `_tenant_scope()` — intentional unauthenticated access for
+    RequestFeedbackPublicPage. Routers must call this helper (not list/get
+    under fail-open).
+    """
+    tok = str(token or "").strip()
+    if not tok:
+        return None
+    pool = _get_pool()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT request_id, payload
+                FROM request_feedback
+                WHERE payload->>'publicToken' = %s
+                LIMIT 1;
+                """,
+                (tok,),
+            )
+            fb = cur.fetchone()
+            if not fb:
+                return None
+            rid = str(fb["request_id"])
+            feedback = fb["payload"] if isinstance(fb.get("payload"), dict) else {}
+            cur.execute("SELECT * FROM requests WHERE id = %s;", (rid,))
+            r = cur.fetchone()
+            if not r:
+                return None
+            prop_name = ""
+            prop_logo = None
+            prop_templates = None
+            pid = r.get("property_id")
+            if pid:
+                cur.execute("SELECT payload, name FROM properties WHERE id = %s;", (str(pid),))
+                prow = cur.fetchone()
+                if prow:
+                    prop_name = str(prow.get("name") or "")
+                    pp = prow.get("payload") if isinstance(prow.get("payload"), dict) else {}
+                    if not prop_name:
+                        prop_name = str(pp.get("name") or "")
+                    prop_logo = pp.get("logoUrl") or pp.get("logo")
+                    prop_templates = pp.get("feedbackTemplates")
+            return {
+                "requestId": rid,
+                "requestType": r.get("request_type") or "",
+                "propertyName": prop_name,
+                "propertyLogoUrl": prop_logo,
+                "requestName": r.get("request_name"),
+                "accountName": r.get("account_name"),
+                "confirmationNo": r.get("confirmation_no"),
+                "propertyFeedbackTemplates": prop_templates,
+                "feedback": {k: v for k, v in feedback.items() if k != "request_id"},
+            }
+
+
+def submit_public_feedback(token: str, answers: dict) -> dict:
+    """Explicit public opt-in: submit feedback answers by publicToken without auth."""
+    tok = str(token or "").strip()
+    if not tok:
+        raise PermissionError("Invalid feedback token.")
+    if not isinstance(answers, dict):
+        raise PermissionError("Invalid feedback answers.")
+    submitted_at = _NOW().isoformat()
+    pool = _get_pool()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT request_id, payload
+                FROM request_feedback
+                WHERE payload->>'publicToken' = %s
+                LIMIT 1;
+                """,
+                (tok,),
+            )
+            fb = cur.fetchone()
+            if not fb:
+                raise PermissionError("Feedback link not found.")
+            payload = dict(fb["payload"]) if isinstance(fb.get("payload"), dict) else {}
+            payload["publicToken"] = tok
+            payload["answers"] = answers
+            payload["submittedAt"] = submitted_at
+            cur.execute(
+                """
+                UPDATE request_feedback
+                   SET payload = %s
+                 WHERE request_id = %s;
+                """,
+                (Json(payload), fb["request_id"]),
+            )
+            conn.commit()
+    return {"submittedAt": submitted_at, "requestId": str(fb["request_id"])}
 
 
 _REQUEST_ARRAY_CHILD_TABLES = (
@@ -978,7 +1085,7 @@ def get_account(account_id: str) -> Optional[dict]:
             acc = _row_to_account_dict(r, cur)
     # Tenant isolation: hide accounts outside the caller's property scope (IDOR).
     scope = _tenant_scope()
-    if scope is not None:
+    if not _is_admin_scope(scope):
         pid = str(acc.get("propertyId") or "").strip()
         if pid and pid not in scope:
             return None

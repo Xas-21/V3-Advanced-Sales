@@ -1,6 +1,11 @@
-import sys
+import json
+import logging
 import os
-print("Advanced Sales Backend: LOADING MAIN APP...")
+import sys
+import uuid
+from contextvars import ContextVar
+from datetime import datetime, timezone
+
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
@@ -13,6 +18,57 @@ from auth_db import resolve_session
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
 load_dotenv(os.path.join(BASE_DIR, ".env"), override=True)
+
+# --- Logging (PROD-05) -------------------------------------------------------
+_request_id_ctx: ContextVar[str] = ContextVar("as_request_id", default="")
+
+
+def get_request_id() -> str:
+    return _request_id_ctx.get() or "-"
+
+
+class _RequestIdFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.request_id = get_request_id()
+        return True
+
+
+class _JsonFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        payload = {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "request_id": getattr(record, "request_id", "-"),
+            "message": record.getMessage(),
+        }
+        if record.exc_info:
+            payload["exc_info"] = self.formatException(record.exc_info)
+        return json.dumps(payload, ensure_ascii=False)
+
+
+def _configure_logging() -> None:
+    env = (os.getenv("APP_ENV") or os.getenv("ENVIRONMENT") or "").strip().lower()
+    use_json = env in {"prod", "production"}
+    handler = logging.StreamHandler()
+    handler.addFilter(_RequestIdFilter())
+    if use_json:
+        handler.setFormatter(_JsonFormatter())
+    else:
+        handler.setFormatter(
+            logging.Formatter(
+                "%(asctime)s %(levelname)s [%(name)s] [req=%(request_id)s] %(message)s"
+            )
+        )
+    root = logging.getLogger()
+    root.handlers.clear()
+    root.addHandler(handler)
+    root.setLevel(logging.INFO)
+
+
+_configure_logging()
+logger = logging.getLogger(__name__)
+logger.info("Advanced Sales Backend: LOADING MAIN APP...")
 
 from routers import auth, users, properties, rooms, venues, taxes, financials, reqs, crm_state, contact, accounts, tasks, uploads, contracts, cxl_reasons, promotions, account_rates, feed, chat, presence
 from routers import ws
@@ -56,6 +112,42 @@ async def auth_context_and_security_headers(request: Request, call_next):
     return response
 
 
+class RequestIdASGIMiddleware:
+    """Pure ASGI (not BaseHTTPMiddleware) so the request-id ContextVar propagates
+    into route handlers and the global 500 handler. Own ContextVar — no conflict
+    with the auth user contextvar in auth_context_and_security_headers.
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        header_rid = b""
+        for key, val in scope.get("headers") or []:
+            if key.lower() == b"x-request-id":
+                header_rid = val
+                break
+        rid = header_rid.decode("latin-1").strip() or str(uuid.uuid4())
+        scope.setdefault("state", {})
+        scope["state"]["request_id"] = rid
+        token = _request_id_ctx.set(rid)
+
+        async def send_with_request_id(message):
+            if message["type"] == "http.response.start":
+                headers = list(message.get("headers") or [])
+                headers.append((b"x-request-id", rid.encode("latin-1")))
+                message = {**message, "headers": headers}
+            await send(message)
+
+        try:
+            await self.app(scope, receive, send_with_request_id)
+        finally:
+            _request_id_ctx.reset(token)
+
+
 _cors_origins, _cors_regex = build_cors_settings()
 app.add_middleware(
     ProductionCORSMiddleware,
@@ -65,9 +157,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Outermost after CORS registration → wraps the stack; runs before auth http middleware.
+app.add_middleware(RequestIdASGIMiddleware)
 
 # Global exception handler — sanitize 500 errors, log internal details
-import logging
 @app.exception_handler(PermissionError)
 async def permission_error_handler(request: Request, exc: PermissionError):
     # Tenant/authorization violations raised by the data layer -> 403 (not 500).
@@ -75,10 +168,19 @@ async def permission_error_handler(request: Request, exc: PermissionError):
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    logging.error(f"Unhandled error on {request.method} {request.url.path}: {exc}", exc_info=True)
+    rid = getattr(request.state, "request_id", None) or get_request_id()
+    logger.error(
+        "Unhandled error on %s %s request_id=%s: %s",
+        request.method,
+        request.url.path,
+        rid,
+        exc,
+        exc_info=True,
+    )
     return JSONResponse(
         status_code=500,
         content={"detail": "An internal error occurred. Please try again or contact support."},
+        headers={"X-Request-ID": rid} if rid and rid != "-" else None,
     )
 
 # Include Routers  

@@ -38,32 +38,43 @@ _FORCE_FILE_STORAGE: bool = False
 _ROW_COLLECTIONS = {"users", "properties", "room_types", "venues", "taxes", "financials", "tasks"}
 _MAP_COLLECTIONS = {"crm_state"}
 
+# Sentinel: admin / full access. Distinct from set() (deny / no properties) and from
+# missing auth (also deny). Never overload None for both admin and no-context.
+ADMIN_SCOPE = object()
 
-def _tenant_scope() -> Optional[set]:
-    """Return the set of property_ids the current user may see, or None for admin-wide.
+
+def _is_admin_scope(scope: Any) -> bool:
+    return scope is ADMIN_SCOPE
+
+
+def _tenant_scope() -> Any:
+    """Return tenant access for the current request.
 
     Reads the request-scoped user set by the auth middleware. Returns:
-      - None  -> admin (no restriction)
-      - set() -> non-admin with no assigned properties (sees nothing scoped)
-      - set(ids) -> allowed property ids
+      - ADMIN_SCOPE -> admin (no restriction)
+      - set()       -> no auth context, OR non-admin with no assigned properties (deny)
+      - set(ids)    -> allowed property ids
+
+    Genuinely public paths must opt in explicitly (see data_access public-feedback
+    helpers) — they must not rely on a fail-open default here.
     """
     try:
         from dependencies import get_current_user_ctx
     except Exception:
-        return None
+        return set()
     user = get_current_user_ctx()
     if not user:
-        return None  # No auth context (e.g. public feedback route) -> caller's responsibility
+        return set()  # fail closed: no auth context -> deny
     if str(user.get("role") or "").strip().lower() in ("super_admin", "admin"):
-        return None
+        return ADMIN_SCOPE
     ids = set(user.get("property_ids") or [])
     if user.get("propertyId"):
         ids.add(user["propertyId"])
     return ids
 
 
-def _filter_by_tenant(payloads: list, scope: Optional[set]) -> list:
-    if scope is None:
+def _filter_by_tenant(payloads: list, scope: Any) -> list:
+    if _is_admin_scope(scope):
         return payloads
     out = []
     for p in payloads:

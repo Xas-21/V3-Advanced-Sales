@@ -69,7 +69,6 @@ import { collectSalesCallFormViolations } from './formConfigurations';
 import { repointContractRecordsForAccountMerge } from './contractsStore';
 import { createPortal } from 'react-dom';
 import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 
 /** Period filter for pipeline, list, and funnel dashboard (controlled from app header). */
 export type CrmSalesPeriod = {
@@ -1452,6 +1451,9 @@ export default function CRM({
     const exportDashboardPdf = useCallback(async () => {
         const imageDataUrl = await captureDashboardSnapshot();
         if (!imageDataUrl) return;
+        // Lazy-load so jspdf is not in the CRM route chunk until export runs.
+        const jspdfMod: any = await import('jspdf');
+        const jsPDF = jspdfMod?.jsPDF || jspdfMod?.default;
         const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
         const pageW = pdf.internal.pageSize.getWidth();
         const pageH = pdf.internal.pageSize.getHeight();

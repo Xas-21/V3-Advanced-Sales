@@ -338,16 +338,16 @@ Do Batch I (038–041) first. Then, roughly by leverage:
 |------|-----------|----------|--------|--------|
 | 042-backend-input-upload-hardening | SEC-04, SEC-05, SEC-06 | P1 | M | DONE |
 | 043-auth-session-config-hardening | SEC-07, SEC-09, SEC-10 | P1 | M | DONE |
-| 044-tenant-scope-fail-closed | SEC-08 | P1 | S–M | TODO |
+| 044-tenant-scope-fail-closed | SEC-08 | P1 | S–M | DONE |
 | 045-remove-dead-xlsx-dependency | SEC-03, PERF-01 | P1 | S | DONE |
 | 046-correctness-fixes-type-contracts | BUG-03, BUG-04, BUG-05, DEBT-02, BUG-07 | P2 | M | TODO |
 | 047-dead-code-unused-modal-cleanup | BUG-01, BUG-06 | P2 | M | TODO |
 | 048-currency-formatter-dedup-hook | DEBT-03 | P2 | M | TODO |
 | 049-as-tsx-decomposition | DEBT-01 | P2 | L | TODO |
 | 050-nginx-container-hardening | PROD-04, PROD-08 | P1 | S–M | DONE |
-| 051-backend-observability-pinned-deps | PROD-05, PROD-06 | P2 | M | TODO |
+| 051-backend-observability-pinned-deps | PROD-05, PROD-06 | P2 | M | DONE |
 | 052-frontend-error-boundary-hardening | PROD-07 | P1 | S–M | TODO |
-| 053-bundle-perf-refinements | PERF-02, PERF-03 | P2–P3 | S–M | TODO |
+| 053-bundle-perf-refinements | PERF-02, PERF-03 | P2–P3 | S–M | DONE |
 | 054-dx-cross-platform-scripts-env-docs | DX-02, DX-03 | P2–P3 | S | DONE |
 
 ### Batch I/J — considered and rejected / not-a-finding (Ponytail)

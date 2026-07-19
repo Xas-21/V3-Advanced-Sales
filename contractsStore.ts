@@ -1,6 +1,4 @@
 import PizZip from 'pizzip';
-import Docxtemplater from 'docxtemplater';
-import { jsPDF } from 'jspdf';
 import { deleteFileLocal, mediaUrl, uploadFileLocal } from './localUpload';
 import { apiUrl } from './backendApi';
 
@@ -346,6 +344,9 @@ export async function generateContractFromTemplate(params: {
     normalizedLookup.today = todayLong;
     normalizedLookup.currentdate = todayLong;
 
+    // Lazy-load so docxtemplater is not in the Contracts chunk until generate runs.
+    const docxtemplaterMod: any = await import('docxtemplater');
+    const Docxtemplater = docxtemplaterMod?.default || docxtemplaterMod;
     const doc = new Docxtemplater(zip, {
         delimiters: { start: '{', end: '}' },
         paragraphLoop: true,
@@ -388,6 +389,9 @@ export async function generateContractFromTemplate(params: {
                 .map(([k, v]) => `${k}: ${v}`)
                 .join('\n');
         }
+        // Lazy-load so jspdf is not in the Contracts chunk until PDF export runs.
+        const jspdfMod: any = await import('jspdf');
+        const jsPDF = jspdfMod?.jsPDF || jspdfMod?.default;
         const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
         const lines = pdf.splitTextToSize(rawText, 520);
         let y = 60;
