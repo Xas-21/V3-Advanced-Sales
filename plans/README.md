@@ -301,7 +301,7 @@ Planned at commit `90c3a4c`, 2026-07-19 via `/improve` (full audit: security + c
 |------|----------|--------|
 | 040-verification-gate-typecheck-lint-ci | P0 | DONE (ratchet: 50 tsc errors; lint warn-ratchet) |
 | 038-user-get-tenant-scope | P0 | DONE |
-| 039-purge-committed-pii-and-secrets | P0 | TODO |
+| 039-purge-committed-pii-and-secrets | P0 | DONE (untracked in 68c59c1; history scrub + password rotate still operator) |
 | 041-characterization-tests-money-booking | P1 | DONE (currency/vsLY/compact; contractsStore STOP — no pure total math) |
 
 ## Batch J — Full-audit remediation (NEW, all findings planned)

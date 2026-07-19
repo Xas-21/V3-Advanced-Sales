@@ -198,6 +198,7 @@ import {
 } from './userPermissions';
 import { normalizePathname, parseAppPath, viewToPath } from './appShellRoutes';
 import type { DashboardHubTabId } from './dashboardHub/dashboardHubTabs';
+import { userCanAccessProperty } from './userPropertyAccess';
 
 function normalizeComparePath(pathname: string): string {
     return normalizePathname(pathname);
@@ -1303,7 +1304,7 @@ export default function AdvancedSalesDashboard() {
             terminateSessionAndShowLogin();
             return;
         }
-        const keys = ['role', 'permissionGrants', 'permissionRevokes', 'propertyId', 'name', 'email', 'username', 'status'] as const;
+        const keys = ['role', 'permissionGrants', 'permissionRevokes', 'propertyId', 'property_ids', 'name', 'email', 'username', 'status', 'isAdmin'] as const;
         const patch: Record<string, unknown> = {};
         for (const k of keys) {
             const a = JSON.stringify((currentUser as any)[k] ?? null);
@@ -1915,12 +1916,8 @@ export default function AdvancedSalesDashboard() {
     }, [crmState, activeProperty?.id]);
 
     const canAccessProperty = useCallback(
-        (prop: any) =>
-            !!prop &&
-            (String(prop.id) === String(currentUser?.propertyId ?? '') ||
-                (Array.isArray(prop.assignedUserIds) &&
-                    prop.assignedUserIds.some((id: any) => String(id) === String(currentUser?.id)))),
-        [currentUser?.id, currentUser?.propertyId]
+        (prop: any) => userCanAccessProperty(currentUser, prop),
+        [currentUser],
     );
 
     // Initial load properties globally for user

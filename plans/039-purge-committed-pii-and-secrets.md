@@ -14,6 +14,7 @@
 - **Depends on**: none
 - **Category**: security
 - **Planned at**: commit `90c3a4c`, 2026-07-19
+- **Executor status**: DONE for Steps 1–4 (landed in `68c59c1`). Step 5 (history scrub + credential rotation) remains an **operator** action — see completion report.
 
 ## Why this matters
 
@@ -103,11 +104,11 @@ In your completion report, instruct the operator to:
 
 ## Done criteria
 
-- [ ] `git ls-files | grep -Ei '\.csv$|backend/data/.*\.json$'` returns nothing.
-- [ ] `git check-ignore` confirms the paths are ignored.
-- [ ] `cd backend && python -m pytest tests -q` exits 0.
-- [ ] Completion report contains the rotation + history-scrub instructions (Step 5), explicitly flagged as operator actions.
-- [ ] `plans/README.md` status row updated.
+- [x] `git ls-files | grep -Ei '\.csv$|backend/data/.*\.json$'` returns nothing.
+- [x] `git check-ignore` confirms the paths are ignored.
+- [x] `cd backend && python -m pytest tests -q` exits 0 (verified via `docker compose exec as-backend python -m pytest tests -q` — 63 passed).
+- [x] Completion report contains the rotation + history-scrub instructions (Step 5), explicitly flagged as operator actions.
+- [x] `plans/README.md` status row updated.
 
 ## STOP conditions
 

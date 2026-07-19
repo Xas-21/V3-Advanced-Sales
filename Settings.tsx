@@ -46,6 +46,7 @@ import {
     type PermissionId,
 } from './userPermissions';
 import { checkPasswordPolicy } from './passwordPolicy';
+import { nextUserPropertyAccess } from './userPropertyAccess';
 import { type CurrencyCode } from './currency';
 import { useCurrencyFormatters } from './useCurrencyFormatters';
 import type {
@@ -636,19 +637,20 @@ export default function Settings({
             const pending: Promise<void>[] = [];
 
             // Grant access on each selected user's record (source of truth for backend access).
+            // Merge into existing assignments so cluster users keep their other properties.
             selectedUserIds.forEach((uid: string) => {
                 const idStr = String(uid ?? '').trim();
                 if (!idStr) return;
-                pending.push(patchUserPropertyAccess(idStr, propertyId));
+                pending.push(patchUserPropertyAccess(idStr, propertyId, true));
             });
 
-            // Revoke access for any user previously assigned (by user record) but now deselected.
+            // Revoke only THIS property for users deselected here (keep other cluster assignments).
             users
                 .filter((usr) => userAssignedToProperty(usr, propertyId))
                 .forEach((usr) => {
                     const uid = String(usr?.id ?? '');
                     if (uid && !nextAssigned.has(uid)) {
-                        pending.push(patchUserPropertyAccess(uid, null));
+                        pending.push(patchUserPropertyAccess(uid, propertyId, false));
                     }
                 });
 
@@ -729,15 +731,25 @@ export default function Settings({
         onUsersDirectoryChange?.();
     };
 
-    const patchUserPropertyAccess = (userId: string, propertyId: string | null): Promise<void> => {
+    const patchUserPropertyAccess = (
+        userId: string,
+        propertyId: string,
+        assign: boolean,
+    ): Promise<void> => {
         const uidStr = String(userId ?? '').trim();
-        if (!uidStr) return Promise.resolve();
+        const pid = String(propertyId ?? '').trim();
+        if (!uidStr || !pid) return Promise.resolve();
         const user = users.find((u) => String(u?.id ?? '') === uidStr);
         if (!user) return Promise.resolve();
+        const { propertyId: newPrimary, assignedPropertyIds } = nextUserPropertyAccess(
+            user,
+            pid,
+            assign,
+        );
         const updatedUser = {
             ...user,
-            propertyId: propertyId || null,
-            property_ids: propertyId ? [propertyId] : [],
+            propertyId: newPrimary,
+            property_ids: assignedPropertyIds,
         };
         setUsers((prevUsers) =>
             prevUsers.map((u) => (String(u?.id ?? '') === uidStr ? updatedUser : u)),
@@ -746,8 +758,8 @@ export default function Settings({
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                propertyId: propertyId || null,
-                assignedPropertyIds: propertyId ? [propertyId] : [],
+                propertyId: newPrimary,
+                assignedPropertyIds,
             }),
         })
             .then(() => undefined)
@@ -761,14 +773,11 @@ export default function Settings({
 
         const uidStr = String(userId ?? '').trim();
         const user = users.find((u) => String(u?.id ?? '') === uidStr);
-
-        // Compute the user's remaining property access after removing this one.
-        const currentAssigned: string[] = Array.isArray(user?.property_ids)
-            ? user!.property_ids.map((x: any) => String(x))
-            : (user?.propertyId ? [String(user.propertyId)] : []);
-        const remaining = currentAssigned.filter((id) => id !== String(propId));
-        const newPrimary =
-            String(user?.propertyId ?? '') === String(propId) ? (remaining[0] || null) : (user?.propertyId ?? null);
+        const { propertyId: newPrimary, assignedPropertyIds: remaining } = nextUserPropertyAccess(
+            user,
+            String(propId),
+            false,
+        );
 
         // Revoke on the USER record (this is what the backend uses for access control).
         setUsers((prevUsers) =>
