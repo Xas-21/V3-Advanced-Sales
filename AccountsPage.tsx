@@ -37,6 +37,7 @@ export type AccountPerfDateRange = { from: string; to: string };
 import { apiUrl } from './backendApi';
 import ConfirmDialog from './ConfirmDialog';
 import AccountLinkedRequestsModal from './AccountLinkedRequestsModal';
+import AccountBillingPanel from './AccountBillingPanel';
 import {
     canDeleteRequests,
     canLinkRequestPromotions,
@@ -129,6 +130,7 @@ export default function AccountsPage({
     const canLinkPromos = canLinkRequestPromotions(currentUser);
     const canMutate = canMutateOperational(currentUser);
     const [profileRequestsListOpen, setProfileRequestsListOpen] = useState(false);
+    const [billingAccount, setBillingAccount] = useState<any | null>(null);
     const [search, setSearch] = useState('');
     const [listTab, setListTab] = useState<AccountsPageTab>('accounts');
     const [listSort, setListSort] = useState<AccountsListSort>('name_az');
@@ -879,76 +881,95 @@ export default function AccountsPage({
         const linkedReq = filterRequestsForAccount(sharedRequests, aid, aname);
         const salesForAcc = filterSalesCallsForAccount(flatCrmLeads, aid, aname);
         const contractsForAccount = accountContracts.filter((c) => String(c.accountId || '') === String(aid));
+        const profileAccountRow =
+            accounts.find((a: any) => String(a.id) === String(aid)) || { id: aid, name: aname };
         return (
             <>
-                <CRMProfileView
-                    lead={profileLead}
-                    theme={theme}
-                    onClose={() => setProfileLead(null)}
-                    onLeadChange={(next) => {
-                        setProfileLead(next);
-                        syncAccountFromLead(next);
-                    }}
-                    linkedRequests={linkedReq}
-                    salesCalls={salesForAcc}
-                    currentUser={currentUser}
-                    onOpenRequest={onOpenRequest}
-                    onViewAccountRequests={() => setProfileRequestsListOpen(true)}
-                    onEditAccount={
-                        profileReadOnly
-                            ? undefined
-                            : () => {
-                                  const row = accounts.find((a: any) => a.id === aid) || null;
-                                  setEditingAccountRow(row);
-                                  setShowEditAccountModal(true);
-                              }
-                    }
-                    readOnly={profileReadOnly}
-                    canDeleteAccount={allowDeleteAccount}
-                    canManageManualTimeline={allowManualTimeline}
-                    canManageAccountTags={allowTagAdmin}
-                    appendAuditLog={appendProfileAudit}
-                    accountContracts={contractsForAccount}
-                    onUpdateContractStatus={(contractId: string, status: ContractStatus) =>
-                        updateContractRecordStatus(contractId, status)
-                    }
-                    onUpdateContractMeta={(contractId: string, patch: { startDate?: string; endDate?: string }) =>
-                        updateContractRecordMeta(contractId, patch)
-                    }
-                    onUploadSignedContract={async (contractId: string, file: File) => {
-                        await attachSignedContractFile(contractId, file);
-                    }}
-                    onDownloadContractFile={(contractId: string, kind: 'word' | 'pdf' | 'signed') => {
-                        const c = accountContracts.find((x) => x.id === contractId);
-                        if (!c) return;
-                        const f = downloadContractArtifact(c, kind);
-                        if (!f) return;
-                        triggerBlobDownload(f.blob, f.fileName);
-                    }}
-                    onStartNewContractForAccount={() => onNavigateToContractsWithAccount?.(String(aid))}
-                    canDeleteContractRecords={allowDeleteContracts}
-                    onDeleteContractRecord={(contractId: string) => {
-                        deleteContractRecord(contractId);
-                    }}
-                    currency={currency}
-                    onDeleteAccount={
-                        allowDeleteAccount
-                            ? () => openAccountDeleteConfirm(String(aid))
-                            : undefined
-                    }
-                    shellAccountPerformanceRange={shellAccountPerformanceRange}
-                    onShellAccountPerformanceRangeChange={onShellAccountPerformanceRangeChange}
-                    canMergeAccountsAndAssignOwner={allowAccountMergeAndOwner}
-                    accountOwnerUserOptions={assignableUsersForAccounts}
-                    allAccountsForMergeSearch={accountsSameProperty}
-                    onMergeAccountIntoCurrent={
-                        allowAccountMergeAndOwner ? handleMergeAccountIntoCurrent : undefined
-                    }
-                    onAssignAccountOwner={allowAccountMergeAndOwner ? handleAssignAccountOwner : undefined}
-                    onScanContactCard={profileReadOnly ? undefined : handleScanContactForCurrentProfile}
-                    activeProperty={activeProperty}
-                    segmentOptions={segmentOptions}
-                />
+                <div className="h-full flex flex-col overflow-hidden">
+                    <div
+                        className="shrink-0 flex flex-wrap items-center justify-end gap-2 px-4 py-2 border-b"
+                        style={{ backgroundColor: colors.card, borderColor: colors.border }}
+                    >
+                        <button
+                            type="button"
+                            onClick={() => setBillingAccount(profileAccountRow)}
+                            className="px-3 py-2 rounded border hover:bg-white/5 flex items-center gap-2 text-sm font-bold"
+                            style={{ borderColor: colors.border, color: colors.textMain }}
+                        >
+                            Billing
+                        </button>
+                    </div>
+                    <div className="flex-1 min-h-0 overflow-hidden">
+                        <CRMProfileView
+                            lead={profileLead}
+                            theme={theme}
+                            onClose={() => setProfileLead(null)}
+                            onLeadChange={(next) => {
+                                setProfileLead(next);
+                                syncAccountFromLead(next);
+                            }}
+                            linkedRequests={linkedReq}
+                            salesCalls={salesForAcc}
+                            currentUser={currentUser}
+                            onOpenRequest={onOpenRequest}
+                            onViewAccountRequests={() => setProfileRequestsListOpen(true)}
+                            onEditAccount={
+                                profileReadOnly
+                                    ? undefined
+                                    : () => {
+                                          const row = accounts.find((a: any) => a.id === aid) || null;
+                                          setEditingAccountRow(row);
+                                          setShowEditAccountModal(true);
+                                      }
+                            }
+                            readOnly={profileReadOnly}
+                            canDeleteAccount={allowDeleteAccount}
+                            canManageManualTimeline={allowManualTimeline}
+                            canManageAccountTags={allowTagAdmin}
+                            appendAuditLog={appendProfileAudit}
+                            accountContracts={contractsForAccount}
+                            onUpdateContractStatus={(contractId: string, status: ContractStatus) =>
+                                updateContractRecordStatus(contractId, status)
+                            }
+                            onUpdateContractMeta={(contractId: string, patch: { startDate?: string; endDate?: string }) =>
+                                updateContractRecordMeta(contractId, patch)
+                            }
+                            onUploadSignedContract={async (contractId: string, file: File) => {
+                                await attachSignedContractFile(contractId, file);
+                            }}
+                            onDownloadContractFile={(contractId: string, kind: 'word' | 'pdf' | 'signed') => {
+                                const c = accountContracts.find((x) => x.id === contractId);
+                                if (!c) return;
+                                const f = downloadContractArtifact(c, kind);
+                                if (!f) return;
+                                triggerBlobDownload(f.blob, f.fileName);
+                            }}
+                            onStartNewContractForAccount={() => onNavigateToContractsWithAccount?.(String(aid))}
+                            canDeleteContractRecords={allowDeleteContracts}
+                            onDeleteContractRecord={(contractId: string) => {
+                                deleteContractRecord(contractId);
+                            }}
+                            currency={currency}
+                            onDeleteAccount={
+                                allowDeleteAccount
+                                    ? () => openAccountDeleteConfirm(String(aid))
+                                    : undefined
+                            }
+                            shellAccountPerformanceRange={shellAccountPerformanceRange}
+                            onShellAccountPerformanceRangeChange={onShellAccountPerformanceRangeChange}
+                            canMergeAccountsAndAssignOwner={allowAccountMergeAndOwner}
+                            accountOwnerUserOptions={assignableUsersForAccounts}
+                            allAccountsForMergeSearch={accountsSameProperty}
+                            onMergeAccountIntoCurrent={
+                                allowAccountMergeAndOwner ? handleMergeAccountIntoCurrent : undefined
+                            }
+                            onAssignAccountOwner={allowAccountMergeAndOwner ? handleAssignAccountOwner : undefined}
+                            onScanContactCard={profileReadOnly ? undefined : handleScanContactForCurrentProfile}
+                            activeProperty={activeProperty}
+                            segmentOptions={segmentOptions}
+                        />
+                    </div>
+                </div>
                 <AddAccountModal
                     isOpen={showEditAccountModal}
                     onClose={() => {
@@ -999,6 +1020,21 @@ export default function AccountsPage({
                     promotionOptions={promotionOptions}
                     canLinkRequestPromotions={canLinkPromos}
                 />
+                {billingAccount && (
+                    <AccountBillingPanel
+                        account={billingAccount}
+                        linkedRequests={filterRequestsForAccount(
+                            sharedRequests,
+                            billingAccount.id,
+                            billingAccount.name || aname
+                        )}
+                        propertyId={String(activeProperty?.id || '')}
+                        currency={currency}
+                        theme={theme}
+                        canEdit={canMutateOperational(currentUser)}
+                        onClose={() => setBillingAccount(null)}
+                    />
+                )}
             </>
         );
     }
