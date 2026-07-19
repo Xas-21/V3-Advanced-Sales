@@ -1,10 +1,47 @@
+from pathlib import Path
+from typing import Any, Optional
+
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
-from typing import Optional
+from pydantic import BaseModel, ConfigDict, Field
 
 from services.business_card_scan import parse_business_card_image
 from data_access import delete_account, get_account, list_accounts, upsert_account
 
 router = APIRouter(prefix="/api", tags=["Accounts"])
+
+SCAN_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
+_SCAN_IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
+_SCAN_IMAGE_CT = {
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/webp",
+    "image/bmp",
+    "application/octet-stream",
+}
+
+
+class AccountUpsertBody(BaseModel):
+    """Minimal identity + list fields; extras kept for payload jsonb."""
+
+    model_config = ConfigDict(extra="allow")
+
+    id: Optional[str] = None
+    propertyId: Optional[str] = None
+    contacts: Optional[list[Any]] = None
+    activities: Optional[list[Any]] = None
+    tags: Optional[list[Any]] = None
+    profileAuditLog: Optional[list[Any]] = None
+
+
+class AccountSyncBody(BaseModel):
+    """Sync envelope: typed identity/list/bool; extras allowed."""
+
+    model_config = ConfigDict(extra="allow")
+
+    propertyId: str = Field(..., min_length=1)
+    accounts: list[Any] = Field(default_factory=list)
+    allowClear: bool = False
 
 
 @router.get("/accounts")
@@ -13,8 +50,8 @@ def list_accounts_endpoint(propertyId: Optional[str] = None):
 
 
 @router.post("/accounts")
-def upsert_account_endpoint(data: dict):
-    return upsert_account(data)
+def upsert_account_endpoint(data: AccountUpsertBody):
+    return upsert_account(data.model_dump(exclude_unset=True))
 
 
 @router.get("/accounts/{account_id}")
@@ -26,9 +63,10 @@ def get_account_endpoint(account_id: str):
 
 
 @router.put("/accounts/sync")
-def sync_accounts(payload: dict):
-    property_id = str(payload.get("propertyId", "")).strip()
-    incoming = payload.get("accounts", [])
+def sync_accounts(payload: AccountSyncBody):
+    data = payload.model_dump(exclude_unset=True)
+    property_id = str(data.get("propertyId", "")).strip()
+    incoming = data.get("accounts", [])
     if not property_id:
         return {"message": "propertyId required", "saved": 0, "propertyId": property_id}
     if not isinstance(incoming, list):
@@ -43,7 +81,7 @@ def sync_accounts(payload: dict):
             upsert_account(item)
             saved += 1
     # allowClear: remove accounts for this property that are not in the incoming set
-    if payload.get("allowClear") is True:
+    if data.get("allowClear") is True:
         existing = list_accounts(property_id)
         for acc in existing:
             eid = str(acc.get("id") or "").strip()
@@ -69,7 +107,17 @@ async def scan_extract_business_card(
     file: UploadFile = File(...),
     propertyId: Optional[str] = Form(default=None),
 ):
-    content = await file.read()
+    ext = Path(file.filename or "").suffix.lower()
+    if ext not in _SCAN_IMAGE_EXT:
+        raise HTTPException(status_code=400, detail="Unsupported image type")
+    content_type = (file.content_type or "").split(";")[0].strip().lower()
+    if content_type and content_type not in _SCAN_IMAGE_CT:
+        raise HTTPException(status_code=400, detail="Unsupported image type")
+
+    content = await file.read(SCAN_MAX_BYTES + 1)
+    if len(content) > SCAN_MAX_BYTES:
+        raise HTTPException(status_code=413, detail="File too large")
+
     parsed = parse_business_card_image(content, file_name=str(file.filename or ""))
     if propertyId and isinstance(parsed, dict):
         parsed["propertyId"] = str(propertyId)

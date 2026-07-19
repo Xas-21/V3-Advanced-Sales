@@ -17,11 +17,11 @@ router = APIRouter(prefix="/api/uploads", tags=["Uploads"])
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024  # 20 MB
 ALLOWED_FOLDERS = {"feed", "chat", "general", "contracts", "requests"}
 ALLOWED_EXTENSIONS = {
-    ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg",
+    ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp",
     ".mp4", ".webm", ".mov",
     ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt", ".csv", ".zip",
 }
-IMAGE_EXT = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg"}
+IMAGE_EXT = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
 VIDEO_EXT = {".mp4", ".webm", ".mov"}
 
 
@@ -61,7 +61,6 @@ def _guess_media_type(ext: str) -> str:
     mapping = {
         ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
         ".gif": "image/gif", ".webp": "image/webp", ".bmp": "image/bmp",
-        ".svg": "image/svg+xml",
         ".mp4": "video/mp4", ".webm": "video/webm", ".mov": "video/quicktime",
         ".pdf": "application/pdf",
         ".txt": "text/plain", ".csv": "text/csv",

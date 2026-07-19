@@ -68,6 +68,16 @@ services:
     depends_on:
       as-backend:
         condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -qO-
+        - http://localhost/
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 volumes:
   as-postgres-data:

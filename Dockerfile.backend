@@ -9,6 +9,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy backend code
 COPY backend/ .
 
+# Uploads mount point must be writable by non-root (named volume inherits this on first create)
+RUN mkdir -p /data/uploads \
+    && adduser --disabled-password --gecos "" appuser \
+    && chown -R appuser /app /data/uploads
+
+USER appuser
+
 # Expose backend port
 EXPOSE 8000
 

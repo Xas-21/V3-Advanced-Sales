@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 router = APIRouter(prefix="/api/contact", tags=["contact"])
 
-DEFAULT_NOTIFY_EMAIL = "Abdullah.saleh-@hotmail.com"
+DEFAULT_NOTIFY_EMAIL = ""
 
 
 class SubscribePayload(BaseModel):
@@ -46,7 +46,8 @@ def subscribe(payload: SubscribePayload):
         ]
     )
 
-    if not smtp_host or not smtp_user or not smtp_pass:
+    # CONTACT_TO_EMAIL required; empty default keeps mailto fallback (sent=false).
+    if not to_addr or not smtp_host or not smtp_user or not smtp_pass:
         return {"sent": False, "reason": "smtp_not_configured"}
 
     subject = f"Advanced Sales Subscription — {payload.hotel}"
