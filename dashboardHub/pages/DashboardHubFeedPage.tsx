@@ -5,6 +5,7 @@ import {
   Calendar, MapPin, Plus, X, MoreHorizontal, Share2, Clock, TrendingUp, Circle, CheckCircle2, Pin,
 } from 'lucide-react';
 import { apiUrl } from '../../backendApi';
+import { usePropertyLoadGate } from '../../propertyScopedLoad';
 import { uploadFileLocal, mediaUrl } from '../../localUpload';
 import { useHubData } from '../HubDataContext';
 import { EmptyState, LoadingState, PropertyBadge } from '../analyticsKit';
@@ -716,23 +717,32 @@ export default function DashboardHubFeedPage({ colors }: { colors: any }) {
     return () => clearTimeout(t);
   }, [search]);
 
+  const { begin: beginFeedLoad, isCurrent: isFeedLoadCurrent } = usePropertyLoadGate();
+
   const loadFeed = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!beginFeedLoad(propertyId)) {
+      setPosts([]);
+      if (!opts?.silent) setLoading(false);
+      return;
+    }
     if (!opts?.silent) setLoading(true);
     setError(null);
     try {
       const qs = new URLSearchParams({ limit: '80', offset: '0', filter });
-      if (propertyId) qs.set('property_id', propertyId);
+      qs.set('property_id', propertyId);
       if (searchDebounced) qs.set('q', searchDebounced);
       const res = await fetch(apiUrl(`/api/feed?${qs.toString()}`), { credentials: 'include' });
       if (!res.ok) throw new Error(`Feed load failed (${res.status})`);
       const list = (await res.json()) as FeedPost[];
+      if (!isFeedLoadCurrent(propertyId)) return;
       setPosts([...list].sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned)));
     } catch (e) {
+      if (!isFeedLoadCurrent(propertyId)) return;
       setError(e instanceof Error ? e.message : 'Failed to load feed');
     } finally {
-      if (!opts?.silent) setLoading(false);
+      if (!opts?.silent && isFeedLoadCurrent(propertyId)) setLoading(false);
     }
-  }, [propertyId, filter, searchDebounced]);
+  }, [propertyId, filter, searchDebounced, beginFeedLoad, isFeedLoadCurrent]);
 
   useEffect(() => { void loadFeed(); }, [loadFeed]);
 

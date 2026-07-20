@@ -65,7 +65,8 @@ import {
     REQUEST_SECTION_ADD_BTN_LG_CLASS,
     REQUEST_SECTION_ICON_ADD_BTN_CLASS,
 } from './beoShared';
-import { resolveUserAttributionId, createdByMatchesUser } from './userProfileMetrics';
+import { resolveUserAttributionId, createdByMatchesUser, requestInProperty, recordVisibleOnProperty } from './userProfileMetrics';
+import { usePropertyLoadGate } from './propertyScopedLoad';
 import { requestOperationalDatesOverlapRange } from './operationalSegmentRevenue';
 import { refreshRequestsWithDefiniteToActual } from './requestStatusAutomation';
 import { requestMatchesAccount } from './accountProfileData';
@@ -519,11 +520,8 @@ export default function RequestsManager({
 
     const accountsSameProperty = useMemo(() => {
         const pid = String(activeProperty?.id || '').trim();
-        if (!pid) return accounts;
-        return accounts.filter((a: any) => {
-            const p = String(a?.propertyId || '').trim();
-            return !p || p === 'P-GLOBAL' || p === pid;
-        });
+        if (!pid) return [];
+        return accounts.filter((a: any) => recordVisibleOnProperty(pid, a?.propertyId));
     }, [accounts, activeProperty?.id]);
 
     const [requests, setRequests] = useState<any[]>([]);
@@ -533,6 +531,8 @@ export default function RequestsManager({
     const deletedRequestIdsRef = useRef<Set<string>>(new Set());
     // Tracks prior sharedRequestsSeed ids so we can drop rows removed by delete events.
     const prevSeedIdsRef = useRef<Set<string>>(new Set());
+    const requestsLoad = usePropertyLoadGate();
+    const taxesLoad = usePropertyLoadGate();
     const [taxesList, setTaxesList] = useState<any[]>([]);
     const [propertyVenues, setPropertyVenues] = useState<any[]>([]);
     const [propertyRoomNames, setPropertyRoomNames] = useState<string[]>([]);
@@ -934,7 +934,9 @@ export default function RequestsManager({
 
     const listPageRequests = useMemo(() => {
         const quick = (searchTerm || '').toLowerCase().trim();
-        let list: any[] = requests;
+        const pid = String(activeProperty?.id || '').trim();
+        let list: any[] = requests.filter((req: any) => requestInProperty(req, pid || undefined));
+        if (!pid) list = [];
         if (scopedAccountFilter) {
             list = list.filter((req: any) =>
                 requestMatchesAccount(
@@ -964,7 +966,7 @@ export default function RequestsManager({
             if (tb == null) return -1;
             return listSortOrder === 'start_newest' ? tb - ta : ta - tb;
         });
-    }, [requests, searchTerm, listFilterType, listFilterStatus, listSortOrder, scopedAccountFilter]);
+    }, [requests, searchTerm, listFilterType, listFilterStatus, listSortOrder, scopedAccountFilter, activeProperty?.id]);
 
     const [listPageSize, setListPageSize] = useState<20 | 50 | 100>(20);
     const [listCurrentPage, setListCurrentPage] = useState(1);
@@ -1349,8 +1351,7 @@ export default function RequestsManager({
             const extras = sharedRequestsSeed.filter((r: any) => {
                 const id = String(r?.id || '');
                 if (!id || serverIds.has(id) || deletedRequestIdsRef.current.has(id)) return false;
-                const rp = String(r?.propertyId || '').trim();
-                return !pid || !rp || rp === pid;
+                return requestInProperty(r, pid || undefined);
             });
             if (extras.length) next = [...extras, ...next];
         }
@@ -1364,32 +1365,38 @@ export default function RequestsManager({
     };
 
     const fetchRequests = async () => {
+        const pid = String(activeProperty?.id || '').trim();
+        if (!requestsLoad.begin(pid)) {
+            setRequests([]);
+            setIsLoading(false);
+            return;
+        }
         setIsLoading(true);
         try {
-            const url = activeProperty?.id
-                ? apiUrl(`/api/requests?propertyId=${activeProperty.id}`)
-                : apiUrl('/api/requests');
+            const url = apiUrl(`/api/requests?propertyId=${encodeURIComponent(pid)}`);
             const data = await refreshRequestsWithDefiniteToActual(url, {
                 readOnly: readOnlyOperational,
                 requestLogUser,
             });
+            if (!requestsLoad.isCurrent(pid)) return;
             if (Array.isArray(data)) applyRequestsPayload(data);
         } catch (err) {
             console.error("Error fetching requests:", err);
         } finally {
-            setIsLoading(false);
+            if (requestsLoad.isCurrent(pid)) setIsLoading(false);
         }
     };
 
     /** Lightweight refetch for live updates — skips Definite→Actual promotion loop. */
     const fetchRequestsLive = async () => {
+        const pid = String(activeProperty?.id || '').trim();
+        if (!requestsLoad.begin(pid)) return;
         try {
-            const url = activeProperty?.id
-                ? apiUrl(`/api/requests?propertyId=${activeProperty.id}`)
-                : apiUrl('/api/requests');
+            const url = apiUrl(`/api/requests?propertyId=${encodeURIComponent(pid)}`);
             const res = await fetch(url);
             if (!res.ok) return;
             const data = await res.json();
+            if (!requestsLoad.isCurrent(pid)) return;
             if (Array.isArray(data)) applyRequestsPayload(data);
         } catch (err) {
             console.error('Error live-fetching requests:', err);
@@ -1397,12 +1404,16 @@ export default function RequestsManager({
     };
 
     const fetchTaxes = async () => {
+        const pid = String(activeProperty?.id || '').trim();
+        if (!taxesLoad.begin(pid)) {
+            setTaxesList([]);
+            return;
+        }
         try {
-            const url = activeProperty 
-                ? apiUrl(`/api/taxes?propertyId=${activeProperty.id}`)
-                : apiUrl('/api/taxes');
+            const url = apiUrl(`/api/taxes?propertyId=${encodeURIComponent(pid)}`);
             const res = await fetch(url);
             const data = await res.json();
+            if (!taxesLoad.isCurrent(pid)) return;
             if (Array.isArray(data)) setTaxesList(data);
         } catch (err) {
             console.error("Error fetching taxes:", err);
@@ -1410,6 +1421,11 @@ export default function RequestsManager({
     };
 
     useEffect(() => {
+        if (!activeProperty?.id) {
+            setRequests([]);
+            setTaxesList([]);
+            return;
+        }
         fetchRequests();
         fetchTaxes();
     }, [subView, activeProperty?.id]);
@@ -1419,11 +1435,15 @@ export default function RequestsManager({
     useEffect(() => {
         if (!Array.isArray(sharedRequestsSeed)) return;
         const pid = String(activeProperty?.id || '').trim();
+        if (!pid) {
+            setRequests([]);
+            prevSeedIdsRef.current = new Set();
+            return;
+        }
         const seedForProp = sharedRequestsSeed.filter((r: any) => {
             const id = String(r?.id || '');
             if (!id || deletedRequestIdsRef.current.has(id)) return false;
-            const rp = String(r?.propertyId || '').trim();
-            return !pid || !rp || rp === pid;
+            return requestInProperty(r, pid);
         });
         const seedIds = new Set(seedForProp.map((r: any) => String(r.id)));
 
@@ -1435,7 +1455,7 @@ export default function RequestsManager({
             for (const id of prevSeedIdsRef.current) {
                 if (!seedIds.has(id)) byId.delete(id);
             }
-            return Array.from(byId.values());
+            return Array.from(byId.values()).filter((r) => requestInProperty(r, pid));
         });
         prevSeedIdsRef.current = seedIds;
     }, [sharedRequestsSeed, activeProperty?.id]);

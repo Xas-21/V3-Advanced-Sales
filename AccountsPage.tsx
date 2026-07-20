@@ -43,7 +43,7 @@ import {
     canLinkRequestPromotions,
     canMutateOperational,
 } from './userPermissions';
-import { resolveUserAttributionId } from './userProfileMetrics';
+import { resolveUserAttributionId, recordVisibleOnProperty, requestInProperty } from './userProfileMetrics';
 import { applyAccountMergeInMemory, persistAccountMergeToBackend } from './accountMergeUtils';
 import { repointContractRecordsForAccountMerge } from './contractsStore';
 import {
@@ -240,9 +240,23 @@ export default function AccountsPage({
         accountName: 'Account Name',
     };
 
+    const scopedSharedRequests = useMemo(() => {
+        const pid = String(activeProperty?.id || '').trim();
+        if (!pid) return [];
+        return (Array.isArray(sharedRequests) ? sharedRequests : []).filter((r: any) =>
+            requestInProperty(r, pid)
+        );
+    }, [sharedRequests, activeProperty?.id]);
+
+    const accountsSameProperty = useMemo(() => {
+        const pid = String(activeProperty?.id || '').trim();
+        if (!pid) return [];
+        return accounts.filter((a: any) => recordVisibleOnProperty(pid, a?.propertyId));
+    }, [accounts, activeProperty?.id]);
+
     const requestStatsByAccountId = useMemo(
-        () => buildRequestStatsByAccount(accounts, sharedRequests),
-        [accounts, sharedRequests]
+        () => buildRequestStatsByAccount(accountsSameProperty, scopedSharedRequests),
+        [accountsSameProperty, scopedSharedRequests]
     );
 
     const segmentFilterOptions = useMemo(() => {
@@ -268,8 +282,10 @@ export default function AccountsPage({
         const t = search.trim().toLowerCase();
         const cityQ = cityFilter.trim().toLowerCase();
         const contractNarrow = filterWithContract !== filterWithoutContract;
+        const pid = String(activeProperty?.id || '').trim();
 
         return accounts.filter((a: any) => {
+            if (!pid || !recordVisibleOnProperty(pid, a?.propertyId)) return false;
             if (t) {
                 const contacts = Array.isArray(a.contacts) ? a.contacts : [];
                 const contactHay = contacts.flatMap((c: any) => [
@@ -307,16 +323,8 @@ export default function AccountsPage({
         filterWithContract,
         filterWithoutContract,
         accountIdsWithContract,
+        activeProperty?.id,
     ]);
-
-    const accountsSameProperty = useMemo(() => {
-        const pid = String(activeProperty?.id || '').trim();
-        if (!pid) return accounts;
-        return accounts.filter((a: any) => {
-            const p = String(a?.propertyId || '').trim();
-            return !p || p === 'P-GLOBAL' || p === pid;
-        });
-    }, [accounts, activeProperty?.id]);
 
     const sortedFiltered = useMemo(() => {
         const rows = [...filtered];

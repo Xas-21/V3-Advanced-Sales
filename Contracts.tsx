@@ -11,7 +11,8 @@ import {
     Trash2,
 } from 'lucide-react';
 import AddAccountModal from './AddAccountModal';
-import { resolveUserAttributionId } from './userProfileMetrics';
+import { resolveUserAttributionId, recordVisibleOnProperty } from './userProfileMetrics';
+import { usePropertyLoadGate } from './propertyScopedLoad';
 import {
     CONTRACTS_CHANGED_EVENT,
     attachSignedContractFile,
@@ -81,11 +82,8 @@ export default function Contracts({
     const colors = theme.colors;
     const accountsSameProperty = useMemo(() => {
         const pid = String(activeProperty?.id || '').trim();
-        if (!pid) return accounts;
-        return accounts.filter((a: any) => {
-            const p = String(a?.propertyId || '').trim();
-            return !p || p === 'P-GLOBAL' || p === pid;
-        });
+        if (!pid) return [];
+        return accounts.filter((a: any) => recordVisibleOnProperty(pid, a?.propertyId));
     }, [accounts, activeProperty?.id]);
     const [currentView, setCurrentView] = useState<'library' | 'generate' | 'history'>('library');
     const [templates, setTemplates] = useState<ContractTemplate[]>([]);
@@ -110,9 +108,16 @@ export default function Contracts({
     const [generating, setGenerating] = useState(false);
 
     const propertyId = activeProperty?.id ? String(activeProperty.id) : undefined;
+    const { begin: beginContractsLoad, isCurrent: isContractsLoadCurrent } = usePropertyLoadGate();
 
     const refreshContractsData = async () => {
+        if (!beginContractsLoad(propertyId)) {
+            setTemplates([]);
+            setRecords([]);
+            return;
+        }
         const tpl = await getContractTemplates(propertyId);
+        if (!isContractsLoadCurrent(propertyId)) return;
         setTemplates(tpl);
         setRecords(getContractRecords({ propertyId }));
     };

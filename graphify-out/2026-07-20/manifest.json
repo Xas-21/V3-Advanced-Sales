@@ -1,7 +1,7 @@
 {
   "AS.tsx": {
-    "mtime": 1784498816.4294276,
-    "ast_hash": "bd0563f8f41cee7cf9e0b11c110323da",
+    "mtime": 1784503686.2174582,
+    "ast_hash": "64dcb3d908e563be5c6e835af70deac2",
     "semantic_hash": ""
   },
   "AccountLinkedRequestsModal.tsx": {
@@ -15,8 +15,8 @@
     "semantic_hash": ""
   },
   "AccountsPage.tsx": {
-    "mtime": 1784503148.1014824,
-    "ast_hash": "2be491ab3f676e80698232c62d4fcbdd",
+    "mtime": 1784503580.9369638,
+    "ast_hash": "41317651287fd5efc2aa3c83a4b21b99",
     "semantic_hash": ""
   },
   "AddAccountModal.tsx": {
@@ -35,8 +35,8 @@
     "semantic_hash": ""
   },
   "CRMProfileView.tsx": {
-    "mtime": 1784497992.1335933,
-    "ast_hash": "7498bfc417abc0c617c647c29fd0bc16",
+    "mtime": 1784503584.6833496,
+    "ast_hash": "d811a563343b8ae6aad4fba482edbe19",
     "semantic_hash": ""
   },
   "CallDetailsModal.tsx": {
@@ -575,8 +575,8 @@
     "semantic_hash": "716e2ad588daaf52f67bf558373f59d1"
   },
   "package.json": {
-    "mtime": 1784484937.8654377,
-    "ast_hash": "c89f7e884f836c5eeb7a3fa984735502",
+    "mtime": 1784503899.050941,
+    "ast_hash": "b9a496ca171c7690891a5ff8ef291dce",
     "semantic_hash": ""
   },
   "postcss.config.js": {
@@ -1940,8 +1940,8 @@
     "semantic_hash": ""
   },
   "plans/README.md": {
-    "mtime": 1784498816.4345133,
-    "ast_hash": "005043fac4fa8d710055399410a0a937",
+    "mtime": 1784503901.2449949,
+    "ast_hash": "3a14a662643cf0111384aeca76d88ef8",
     "semantic_hash": ""
   },
   "dashboardHub/hubMotion.ts": {
@@ -2140,8 +2140,8 @@
     "semantic_hash": ""
   },
   ".github/workflows/ci.yml": {
-    "mtime": 1784484462.2669673,
-    "ast_hash": "573da7341cffcff0eccbb1322a491736",
+    "mtime": 1784503903.6587706,
+    "ast_hash": "43e71c7b2dd5e0cc9628ae03589556d1",
     "semantic_hash": ""
   },
   "plans/038-user-get-tenant-scope.md": {
@@ -2150,8 +2150,8 @@
     "semantic_hash": ""
   },
   "plans/040-verification-gate-typecheck-lint-ci.md": {
-    "mtime": 1784476585.8703375,
-    "ast_hash": "53a768b0590016c737c536d1f121516f",
+    "mtime": 1784503903.1432042,
+    "ast_hash": "26aea2bed89bac8040d1dcdb54877415",
     "semantic_hash": ""
   },
   "plans/041-characterization-tests-money-booking.md": {
@@ -2195,8 +2195,8 @@
     "semantic_hash": ""
   },
   "plans/049-as-tsx-decomposition.md": {
-    "mtime": 1784497992.1750922,
-    "ast_hash": "5bf66761212d3805bddedf8f71a32e5b",
+    "mtime": 1784503714.539922,
+    "ast_hash": "e93bbad7a8d203dd61b5ea1b15cc6b83",
     "semantic_hash": ""
   },
   "plans/050-nginx-container-hardening.md": {
@@ -2275,38 +2275,38 @@
     "semantic_hash": ""
   },
   ".superpowers/sdd/progress.md": {
-    "mtime": 1784495233.8236642,
-    "ast_hash": "e1fdc71281c9df153b3a22cbcb9dad03",
+    "mtime": 1784503707.6537914,
+    "ast_hash": "98be82db4c2729a1d8bc2a6114707dd2",
     "semantic_hash": ""
   },
   "docs/superpowers/plans/2026-07-19-account-balance-billing.md": {
-    "mtime": 1784494034.3111274,
-    "ast_hash": "dca82feb68fbe95ff73148b2453d2071",
+    "mtime": 1784503915.1863928,
+    "ast_hash": "3a931be48d39e18b51a585bb0e0dfd0a",
     "semantic_hash": ""
   },
   "docs/superpowers/plans/2026-07-19-crm-kanban-card-comments.md": {
-    "mtime": 1784497992.1669176,
-    "ast_hash": "caaa0ce3b82640022f59b25f1b25e521",
+    "mtime": 1784503915.1863928,
+    "ast_hash": "bd8b99de8fa808dc26a910d5bc65f99b",
     "semantic_hash": ""
   },
   "docs/superpowers/specs/2026-07-19-account-balance-billing-design.md": {
-    "mtime": 1784493855.2534554,
-    "ast_hash": "19976c7c188c6049d69f60cef0036d40",
+    "mtime": 1784503709.2563927,
+    "ast_hash": "e7fcebdb1a0b49183126de4531d3f1f4",
     "semantic_hash": ""
   },
   "docs/superpowers/specs/2026-07-19-crm-kanban-card-comments-design.md": {
-    "mtime": 1784497992.1685934,
-    "ast_hash": "5244d2be47c0fb9f990c36f7a014c51e",
+    "mtime": 1784503709.7880218,
+    "ast_hash": "b412bba410c15490181565a77600c1e1",
     "semantic_hash": ""
   },
   "accountBalance.test.ts": {
-    "mtime": 1784503029.638512,
-    "ast_hash": "ea3012a30dd84b7d13983317ec34892d",
+    "mtime": 1784503501.7794306,
+    "ast_hash": "ae273c3f480e0f597cdee3c28d4a4bfe",
     "semantic_hash": ""
   },
   "accountBalance.ts": {
-    "mtime": 1784503025.027717,
-    "ast_hash": "860347ff87b2fed26f584789fbaf4089",
+    "mtime": 1784503498.1830893,
+    "ast_hash": "1ceb900b51e5992530a2332a0c20502c",
     "semantic_hash": ""
   },
   "accountLedgerApi.ts": {
@@ -2320,8 +2320,8 @@
     "semantic_hash": ""
   },
   "AccountBillingPanel.tsx": {
-    "mtime": 1784503213.73665,
-    "ast_hash": "1f0a7adc0f897997c1a19045609ad5c8",
+    "mtime": 1784503567.3878603,
+    "ast_hash": "92c1a9b2a543b664138fb661ca6dbd1a",
     "semantic_hash": ""
   },
   "AlertsBell.tsx": {
@@ -2380,8 +2380,8 @@
     "semantic_hash": ""
   },
   "backend/tests/test_crm_card_comments.py": {
-    "mtime": 1784497992.1503208,
-    "ast_hash": "ff653dfebe8ded0ae212ba7812ecdf1b",
+    "mtime": 1784503668.034383,
+    "ast_hash": "983bfa2b4b277122a8c6219832794658",
     "semantic_hash": ""
   },
   "crmCardComments.test.ts": {
@@ -2432,6 +2432,16 @@
   "spaHtmlFallback.test.ts": {
     "mtime": 1784503081.3389997,
     "ast_hash": "cbdfa726fec615e323a30ef0a8e53cad",
+    "semantic_hash": ""
+  },
+  "dashboardShellDates.ts": {
+    "mtime": 1784503601.343205,
+    "ast_hash": "19917b9b3b623740a33649aa9f102157",
+    "semantic_hash": ""
+  },
+  "spaHtmlFallback.d.ts": {
+    "mtime": 1784503540.3638542,
+    "ast_hash": "3c273c43fd319c76cf9e07d4bf5e4320",
     "semantic_hash": ""
   }
 }

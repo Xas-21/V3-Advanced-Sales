@@ -18,6 +18,8 @@ import {
     Layers,
 } from 'lucide-react';
 import { apiUrl } from './backendApi';
+import { beginPropertyLoad, isPropertyLoadCurrent } from './propertyScopedLoad';
+import { requestInProperty } from './userProfileMetrics';
 import { normalizeRequestTypeKey } from './requestTypeUtils';
 import { filterRequestsForAccount, computeAccountMetrics, flattenCrmLeads } from './accountProfileData';
 import { formatCompactCurrency } from './formatCompactCurrency';
@@ -276,10 +278,8 @@ export default function Reports({
     }, [propertyTaxesFromApi, activeProperty]);
 
     const scopedRequests = useMemo(() => {
-        if (!pid) return sharedRequests || [];
-        return (sharedRequests || []).filter(
-            (r: any) => String(r.propertyId || '') === String(pid)
-        );
+        if (!pid) return [];
+        return (sharedRequests || []).filter((r: any) => requestInProperty(r, String(pid)));
     }, [sharedRequests, pid]);
 
     const scopedTasks = useMemo(() => {
@@ -303,18 +303,17 @@ export default function Reports({
     useEffect(() => {
         let cancelled = false;
         const propertyId = String(pid || '').trim();
-        if (!propertyId) {
-            setPromotionsData([]);
-            return;
-        }
+        setPromotionsData([]);
+        const gate = { current: '' };
+        if (!beginPropertyLoad(gate, propertyId)) return;
         fetch(apiUrl(`/api/promotions?propertyId=${encodeURIComponent(propertyId)}`))
             .then((res) => (res.ok ? res.json() : []))
             .then((rows) => {
-                if (cancelled) return;
+                if (cancelled || !isPropertyLoadCurrent(gate, propertyId)) return;
                 setPromotionsData(Array.isArray(rows) ? rows : []);
             })
             .catch(() => {
-                if (!cancelled) setPromotionsData([]);
+                if (!cancelled && isPropertyLoadCurrent(gate, propertyId)) setPromotionsData([]);
             });
         return () => {
             cancelled = true;

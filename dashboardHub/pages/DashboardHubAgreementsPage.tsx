@@ -3,6 +3,7 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { apiUrl } from '../../backendApi';
+import { beginPropertyLoad, isPropertyLoadCurrent } from '../../propertyScopedLoad';
 import {
     ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip,
     CartesianGrid, Legend, AreaChart, Area, ComposedChart, Line,
@@ -36,15 +37,17 @@ export default function DashboardHubAgreementsPage({ colors }: { colors: any }) 
 
     useEffect(() => {
         let alive = true;
+        setTemplates([]);
+        if (!propertyId) return;
+        const gate = { current: '' };
+        if (!beginPropertyLoad(gate, propertyId)) return;
         (async () => {
             try {
-                const url = propertyId
-                    ? `/api/contracts/templates?propertyId=${encodeURIComponent(propertyId)}`
-                    : '/api/contracts/templates';
+                const url = `/api/contracts/templates?propertyId=${encodeURIComponent(propertyId)}`;
                 const t = await fetch(apiUrl(url), { credentials: 'include' }).then((x) => x.json());
-                if (alive) setTemplates(Array.isArray(t) ? t : []);
+                if (alive && isPropertyLoadCurrent(gate, propertyId)) setTemplates(Array.isArray(t) ? t : []);
             } catch {
-                if (alive) setTemplates([]);
+                if (alive && isPropertyLoadCurrent(gate, propertyId)) setTemplates([]);
             }
         })();
         return () => { alive = false; };

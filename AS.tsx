@@ -152,6 +152,11 @@ import {
     formatAgendaRowVenueDisplay,
 } from './beoShared';
 import { resolveUserAttributionId, taskAssignedToUser, getPrimaryOperationalDate } from './userProfileMetrics';
+import {
+    beginPropertyLoad,
+    isPropertyLoadCurrent,
+    type PropertyLoadGate,
+} from './propertyScopedLoad';
 import { buildAccountProfileChartData, getDefaultAccountPerformanceRange } from './accountProfileChartData';
 import AccountProfilePerformanceChart from './AccountProfilePerformanceChart';
 import ChartVsCompareControls, { defaultChartVsYear } from './ChartVsCompareControls';
@@ -888,9 +893,14 @@ export default function AdvancedSalesDashboard() {
     const crmHydratedForPropertyId = useRef<string | null>(null);
     const crmServerCountsRef = useRef({ salesCalls: 0, pipeline: 0 });
     const crmPersistEnabledRef = useRef(false);
-    const requestsLoadPropertyRef = useRef<string | null>(null);
-    const financialsLoadPropertyRef = useRef<string | null>(null);
-    const promotionsLoadPropertyRef = useRef<string | null>(null);
+    const requestsLoadGate = useRef<PropertyLoadGate>({ current: '' });
+    const financialsLoadGate = useRef<PropertyLoadGate>({ current: '' });
+    const promotionsLoadGate = useRef<PropertyLoadGate>({ current: '' });
+    const accountsLoadGate = useRef<PropertyLoadGate>({ current: '' });
+    const taxesLoadGate = useRef<PropertyLoadGate>({ current: '' });
+    const crmLoadGate = useRef<PropertyLoadGate>({ current: '' });
+    const tasksLoadGate = useRef<PropertyLoadGate>({ current: '' });
+    const presenceLoadGate = useRef<PropertyLoadGate>({ current: '' });
 
     const [accounts, setAccounts] = useState<any[]>([]);
     // Per-entity live signals: any WebSocket broadcast for an entity bumps its
@@ -909,14 +919,16 @@ export default function AdvancedSalesDashboard() {
 
     const refreshPresence = useCallback(async () => {
         const pid = activePropertyIdRef.current;
-        if (!pid) {
+        if (!beginPropertyLoad(presenceLoadGate.current, pid)) {
             setOnlineUsers([]);
             return;
         }
         try {
-            const res = await fetch(apiUrl(`/api/presence?property_id=${encodeURIComponent(pid)}`), { credentials: 'include' });
+            const res = await fetch(apiUrl(`/api/presence?property_id=${encodeURIComponent(pid!)}`), { credentials: 'include' });
+            if (!isPropertyLoadCurrent(presenceLoadGate.current, pid)) return;
             if (res.ok) {
                 const data = await res.json();
+                if (!isPropertyLoadCurrent(presenceLoadGate.current, pid)) return;
                 setOnlineUsers(Array.isArray(data) ? data : []);
             }
         } catch {
@@ -1288,17 +1300,15 @@ export default function AdvancedSalesDashboard() {
     useEffect(() => {
         const pid = activeProperty?.id;
         accountsHydratedForPropertyId.current = null;
-        if (!pid) {
-            setAccounts([]);
-            return;
-        }
         // Avoid keeping another property's accounts in memory while the new list loads (reduces bad sync payloads).
         setAccounts([]);
+        if (!beginPropertyLoad(accountsLoadGate.current, pid)) return;
+        const pidStr = String(pid);
         let cancelled = false;
-        fetchAccountsForProperty(String(pid)).then((list) => {
-            if (cancelled) return;
+        fetchAccountsForProperty(pidStr).then((list) => {
+            if (cancelled || !isPropertyLoadCurrent(accountsLoadGate.current, pidStr)) return;
             skipNextAccountsSync.current = true;
-            accountsHydratedForPropertyId.current = String(pid);
+            accountsHydratedForPropertyId.current = pidStr;
             setAccounts(list);
         });
         return () => {
@@ -1330,12 +1340,13 @@ export default function AdvancedSalesDashboard() {
     useEffect(() => {
         if (accountsLiveVersion === 0) return;
         const pid = activeProperty?.id;
-        if (!pid) return;
+        if (!beginPropertyLoad(accountsLoadGate.current, pid)) return;
+        const pidStr = String(pid);
         let cancelled = false;
-        fetchAccountsForProperty(String(pid)).then((list) => {
-            if (cancelled) return;
+        fetchAccountsForProperty(pidStr).then((list) => {
+            if (cancelled || !isPropertyLoadCurrent(accountsLoadGate.current, pidStr)) return;
             skipNextAccountsSync.current = true;
-            accountsHydratedForPropertyId.current = String(pid);
+            accountsHydratedForPropertyId.current = pidStr;
             setAccounts(list);
         });
         return () => {
@@ -1346,23 +1357,22 @@ export default function AdvancedSalesDashboard() {
     useEffect(() => {
         const pid = activeProperty?.id;
         tasksHydratedForPropertyId.current = null;
-        if (!pid) {
-            setTasks([]);
-            return;
-        }
+        setTasks([]);
+        if (!beginPropertyLoad(tasksLoadGate.current, pid)) return;
+        const pidStr = String(pid);
         let cancelled = false;
-        fetch(apiUrl(`/api/tasks?propertyId=${encodeURIComponent(String(pid))}`))
+        fetch(apiUrl(`/api/tasks?propertyId=${encodeURIComponent(pidStr)}`))
             .then((res) => (res.ok ? res.json() : []))
             .then((data) => {
-                if (cancelled) return;
+                if (cancelled || !isPropertyLoadCurrent(tasksLoadGate.current, pidStr)) return;
                 skipNextTasksSync.current = true;
-                tasksHydratedForPropertyId.current = String(pid);
+                tasksHydratedForPropertyId.current = pidStr;
                 setTasks(Array.isArray(data) ? data : []);
             })
             .catch(() => {
-                if (cancelled) return;
+                if (cancelled || !isPropertyLoadCurrent(tasksLoadGate.current, pidStr)) return;
                 skipNextTasksSync.current = true;
-                tasksHydratedForPropertyId.current = String(pid);
+                tasksHydratedForPropertyId.current = pidStr;
                 setTasks([]);
             });
         return () => {
@@ -1519,17 +1529,18 @@ export default function AdvancedSalesDashboard() {
     }, [currentView]);
 
     const refreshSharedRequests = async () => {
-        const pid = activeProperty?.id || '';
-        requestsLoadPropertyRef.current = pid;
+        const pid = activeProperty?.id ? String(activeProperty.id) : '';
+        if (!beginPropertyLoad(requestsLoadGate.current, pid)) {
+            setSharedRequests([]);
+            return;
+        }
         try {
-            const url = pid
-                ? apiUrl(`/api/requests?propertyId=${encodeURIComponent(pid)}`)
-                : apiUrl('/api/requests');
+            const url = apiUrl(`/api/requests?propertyId=${encodeURIComponent(pid)}`);
             const data = await refreshRequestsWithDefiniteToActual(url, {
                 readOnly: !canMutateOperational(currentUser),
                 requestLogUser: String(currentUser?.name || 'System').trim() || 'System',
             });
-            if (requestsLoadPropertyRef.current !== pid) return;
+            if (!isPropertyLoadCurrent(requestsLoadGate.current, pid)) return;
             if (Array.isArray(data)) {
                 setSharedRequests(data);
                 setCrmState((prev) => ({
@@ -1598,26 +1609,27 @@ export default function AdvancedSalesDashboard() {
     );
 
     useEffect(() => {
-        if (!activeProperty?.id) return;
+        if (!activeProperty?.id) {
+            setSharedRequests([]);
+            beginPropertyLoad(requestsLoadGate.current, '');
+            return;
+        }
         refreshSharedRequests();
     }, [activeProperty?.id, sharedRequestsLiveVersion]);
 
     useEffect(() => {
         let cancelled = false;
         const pid = String(activeProperty?.id || '').trim();
-        if (!pid) {
-            setPromotions([]);
-            return;
-        }
-        promotionsLoadPropertyRef.current = pid;
+        setPromotions([]);
+        if (!beginPropertyLoad(promotionsLoadGate.current, pid)) return;
         fetch(apiUrl(`/api/promotions?propertyId=${encodeURIComponent(pid)}`))
             .then((res) => (res.ok ? res.json() : []))
             .then((data) => {
-                if (cancelled || promotionsLoadPropertyRef.current !== pid) return;
+                if (cancelled || !isPropertyLoadCurrent(promotionsLoadGate.current, pid)) return;
                 setPromotions(Array.isArray(data) ? data : []);
             })
             .catch(() => {
-                if (!cancelled) setPromotions([]);
+                if (!cancelled && isPropertyLoadCurrent(promotionsLoadGate.current, pid)) setPromotions([]);
             });
         return () => {
             cancelled = true;
@@ -1627,16 +1639,13 @@ export default function AdvancedSalesDashboard() {
     useEffect(() => {
         let cancelled = false;
         const pid = activeProperty?.id;
-        if (!pid) {
-            setPropertyFinancialKpis([]);
-            return;
-        }
+        setPropertyFinancialKpis([]);
+        if (!beginPropertyLoad(financialsLoadGate.current, pid)) return;
         const pidStr = String(pid);
-        financialsLoadPropertyRef.current = pidStr;
         fetch(apiUrl(`/api/financials?propertyId=${encodeURIComponent(pidStr)}`), { cache: 'no-store' })
             .then((res) => (res.ok ? res.json() : []))
             .then((data) => {
-                if (cancelled || financialsLoadPropertyRef.current !== pidStr) return;
+                if (cancelled || !isPropertyLoadCurrent(financialsLoadGate.current, pidStr)) return;
                 if (Array.isArray(data)) {
                     setPropertyFinancialKpis(data);
                 } else {
@@ -1644,7 +1653,9 @@ export default function AdvancedSalesDashboard() {
                 }
             })
             .catch(() => {
-                if (!cancelled) setPropertyFinancialKpis([]);
+                if (!cancelled && isPropertyLoadCurrent(financialsLoadGate.current, pidStr)) {
+                    setPropertyFinancialKpis([]);
+                }
             });
         return () => {
             cancelled = true;
@@ -1654,18 +1665,17 @@ export default function AdvancedSalesDashboard() {
     useEffect(() => {
         let cancelled = false;
         const pid = activeProperty?.id;
-        if (!pid) {
-            setPropertyTaxes([]);
-            return;
-        }
-        fetch(apiUrl(`/api/taxes?propertyId=${encodeURIComponent(pid)}`))
+        setPropertyTaxes([]);
+        if (!beginPropertyLoad(taxesLoadGate.current, pid)) return;
+        const pidStr = String(pid);
+        fetch(apiUrl(`/api/taxes?propertyId=${encodeURIComponent(pidStr)}`))
             .then((r) => r.json())
             .then((d) => {
-                if (cancelled) return;
+                if (cancelled || !isPropertyLoadCurrent(taxesLoadGate.current, pidStr)) return;
                 if (Array.isArray(d)) setPropertyTaxes(d);
             })
             .catch(() => {
-                if (!cancelled) setPropertyTaxes([]);
+                if (!cancelled && isPropertyLoadCurrent(taxesLoadGate.current, pidStr)) setPropertyTaxes([]);
             });
         return () => {
             cancelled = true;
@@ -1677,13 +1687,12 @@ export default function AdvancedSalesDashboard() {
         const pid = activeProperty?.id;
         crmHydratedForPropertyId.current = null;
         crmPersistEnabledRef.current = false;
-        if (!pid) {
-            setCrmState(defaultCrmState());
-            return;
-        }
+        setCrmState(defaultCrmState());
+        if (!beginPropertyLoad(crmLoadGate.current, pid)) return;
         const pidStr = String(pid);
         skipNextCrmPersist.current = true;
         const applyCrmPayload = (payload: any, accs: any[]) => {
+            if (!isPropertyLoadCurrent(crmLoadGate.current, pidStr)) return;
             const rawPipeCount = PIPELINE_STAGE_KEYS.reduce((n, k) => {
                 const arr = payload?.pipeline?.[k];
                 return n + (Array.isArray(arr) ? arr.length : 0);
@@ -1693,10 +1702,6 @@ export default function AdvancedSalesDashboard() {
                 pipeline: rawPipeCount,
             };
             const merged = mergeCrmStateFromApi(payload);
-            const pipeCount = PIPELINE_STAGE_KEYS.reduce(
-                (n, k) => n + (merged.pipeline[k]?.length || 0),
-                0
-            );
             const scoped: CrmStatePayload = {
                 salesCalls: filterSalesCallsForProperty(merged.salesCalls, pidStr, accs),
                 pipeline: filterPipelineForProperty(merged.pipeline, pidStr, accs),
@@ -1710,7 +1715,7 @@ export default function AdvancedSalesDashboard() {
         fetch(apiUrl(`/api/crm-state?propertyId=${encodeURIComponent(pidStr)}`))
             .then((res) => (res.ok ? res.json() : null))
             .then(async (data) => {
-                if (cancelled) return;
+                if (cancelled || !isPropertyLoadCurrent(crmLoadGate.current, pidStr)) return;
                 let payload = data;
                 const pre = mergeCrmStateFromApi(data || {});
                 const preTotal =
@@ -1726,25 +1731,25 @@ export default function AdvancedSalesDashboard() {
                     } catch { /* ignore */ }
                 }
                 const accs = await fetchAccountsForProperty(pidStr);
-                if (cancelled) return;
+                if (cancelled || !isPropertyLoadCurrent(crmLoadGate.current, pidStr)) return;
                 applyCrmPayload(payload, accs);
             })
             .catch(() => {
-                if (cancelled) return;
+                if (cancelled || !isPropertyLoadCurrent(crmLoadGate.current, pidStr)) return;
                 try {
                     const raw = localStorage.getItem(crmLocalStorageKey(pidStr));
                     if (raw) {
                         const parsed = JSON.parse(raw);
                         if (parsed && typeof parsed === 'object') {
-                            const merged = mergeCrmStateFromApi(parsed);
                             fetchAccountsForProperty(pidStr).then((accs) => {
-                                if (cancelled) return;
+                                if (cancelled || !isPropertyLoadCurrent(crmLoadGate.current, pidStr)) return;
                                 applyCrmPayload(parsed, accs);
                             });
                             return;
                         }
                     }
                 } catch { /* ignore */ }
+                if (!isPropertyLoadCurrent(crmLoadGate.current, pidStr)) return;
                 crmHydratedForPropertyId.current = pidStr;
                 setCrmState(defaultCrmState());
             });

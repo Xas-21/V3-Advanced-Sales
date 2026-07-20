@@ -65,7 +65,7 @@ import { appendCallDescription, getCallDueDate, isPermanentCallRecord, isRequest
 import { deadlineKindForType, requestDeadlineAppliesToRequest } from './requestAlertEngine';
 import { getCallRule, resolveCallSettingsForProperty } from './propertyCallSettings';
 import type { SalesCallLogEntry } from './crmCallReportUtils';
-import { resolveUserAttributionId, crmLeadAttributedToUser } from './userProfileMetrics';
+import { resolveUserAttributionId, crmLeadAttributedToUser, recordVisibleOnProperty, requestInProperty } from './userProfileMetrics';
 import { applyAccountMergeInMemory, persistAccountMergeToBackend } from './accountMergeUtils';
 import { collectSalesCallFormViolations } from './formConfigurations';
 import { repointContractRecordsForAccountMerge } from './contractsStore';
@@ -403,11 +403,8 @@ export default function CRM({
 
     const accountsSameProperty = useMemo(() => {
         const pid = String(activeProperty?.id || '').trim();
-        if (!pid) return accounts;
-        return accounts.filter((a: any) => {
-            const p = String(a?.propertyId || '').trim();
-            return !p || p === 'P-GLOBAL' || p === pid;
-        });
+        if (!pid) return [];
+        return accounts.filter((a: any) => recordVisibleOnProperty(pid, a?.propertyId));
     }, [accounts, activeProperty?.id]);
 
     const crmLeadsForDisplay = useMemo(() => {
@@ -886,10 +883,13 @@ export default function CRM({
     const requestOperationalDate = (req: any) =>
         toYmd(req?.checkIn || req?.arrivalDate || req?.eventStart || req?.requestDate || req?.createdAt || req?.updatedAt);
 
-    const scopedRequestsAll = useMemo(
-        () => (Array.isArray(sharedRequests) ? sharedRequests : []),
-        [sharedRequests]
-    );
+    const scopedRequestsAll = useMemo(() => {
+        const pid = String(activeProperty?.id || '').trim();
+        if (!pid) return [];
+        return (Array.isArray(sharedRequests) ? sharedRequests : []).filter((r: any) =>
+            requestInProperty(r, pid)
+        );
+    }, [sharedRequests, activeProperty?.id]);
 
     const linkedRequestsForLead = (lead: any) => {
         const aid = String(lead?.accountId || '').trim();

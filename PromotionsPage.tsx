@@ -102,10 +102,13 @@ export default function PromotionsPage({
     const currencyCode = resolveCurrencyCode(currency as CurrencyCode);
     const formatMoney = (n: number) => formatCurrencyAmount(n, currencyCode, { maximumFractionDigits: 0 });
 
-    const promotionsForProperty = useMemo(
-        () => (Array.isArray(promotions) ? promotions : []).filter((p: any) => String(p?.propertyId || '') === String(activeProperty?.id || '')),
-        [promotions, activeProperty?.id],
-    );
+    const promotionsForProperty = useMemo(() => {
+        const pid = String(activeProperty?.id || '').trim();
+        if (!pid) return [];
+        return (Array.isArray(promotions) ? promotions : []).filter(
+            (p: any) => String(p?.propertyId || '').trim() === pid
+        );
+    }, [promotions, activeProperty?.id]);
 
     const effectiveStatus = (promo: PromotionRow) => {
         if (promo.status === 'Draft') return 'Draft';

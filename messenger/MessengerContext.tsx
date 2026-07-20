@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { apiUrl } from '../backendApi';
+import { usePropertyLoadGate } from '../propertyScopedLoad';
 import { setChatWsHandler, type ChatWsMessage } from './chatWsBridge';
 import { playChatSound } from './chatNotify';
 
@@ -116,6 +117,7 @@ export function MessengerProvider({
   const openRef = useRef(false);
   const typingTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const lastTypingSentRef = useRef(0);
+  const { begin: beginListLoad, isCurrent: isListLoadCurrent } = usePropertyLoadGate();
   activeIdRef.current = activeId;
   openRef.current = open;
 
@@ -132,16 +134,23 @@ export function MessengerProvider({
 
   const refreshConversations = useCallback(async () => {
     if (!currentUserId) return;
+    if (!beginListLoad(propertyId)) {
+      setConversations([]);
+      setMessageableUsers([]);
+      return;
+    }
     try {
-      const qs = propertyId ? `?property_id=${encodeURIComponent(propertyId)}` : '';
+      const qs = `?property_id=${encodeURIComponent(propertyId)}`;
       const [convRes, usersRes] = await Promise.all([
         fetch(apiUrl(`/api/chat/conversations${qs}`), { credentials: 'include' }),
         fetch(apiUrl(`/api/chat/users${qs}`), { credentials: 'include' }),
       ]);
+      if (!isListLoadCurrent(propertyId)) return;
       if (convRes.ok) setConversations(await convRes.json());
+      if (!isListLoadCurrent(propertyId)) return;
       if (usersRes.ok) setMessageableUsers(await usersRes.json());
     } catch { /* silent */ }
-  }, [propertyId, currentUserId]);
+  }, [propertyId, currentUserId, beginListLoad, isListLoadCurrent]);
 
   const loadMessages = useCallback(async (conversationId: string) => {
     setLoading(true);

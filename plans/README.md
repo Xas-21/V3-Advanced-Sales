@@ -360,6 +360,39 @@ Do Batch I (038–041) first. Then, roughly by leverage:
 | Source-map leak in prod | Not a finding — Vite `build.sourcemap` defaults to false. |
 | Rewrite auth / session system | Rejected — bcrypt-12 + HMAC signed revocable sessions are already production-grade. |
 
+## Batch K — Property refresh (site-wide) + billing payment sync (NEW)
+
+Planned at commit `805923b`, 2026-07-20 via `/improve` + superpowers writing-plans + Ponytail. User-reported: refresh shows other properties’ data; Billing allocate/move/split/undo desync from `request.payments`; offset Balance payment does not restore ledger; browser `alert` on Balance guard.
+
+**Canonical plan:** `plans/055-property-scope-billing-payment-sync.md`  
+**SDD twin:** `docs/superpowers/plans/2026-07-20-property-scope-billing-payment-sync.md`
+
+### Recommended execution order
+
+1. `propertyScopedLoad` kit + apply to **all** property-scoped pages/collections (P0, M) **do first**
+2. Shared `accountPaymentSync` helper + tests (M)
+3. BillingPanel dual-write + notices (M)
+4. RequestsManager offset/delete ↔ ledger + money-path system notices (M)
+
+```
+propertyScopedLoad (site-wide) ──► accountPaymentSync ──► billing panel
+                                              └──► request payment reverse
+```
+
+| Plan | Priority | Effort | Status |
+|------|----------|--------|--------|
+| 055-property-scope-billing-payment-sync | P0–P1 | L | TODO |
+
+### Batch K — considered and rejected (Ponytail)
+
+| Idea | Why |
+|------|-----|
+| Guard only RequestsManager / AS | User requirement: every page; other hubs still leak on refresh |
+| Copy-paste `useRef` per page | One `propertyScopedLoad` kit instead |
+| Unscoped admin “all requests” on property pages | Active property is the product rule; shell always has a selected property |
+| Ledger-only paid amounts | Breaks request payment tables / BEO / reports |
+| Replace every Settings/CRM/Landing `alert` | Separate DX pass; this plan = money paths only |
+
 ## Still deferred (Notion Not started; no plan file yet)
 
 | Notion | Topic |

@@ -4,6 +4,7 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { apiUrl } from '../../backendApi';
+import { beginPropertyLoad, isPropertyLoadCurrent } from '../../propertyScopedLoad';
 import {
     BarChart, Bar, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
     Line, ComposedChart, Area,
@@ -38,17 +39,27 @@ export default function DashboardHubMicePage({ colors }: { colors: any }) {
     useEffect(() => {
         let cancelled = false;
         setLoading(true);
+        setVenues([]);
+        if (!propertyId) {
+            setLoading(false);
+            return;
+        }
+        const gate = { current: '' };
+        if (!beginPropertyLoad(gate, propertyId)) {
+            setLoading(false);
+            return;
+        }
         (async () => {
             try {
-                const url = propertyId ? `/api/venues?propertyId=${encodeURIComponent(propertyId)}` : '/api/venues';
+                const url = `/api/venues?propertyId=${encodeURIComponent(propertyId)}`;
                 const v = await fetch(apiUrl(url), { credentials: 'include' }).then((x) => x.json());
-                if (cancelled) return;
+                if (cancelled || !isPropertyLoadCurrent(gate, propertyId)) return;
                 const list = Array.isArray(v) ? v : [];
-                setVenues(propertyId ? list.filter((x: any) => !x.propertyId || x.propertyId === propertyId) : list);
+                setVenues(list.filter((x: any) => !x.propertyId || x.propertyId === propertyId));
             } catch {
-                if (!cancelled) setVenues([]);
+                if (!cancelled && isPropertyLoadCurrent(gate, propertyId)) setVenues([]);
             } finally {
-                if (!cancelled) setLoading(false);
+                if (!cancelled && isPropertyLoadCurrent(gate, propertyId)) setLoading(false);
             }
         })();
         return () => { cancelled = true; };

@@ -4,6 +4,7 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { apiUrl } from '../../backendApi';
+import { beginPropertyLoad, isPropertyLoadCurrent } from '../../propertyScopedLoad';
 import {
     BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
     AreaChart, Area,
@@ -40,17 +41,27 @@ export default function DashboardHubRoomsPage({ colors }: { colors: any }) {
     useEffect(() => {
         let cancelled = false;
         setLoading(true);
+        setRooms([]);
+        if (!propertyId) {
+            setLoading(false);
+            return;
+        }
+        const gate = { current: '' };
+        if (!beginPropertyLoad(gate, propertyId)) {
+            setLoading(false);
+            return;
+        }
         (async () => {
             try {
-                const url = propertyId ? `/api/rooms?propertyId=${encodeURIComponent(propertyId)}` : '/api/rooms';
+                const url = `/api/rooms?propertyId=${encodeURIComponent(propertyId)}`;
                 const r = await fetch(apiUrl(url), { credentials: 'include' }).then((x) => x.json());
-                if (cancelled) return;
+                if (cancelled || !isPropertyLoadCurrent(gate, propertyId)) return;
                 const list = Array.isArray(r) ? r : [];
-                setRooms(propertyId ? list.filter((x: any) => !x.propertyId || x.propertyId === propertyId) : list);
+                setRooms(list.filter((x: any) => !x.propertyId || x.propertyId === propertyId));
             } catch {
-                if (!cancelled) setRooms([]);
+                if (!cancelled && isPropertyLoadCurrent(gate, propertyId)) setRooms([]);
             } finally {
-                if (!cancelled) setLoading(false);
+                if (!cancelled && isPropertyLoadCurrent(gate, propertyId)) setLoading(false);
             }
         })();
         return () => { cancelled = true; };
