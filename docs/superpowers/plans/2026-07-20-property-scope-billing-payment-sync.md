@@ -61,11 +61,11 @@
 
 **Files:** create `accountPaymentSync.ts`, `accountPaymentSync.test.ts`
 
-- [ ] **Step 1:** Write failing tests for attach/find/`withRefundPayment`/`recomputePaymentStatus`
-- [ ] **Step 2:** Implement pure helpers; tests pass
-- [ ] **Step 3:** Implement async allocate / transfer / split / undo / reverse-from-payment (ledger + `POST /api/requests` with `_update: true`, `credentials: 'include'`)
-- [ ] **Step 4:** New Balance payments store `ledgerEntryId` from ledger POST response
-- [ ] **Step 5:** `npm run test:frontend -- accountPaymentSync` → pass
+- [x] **Step 1:** Write failing tests for attach/find/`withRefundPayment`/`recomputePaymentStatus`
+- [x] **Step 2:** Implement pure helpers; tests pass
+- [x] **Step 3:** Implement async allocate / transfer / split / undo / reverse-from-payment (ledger + `POST /api/requests` with `_update: true`, `credentials: 'include'`)
+- [x] **Step 4:** New Balance payments store `ledgerEntryId` from ledger POST response
+- [x] **Step 5:** `npm run test:frontend -- accountPaymentSync` → pass
 
 ---
 
