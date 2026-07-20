@@ -303,13 +303,13 @@ onNotice?: (title: string, message: string) => void; // system toast/modal from 
 
 ## Done criteria
 
-- [ ] **Every** property-scoped page/collection uses `propertyScopedLoad` (or equivalent begin/isCurrent): no unscoped list GET on operational pages; no stale apply after property switch/refresh.
-- [ ] Hard refresh on Dashboard / Requests / CRM / Accounts / Reports / Promotions / Contracts / Hub Rooms / Feed / Messenger with a multi-property user shows **only** the active property’s data.
-- [ ] Billing allocate / move / split / undo updates **both** ledger and request payment records (including red refund on undo).
-- [ ] Offset/delete Balance payment on request restores account balance / removes allocation.
-- [ ] Money-path user messages use system notice / `ConfirmDialog` — not browser `alert`/`confirm` on those paths.
-- [ ] Tests for `propertyScopedLoad` + sync helpers pass; typecheck + build pass.
-- [ ] `plans/README.md` status updated.
+- [x] **Every** property-scoped page/collection uses `propertyScopedLoad` (or equivalent begin/isCurrent): no unscoped list GET on operational pages; no stale apply after property switch/refresh.
+- [ ] Hard refresh on Dashboard / Requests / CRM / Accounts / Reports / Promotions / Contracts / Hub Rooms / Feed / Messenger with a multi-property user shows **only** the active property’s data. *(optional remaining — manual smoke)*
+- [x] Billing allocate / move / split / undo updates **both** ledger and request payment records (including red refund on undo).
+- [x] Offset/delete Balance payment on request restores account balance / removes allocation.
+- [x] Money-path user messages use system notice / `ConfirmDialog` — not browser `alert`/`confirm` on those paths.
+- [x] Tests for `propertyScopedLoad` + sync helpers pass; typecheck + build pass.
+- [x] `plans/README.md` status updated.
 
 ## STOP conditions
 

@@ -216,3 +216,29 @@ permission that already gates Add Deposit).
   is a client rule per §3.2, so it is covered by the frontend test, not backend.)
 - **Frontend pure logic (`accountBalance.ts`):** `computeBalance`, `requestOwed`,
   `outstandingTotal` — the worked example (§6) as one assert-based check.
+
+## 10. Addendum (2026-07-20) — Billing ↔ request payment dual-write
+
+Ledger remains the account balance source of truth (§3). Request UI still reads
+`request.payments` for paid amount / payment status / BEO. Those two stores must
+stay aligned for Balance / CL / allocation flows.
+
+**Dual-write rule:** Every Billing allocate / move / split / undo and every
+request-side Balance/CL apply or offset goes through `accountPaymentSync.ts`,
+which updates `account_ledger` **and** the linked request’s `payments` (via
+`POST /api/requests` with `_update: true`). Free-credit deposits (no allocate)
+remain ledger-only.
+
+**`ledgerEntryId`:** New Balance (and CL) payment rows store `ledgerEntryId`
+from the ledger POST response `id`. Undo / move / reverse prefer match by that
+field; legacy rows without it fall back to `method` + amount (±epsilon).
+
+**Undo / reverse UX:** Do not silently delete the payment. Append a **negative**
+row with method `Balance refund` (amount `−abs`, note like “Refunded to account
+balance”) so the request payment history shows a red refund line, then
+recompute `paidAmount` / `paymentStatus`. Offset/delete of a Balance/CL payment
+on the request restores account credit the same way (reverse or delete the
+matching ledger entry).
+
+`ponytail:` frontend dual-write only — upgrade path = one FastAPI endpoint that
+commits ledger + request payment in a single transaction.

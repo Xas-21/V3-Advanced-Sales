@@ -1895,8 +1895,8 @@
     "semantic_hash": ""
   },
   "plans/README.md": {
-    "mtime": 1784571231.53899,
-    "ast_hash": "1e5851298fb04b6f60aaecce9217c9e9",
+    "mtime": 1784578167.3318794,
+    "ast_hash": "b57dbed6e8189fe23d80f0cbfecd0379",
     "semantic_hash": ""
   },
   "dashboardHub/hubMotion.ts": {
@@ -2245,8 +2245,8 @@
     "semantic_hash": ""
   },
   "docs/superpowers/specs/2026-07-19-account-balance-billing-design.md": {
-    "mtime": 1784571909.236054,
-    "ast_hash": "e7fcebdb1a0b49183126de4531d3f1f4",
+    "mtime": 1784578154.1500714,
+    "ast_hash": "8511242052a929c0a282494e9e71031c",
     "semantic_hash": ""
   },
   "docs/superpowers/specs/2026-07-19-crm-kanban-card-comments-design.md": {
@@ -2410,13 +2410,13 @@
     "semantic_hash": ""
   },
   "docs/superpowers/plans/2026-07-20-property-scope-billing-payment-sync.md": {
-    "mtime": 1784577592.3164237,
-    "ast_hash": "5a224006a285880d4f9f2226ae741ce7",
+    "mtime": 1784578178.7984798,
+    "ast_hash": "a9ac532cd0ba9b8ebf198ad3e49cae2e",
     "semantic_hash": ""
   },
   "plans/055-property-scope-billing-payment-sync.md": {
-    "mtime": 1784571225.5642855,
-    "ast_hash": "42d5cc1f77eecae9a789b1a427771bda",
+    "mtime": 1784578159.6355014,
+    "ast_hash": "c2200051e61b0910b6fc0921d7c126ef",
     "semantic_hash": ""
   },
   "accountPaymentSync.test.ts": {

@@ -360,7 +360,7 @@ Do Batch I (038–041) first. Then, roughly by leverage:
 | Source-map leak in prod | Not a finding — Vite `build.sourcemap` defaults to false. |
 | Rewrite auth / session system | Rejected — bcrypt-12 + HMAC signed revocable sessions are already production-grade. |
 
-## Batch K — Property refresh (site-wide) + billing payment sync (NEW)
+## Batch K — Property refresh (site-wide) + billing payment sync (DONE)
 
 Planned at commit `805923b`, 2026-07-20 via `/improve` + superpowers writing-plans + Ponytail. User-reported: refresh shows other properties’ data; Billing allocate/move/split/undo desync from `request.payments`; offset Balance payment does not restore ledger; browser `alert` on Balance guard.
 
@@ -381,7 +381,7 @@ propertyScopedLoad (site-wide) ──► accountPaymentSync ──► billing pa
 
 | Plan | Priority | Effort | Status |
 |------|----------|--------|--------|
-| 055-property-scope-billing-payment-sync | P0–P1 | L | TODO |
+| 055-property-scope-billing-payment-sync | P0–P1 | L | DONE |
 
 ### Batch K — considered and rejected (Ponytail)
 

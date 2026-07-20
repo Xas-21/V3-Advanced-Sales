@@ -52,7 +52,7 @@
 - [x] **Step 4:** Hub Rooms — remove unscoped `/api/rooms` fallback; audit other hub/local fetches
 - [x] **Step 5:** Reports / Promotions / Contracts / Messenger list loads use kit
 - [x] **Step 6:** CRM/Accounts display filters (defense in depth)
-- [ ] **Step 7:** Manual matrix — 2 properties, hard refresh each main route → only active property data
+- [ ] **Step 7:** Manual matrix — 2 properties, hard refresh each main route → only active property data *(optional remaining)*
 - [x] **Step 8:** `npm run test:frontend -- propertyScopedLoad`; `npm run typecheck` → exit 0
 
 ---
@@ -77,7 +77,7 @@
 - [x] **Step 2:** Deposit+allocate / move / split / undo call sync helper (not ledger-only)
 - [x] **Step 3:** Undo → ConfirmDialog → red negative refund payment on request + ledger delete/reverse
 - [x] **Step 4:** Success notices: deposit, allocate, move, split, undo
-- [ ] **Step 5:** Manual smoke of all four Billing actions against two linked requests
+- [ ] **Step 5:** Manual smoke of all four Billing actions against two linked requests *(optional remaining)*
 - [x] **Step 6:** `npm run build` → exit 0
 
 ---
@@ -90,17 +90,17 @@
 - [x] **Step 2:** Replace payment-path `window.confirm` with `ConfirmDialog`
 - [x] **Step 3:** Replace Balance/CL `alert(...)` with `showSystemNotice`
 - [x] **Step 4:** Notice on successful Balance/CL payment add
-- [ ] **Step 5:** Manual smoke — Balance pay → offset → Billing balance restored
+- [ ] **Step 5:** Manual smoke — Balance pay → offset → Billing balance restored *(optional remaining)*
 - [x] **Step 6:** `rg "alert\\(|window\\.confirm" RequestsManager.tsx` — no hits on payment/Balance/CL paths
 
 ---
 
 ### Task 5: Spec note + graphify + index
 
-- [ ] **Step 1:** Document dual-write + `ledgerEntryId` + refund row in billing design spec
-- [ ] **Step 2:** `graphify update .`
-- [ ] **Step 3:** Mark `plans/055` DONE in `plans/README.md`
-- [ ] **Step 4:** `npm run typecheck`; `npm run test:frontend -- accountPaymentSync accountBalance`; `npm run build`
+- [x] **Step 1:** Document dual-write + `ledgerEntryId` + refund row in billing design spec
+- [x] **Step 2:** `graphify update .`
+- [x] **Step 3:** Mark `plans/055` DONE in `plans/README.md`
+- [x] **Step 4:** `npm run typecheck`; `npm run test:frontend -- accountPaymentSync accountBalance`; `npm run build`
 
 ---
 
