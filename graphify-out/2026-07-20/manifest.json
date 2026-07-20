@@ -15,8 +15,8 @@
     "semantic_hash": ""
   },
   "AccountsPage.tsx": {
-    "mtime": 1784573003.7710555,
-    "ast_hash": "9edaf5694fe934d9cad66723c7c1b208",
+    "mtime": 1784575362.1132696,
+    "ast_hash": "afac0e770cee2a5cbdb9caa1516a89ba",
     "semantic_hash": ""
   },
   "AddAccountModal.tsx": {
@@ -2265,8 +2265,8 @@
     "semantic_hash": ""
   },
   "accountLedgerApi.ts": {
-    "mtime": 1784571908.9197078,
-    "ast_hash": "c05a9423e624c9b5f57cd98cdb3d35aa",
+    "mtime": 1784575176.1381578,
+    "ast_hash": "cb50878a67494c3286c04034b7c61deb",
     "semantic_hash": ""
   },
   "docs/superpowers/reports/task-1-report.md": {
@@ -2275,8 +2275,8 @@
     "semantic_hash": ""
   },
   "AccountBillingPanel.tsx": {
-    "mtime": 1784571908.8551118,
-    "ast_hash": "92c1a9b2a543b664138fb661ca6dbd1a",
+    "mtime": 1784575252.70938,
+    "ast_hash": "aec4b03915f8601734758adadbe582fc",
     "semantic_hash": ""
   },
   "AlertsBell.tsx": {
@@ -2410,8 +2410,8 @@
     "semantic_hash": ""
   },
   "docs/superpowers/plans/2026-07-20-property-scope-billing-payment-sync.md": {
-    "mtime": 1784574367.520133,
-    "ast_hash": "97d2a0d46d99d151739401308e778dee",
+    "mtime": 1784575503.346655,
+    "ast_hash": "542c86e74993470858f351756bd2f536",
     "semantic_hash": ""
   },
   "plans/055-property-scope-billing-payment-sync.md": {
@@ -2427,6 +2427,11 @@
   "accountPaymentSync.ts": {
     "mtime": 1784574247.2833636,
     "ast_hash": "da609aa5691b7f1e6bfdb2d2c31d330d",
+    "semantic_hash": ""
+  },
+  "SystemNoticeModal.tsx": {
+    "mtime": 1784575350.828355,
+    "ast_hash": "4656a294b6e0afa20c191cd9cf6f2cbe",
     "semantic_hash": ""
   }
 }

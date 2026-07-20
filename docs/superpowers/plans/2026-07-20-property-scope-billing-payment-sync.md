@@ -86,12 +86,12 @@
 
 **Files:** `RequestsManager.tsx`
 
-- [ ] **Step 1:** Balance/CL offset & delete call `reverseBalancePaymentOnRequest`
-- [ ] **Step 2:** Replace payment-path `window.confirm` with `ConfirmDialog`
-- [ ] **Step 3:** Replace Balance/CL `alert(...)` with `showSystemNotice`
-- [ ] **Step 4:** Notice on successful Balance/CL payment add
+- [x] **Step 1:** Balance/CL offset & delete call `reverseBalancePaymentOnRequest`
+- [x] **Step 2:** Replace payment-path `window.confirm` with `ConfirmDialog`
+- [x] **Step 3:** Replace Balance/CL `alert(...)` with `showSystemNotice`
+- [x] **Step 4:** Notice on successful Balance/CL payment add
 - [ ] **Step 5:** Manual smoke — Balance pay → offset → Billing balance restored
-- [ ] **Step 6:** `rg "alert\\(|window\\.confirm" RequestsManager.tsx` — no hits on payment/Balance/CL paths
+- [x] **Step 6:** `rg "alert\\(|window\\.confirm" RequestsManager.tsx` — no hits on payment/Balance/CL paths
 
 ---
 

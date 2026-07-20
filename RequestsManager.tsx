@@ -82,6 +82,7 @@ import {
     type LedgerEntry,
     type LedgerType,
 } from './accountBalance';
+import { reverseBalancePaymentOnRequest } from './accountPaymentSync';
 import {
     clearNewRequestDraft,
     readNewRequestDraft,
@@ -130,6 +131,11 @@ function matchesSearchStatusFilter(req: any, selectedStatuses: string[]): boolea
     if (!selectedStatuses.length) return true;
     const reqKey = normalizeSearchStatusKey(req?.status);
     return selectedStatuses.some((s) => normalizeSearchStatusKey(s) === reqKey);
+}
+
+function isBalanceOrClPaymentMethod(method: unknown): boolean {
+    const m = String(method || '').trim().toLowerCase();
+    return m === 'balance' || isClPaymentMethod(method);
 }
 
 function filterRequestsByAdvancedSearch(
@@ -837,6 +843,11 @@ export default function RequestsManager({
     const [showStatusModal, setShowStatusModal] = useState(false);
     const [showDeleteRequestConfirm, setShowDeleteRequestConfirm] = useState(false);
     const [pendingDeleteRequest, setPendingDeleteRequest] = useState<any | null>(null);
+    const [pendingPaymentRemove, setPendingPaymentRemove] = useState<{
+        source: 'form' | 'detail';
+        payment: any;
+        request?: any;
+    } | null>(null);
     const [cancelReason, setCancelReason] = useState('Price too high');
     const [cxlReasons, setCxlReasons] = useState<string[]>(DEFAULT_CXL_REASONS);
     const [cancelNote, setCancelNote] = useState('');
@@ -998,6 +1009,22 @@ export default function RequestsManager({
     const showSystemNotice = useCallback((title: string, message: string) => {
         setSystemNotice({ title, message });
     }, []);
+
+    const mergePatchedRequest = useCallback(
+        (patched: any) => {
+            if (!patched?.id) return;
+            const id = String(patched.id);
+            setRequests((prev) =>
+                prev.map((r) => (String(r.id) === id ? { ...r, ...patched } : r))
+            );
+            setSelectedRequest((prev: any) =>
+                prev && String(prev.id) === id ? { ...prev, ...patched } : prev
+            );
+            onRequestSaved?.(patched);
+            onAfterRequestsMutate?.();
+        },
+        [onAfterRequestsMutate, onRequestSaved]
+    );
 
     const [showAddAccountModal, setShowAddAccountModal] = useState(false);
     const [showAddContactModal, setShowAddContactModal] = useState(false);
@@ -2404,6 +2431,142 @@ export default function RequestsManager({
         }
     };
 
+    const executePendingPaymentRemove = async () => {
+        const pending = pendingPaymentRemove;
+        setPendingPaymentRemove(null);
+        if (!pending?.payment?.id) return;
+        const { payment, source, request } = pending;
+        const propertyId = String(activeProperty?.id || '').trim();
+
+        if (source === 'form') {
+            if (isBalanceOrClPaymentMethod(payment.method)) {
+                const accountId = String(accForm.accountId || '').trim();
+                if (!accountId) {
+                    showSystemNotice(
+                        'Cannot remove payment',
+                        'Link an account to this request before removing a Balance or CL payment.'
+                    );
+                    return;
+                }
+                if (!accForm?.id || !propertyId) {
+                    showSystemNotice(
+                        'Cannot remove payment',
+                        'Save the request and select a property before removing Balance or CL payments.'
+                    );
+                    return;
+                }
+                try {
+                    const { request: patched } = await reverseBalancePaymentOnRequest({
+                        request: { ...accForm, payments: accForm.payments },
+                        payment,
+                        accountId,
+                        propertyId,
+                        mode: 'delete',
+                    });
+                    setAccForm({
+                        ...accForm,
+                        ...patched,
+                        payments: patched.payments || [],
+                        logs: [
+                            ...(accForm.logs || []),
+                            {
+                                date: new Date().toISOString(),
+                                user: requestLogUser,
+                                action: 'Payment line removed',
+                                details: `${formatMoney(Number(payment.amount || 0), 0)} — ${payment.method || ''} — ${payment.note || ''}`.trim(),
+                            },
+                        ],
+                    });
+                    mergePatchedRequest(patched);
+                    showSystemNotice(
+                        'Payment removed',
+                        'Balance restored on the linked account.'
+                    );
+                } catch (e: any) {
+                    showSystemNotice(
+                        'Remove failed',
+                        e?.message || 'Could not reverse the Balance/CL payment on the ledger.'
+                    );
+                }
+                return;
+            }
+            setAccForm({
+                ...accForm,
+                payments: (accForm.payments || []).filter((p: any) => p.id !== payment.id),
+                logs: [
+                    ...(accForm.logs || []),
+                    {
+                        date: new Date().toISOString(),
+                        user: requestLogUser,
+                        action: 'Payment line removed',
+                        details: `${formatMoney(Number(payment.amount || 0), 0)} — ${payment.method || ''} — ${payment.note || ''}`.trim(),
+                    },
+                ],
+            });
+            return;
+        }
+
+        const req = request;
+        if (!req?.id) return;
+        if (isBalanceOrClPaymentMethod(payment.method)) {
+            const accountId = String(req.accountId || '').trim();
+            if (!accountId) {
+                showSystemNotice(
+                    'Cannot remove payment',
+                    'Link an account to this request before removing a Balance or CL payment.'
+                );
+                return;
+            }
+            if (!propertyId) {
+                showSystemNotice(
+                    'Cannot remove payment',
+                    'Select an active property before removing Balance or CL payments.'
+                );
+                return;
+            }
+            try {
+                const { request: patched } = await reverseBalancePaymentOnRequest({
+                    request: req,
+                    payment,
+                    accountId,
+                    propertyId,
+                    mode: 'delete',
+                });
+                mergePatchedRequest(patched);
+                showSystemNotice(
+                    'Payment removed',
+                    'Balance restored on the linked account.'
+                );
+            } catch (e: any) {
+                showSystemNotice(
+                    'Remove failed',
+                    e?.message || 'Could not reverse the Balance/CL payment on the ledger.'
+                );
+            }
+            return;
+        }
+        const newPayments = (req.payments || []).filter((p: any) => p.id !== payment.id);
+        const paidSum = sumPaymentAmounts(newPayments);
+        const totalCost = parseFloat(String(req.totalCost ?? '0').replace(/,/g, '')) || 0;
+        let paymentStatus = 'Unpaid';
+        if (totalCost > 0) {
+            if (paymentsMeetOrExceedTotal(paidSum, totalCost)) paymentStatus = 'Paid';
+            else if (paidSum > 0) paymentStatus = 'Deposit';
+        }
+        await updateRequest(req.id, {
+            payments: newPayments,
+            paidAmount: paidSum.toFixed(2),
+            paymentStatus,
+        });
+        if (selectedRequest?.id === req.id) {
+            setSelectedRequest((prev: any) =>
+                prev
+                    ? { ...prev, payments: newPayments, paidAmount: paidSum.toFixed(2), paymentStatus }
+                    : null
+            );
+        }
+    };
+
     const generateFeedbackToken = () => {
         try {
             const raw = crypto.randomUUID().replace(/-/g, '');
@@ -2950,7 +3113,7 @@ export default function RequestsManager({
             setBalanceMode('full');
         };
 
-        const offsetPayment = (payment: any) => {
+        const offsetPayment = async (payment: any) => {
             const amt = Number(payment.amount);
             if (!(amt > 0)) return;
             const netPaid = sumPaymentAmounts(accForm.payments);
@@ -2959,6 +3122,57 @@ export default function RequestsManager({
                     'Cannot offset payment',
                     'There is no remaining paid balance to offset for this amount.'
                 );
+                return;
+            }
+            if (isBalanceOrClPaymentMethod(payment.method)) {
+                const accountId = String(accForm.accountId || '').trim();
+                const propertyId = String(activeProperty?.id || '').trim();
+                if (!accountId) {
+                    showSystemNotice(
+                        'Cannot offset payment',
+                        'Link an account to this request before offsetting a Balance or CL payment.'
+                    );
+                    return;
+                }
+                if (!accForm?.id || !propertyId) {
+                    showSystemNotice(
+                        'Cannot offset payment',
+                        'Save the request and select a property before offsetting Balance or CL payments.'
+                    );
+                    return;
+                }
+                try {
+                    const { request: patched } = await reverseBalancePaymentOnRequest({
+                        request: { ...accForm, payments: accForm.payments },
+                        payment,
+                        accountId,
+                        propertyId,
+                        mode: 'offset',
+                    });
+                    setAccForm({
+                        ...accForm,
+                        ...patched,
+                        payments: patched.payments || accForm.payments,
+                        logs: [
+                            ...accForm.logs,
+                            {
+                                date: new Date().toISOString(),
+                                user: requestLogUser,
+                                action: `Offset payment of ${amt}`,
+                            },
+                        ],
+                    });
+                    mergePatchedRequest(patched);
+                    showSystemNotice(
+                        'Payment offset',
+                        'Balance restored on the linked account.'
+                    );
+                } catch (e: any) {
+                    showSystemNotice(
+                        'Offset failed',
+                        e?.message || 'Could not reverse the Balance/CL payment on the ledger.'
+                    );
+                }
                 return;
             }
             setAccForm({
@@ -2985,20 +3199,7 @@ export default function RequestsManager({
 
         const removePaymentLine = (payment: any) => {
             if (!payment?.id) return;
-            if (!window.confirm('Remove this payment line from the request?')) return;
-            setAccForm({
-                ...accForm,
-                payments: accForm.payments.filter((p: any) => p.id !== payment.id),
-                logs: [
-                    ...accForm.logs,
-                    {
-                        date: new Date().toISOString(),
-                        user: requestLogUser,
-                        action: 'Payment line removed',
-                        details: `${formatMoney(Number(payment.amount || 0), 0)} — ${payment.method || ''} — ${payment.note || ''}`.trim(),
-                    },
-                ],
-            });
+            setPendingPaymentRemove({ source: 'form', payment });
         };
 
         const getRequestDocMeta = (docId: RequestDocId): { name: string; url: string; publicId?: string } | null => {
@@ -4934,6 +5135,44 @@ export default function RequestsManager({
                                     showSystemNotice('Cannot offset payment', 'There is no remaining paid balance to offset for this amount.');
                                     return;
                                 }
+                                if (isBalanceOrClPaymentMethod(payment.method)) {
+                                    const accountId = String(request.accountId || '').trim();
+                                    const propertyId = String(activeProperty?.id || '').trim();
+                                    if (!accountId) {
+                                        showSystemNotice(
+                                            'Cannot offset payment',
+                                            'Link an account to this request before offsetting a Balance or CL payment.'
+                                        );
+                                        return;
+                                    }
+                                    if (!propertyId) {
+                                        showSystemNotice(
+                                            'Cannot offset payment',
+                                            'Select an active property before offsetting Balance or CL payments.'
+                                        );
+                                        return;
+                                    }
+                                    try {
+                                        const { request: patched } = await reverseBalancePaymentOnRequest({
+                                            request,
+                                            payment,
+                                            accountId,
+                                            propertyId,
+                                            mode: 'offset',
+                                        });
+                                        mergePatchedRequest(patched);
+                                        showSystemNotice(
+                                            'Payment offset',
+                                            'Balance restored on the linked account.'
+                                        );
+                                    } catch (e: any) {
+                                        showSystemNotice(
+                                            'Offset failed',
+                                            e?.message || 'Could not reverse the Balance/CL payment on the ledger.'
+                                        );
+                                    }
+                                    return;
+                                }
                                 const newPayments = [...(request.payments || []), {
                                     ...payment,
                                     id: Date.now(),
@@ -4954,19 +5193,7 @@ export default function RequestsManager({
                             };
                             const handleDeletePayment = async (payment: any) => {
                                 if (!payment?.id) return;
-                                if (!window.confirm('Remove this payment line from the request?')) return;
-                                const newPayments = (request.payments || []).filter((p: any) => p.id !== payment.id);
-                                const paidSum = sumPaymentAmounts(newPayments);
-                                const totalCost = parseFloat(String(request.totalCost ?? '0').replace(/,/g, '')) || 0;
-                                let paymentStatus = 'Unpaid';
-                                if (totalCost > 0) {
-                                    if (paymentsMeetOrExceedTotal(paidSum, totalCost)) paymentStatus = 'Paid';
-                                    else if (paidSum > 0) paymentStatus = 'Deposit';
-                                }
-                                await updateRequest(request.id, { payments: newPayments, paidAmount: paidSum.toFixed(2), paymentStatus });
-                                if (selectedRequest?.id === request.id) {
-                                    setSelectedRequest((prev: any) => prev ? { ...prev, payments: newPayments, paidAmount: paidSum.toFixed(2), paymentStatus } : null);
-                                }
+                                setPendingPaymentRemove({ source: 'detail', payment, request });
                             };
                             return (
                             <div className="p-8 rounded-2xl border-2 space-y-8 relative overflow-hidden" style={{ backgroundColor: colors.card, borderColor: colors.primary + '40' }}>
@@ -5512,7 +5739,8 @@ export default function RequestsManager({
                                 type="button"
                                 onClick={() => {
                                     if (src === 'balance' && accountBalance <= 0) {
-                                        alert(
+                                        showSystemNotice(
+                                            'No prepaid balance',
                                             'No prepaid balance on this account. Use Method for a normal payment, or CL to collect later.'
                                         );
                                         return;
@@ -5624,7 +5852,10 @@ export default function RequestsManager({
                                 (paymentSource === 'balance' || paymentSource === 'cl') &&
                                 !String(acctId || '').trim()
                             ) {
-                                alert('Link an account to this request before using Balance or CL.');
+                                showSystemNotice(
+                                    'Account required',
+                                    'Link an account to this request before using Balance or CL.'
+                                );
                                 return;
                             }
                             const requestTotal =
@@ -5704,8 +5935,9 @@ export default function RequestsManager({
 
                             if (acctId && ledgerPosts.length > 0) {
                                 const { postLedgerEntry } = await import('./accountLedgerApi');
-                                for (const p of ledgerPosts) {
-                                    await postLedgerEntry({
+                                for (let i = 0; i < ledgerPosts.length; i++) {
+                                    const p = ledgerPosts[i];
+                                    const created = await postLedgerEntry({
                                         type: p.type,
                                         amount: p.amount,
                                         accountId: acctId,
@@ -5716,6 +5948,12 @@ export default function RequestsManager({
                                         date: newPayment.date,
                                         user: requestLogUser,
                                     });
+                                    if (extraPayments[i] && created?.id) {
+                                        extraPayments[i] = {
+                                            ...extraPayments[i],
+                                            ledgerEntryId: String(created.id),
+                                        };
+                                    }
                                 }
                             }
 
@@ -5928,6 +6166,15 @@ export default function RequestsManager({
                                     await updateRequest(req.id, updateData);
                                 }
                                 setActiveOptionsMenu(null);
+                            }
+                            if (
+                                (paymentSource === 'balance' || paymentSource === 'cl') &&
+                                extraPayments.length > 0
+                            ) {
+                                showSystemNotice(
+                                    'Payment added',
+                                    'Payment added successfully.'
+                                );
                             }
                             setShowPaymentModal(false);
                             setNewPayment(emptyNewPayment());
@@ -6464,6 +6711,22 @@ export default function RequestsManager({
                         setPendingDeleteRequest(null);
                         setShowDeleteRequestConfirm(false);
                     }}
+                />
+
+                <ConfirmDialog
+                    isOpen={!!pendingPaymentRemove}
+                    title="Remove payment line?"
+                    message={
+                        pendingPaymentRemove?.payment
+                            ? `Remove this payment line from the request?\n\n${formatMoney(Number(pendingPaymentRemove.payment.amount || 0), 0)} — ${pendingPaymentRemove.payment.method || ''} — ${pendingPaymentRemove.payment.note || ''}`.trim()
+                            : 'Remove this payment line from the request?'
+                    }
+                    confirmLabel="Remove payment"
+                    danger
+                    onConfirm={() => {
+                        void executePendingPaymentRemove();
+                    }}
+                    onCancel={() => setPendingPaymentRemove(null)}
                 />
 
                 <RequestAlertsModal

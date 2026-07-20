@@ -105,8 +105,8 @@
     "semantic_hash": "42600414548e74d198bc89ebdfabd33a"
   },
   "RequestsManager.tsx": {
-    "mtime": 1784572914.870537,
-    "ast_hash": "a44b39c2550f2a5410409d976f91f669",
+    "mtime": 1784577265.4830794,
+    "ast_hash": "0b1ce345d827599c9c3e5cbd57b335d3",
     "semantic_hash": ""
   },
   "Settings.tsx": {
@@ -2275,8 +2275,8 @@
     "semantic_hash": ""
   },
   "AccountBillingPanel.tsx": {
-    "mtime": 1784575252.70938,
-    "ast_hash": "aec4b03915f8601734758adadbe582fc",
+    "mtime": 1784576992.4475958,
+    "ast_hash": "62541ca0be0cc18494dfbea69c92b648",
     "semantic_hash": ""
   },
   "AlertsBell.tsx": {
@@ -2410,8 +2410,8 @@
     "semantic_hash": ""
   },
   "docs/superpowers/plans/2026-07-20-property-scope-billing-payment-sync.md": {
-    "mtime": 1784575503.346655,
-    "ast_hash": "542c86e74993470858f351756bd2f536",
+    "mtime": 1784577592.3164237,
+    "ast_hash": "5a224006a285880d4f9f2226ae741ce7",
     "semantic_hash": ""
   },
   "plans/055-property-scope-billing-payment-sync.md": {

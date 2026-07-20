@@ -238,8 +238,15 @@ export default function AccountBillingPanel({
         setError('');
         const patched: any[] = [];
         try {
-            const linked = findLinkedRequest(linkedRequests, entry.requestId);
-            if (linked && entry.requestId) {
+            if (entry.requestId) {
+                const linked = findLinkedRequest(linkedRequests, entry.requestId);
+                if (!linked) {
+                    const msg =
+                        'Linked request not found for this ledger entry. Refresh the account or open the request, then try undo again.';
+                    setError(msg);
+                    onNotice?.('Undo failed', msg);
+                    return;
+                }
                 const { request } = await undoLedgerLinkedToRequest({
                     entry,
                     request: linked,
@@ -247,15 +254,14 @@ export default function AccountBillingPanel({
                 });
                 patched.push(request);
                 onRequestsPatched?.([request]);
+                onNotice?.(
+                    'Undone',
+                    'Ledger entry removed and a Balance refund was posted on the linked request.'
+                );
             } else {
                 await deleteLedgerEntry(entry.id, propertyId || undefined);
+                onNotice?.('Undone', 'Ledger entry removed.');
             }
-            onNotice?.(
-                'Undone',
-                entry.requestId
-                    ? 'Ledger entry removed and a Balance refund was posted on the linked request.'
-                    : 'Ledger entry removed.'
-            );
             await reload();
         } catch (e: any) {
             await handlePartialFail(
