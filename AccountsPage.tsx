@@ -38,6 +38,7 @@ import { apiUrl } from './backendApi';
 import ConfirmDialog from './ConfirmDialog';
 import AccountLinkedRequestsModal from './AccountLinkedRequestsModal';
 import AccountBillingPanel from './AccountBillingPanel';
+import SystemNoticeModal from './SystemNoticeModal';
 import {
     canDeleteRequests,
     canLinkRequestPromotions,
@@ -131,6 +132,7 @@ export default function AccountsPage({
     const canMutate = canMutateOperational(currentUser);
     const [profileRequestsListOpen, setProfileRequestsListOpen] = useState(false);
     const [billingAccount, setBillingAccount] = useState<any | null>(null);
+    const [systemNotice, setSystemNotice] = useState<{ title: string; message: string } | null>(null);
     const [search, setSearch] = useState('');
     const [listTab, setListTab] = useState<AccountsPageTab>('accounts');
     const [listSort, setListSort] = useState<AccountsListSort>('name_az');
@@ -1058,8 +1060,28 @@ export default function AccountsPage({
                                 onAfterRequestsMutate?.();
                             }
                         }}
+                        onRequestsPatched={(requests) => {
+                            const updates = (requests || []).filter(Boolean);
+                            if (!updates.length) return;
+                            setSharedRequests((prev) =>
+                                prev.map((r) => {
+                                    const hit = updates.find((u) => String(u.id) === String(r.id));
+                                    return hit || r;
+                                })
+                            );
+                            onAfterRequestsMutate?.();
+                        }}
+                        onNotice={(title, message) => setSystemNotice({ title, message })}
                     />
                 )}
+                {systemNotice ? (
+                    <SystemNoticeModal
+                        title={systemNotice.title}
+                        message={systemNotice.message}
+                        theme={theme}
+                        onClose={() => setSystemNotice(null)}
+                    />
+                ) : null}
             </>
         );
     }

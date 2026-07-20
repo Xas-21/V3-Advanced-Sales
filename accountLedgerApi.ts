@@ -36,8 +36,9 @@ export async function transferAllocation(entryId: string, toRequestId: string): 
 
 export async function deleteLedgerEntry(entryId: string, propertyId?: string): Promise<void> {
   const qs = propertyId ? `?propertyId=${encodeURIComponent(propertyId)}` : '';
-  await fetch(apiUrl(`/api/account-ledger/${encodeURIComponent(entryId)}${qs}`), {
+  const res = await fetch(apiUrl(`/api/account-ledger/${encodeURIComponent(entryId)}${qs}`), {
     method: 'DELETE',
     credentials: 'include',
   });
+  if (!res.ok) throw new Error(`ledger delete failed: ${res.status}`);
 }

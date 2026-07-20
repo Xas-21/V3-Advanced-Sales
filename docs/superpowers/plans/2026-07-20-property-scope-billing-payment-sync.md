@@ -73,12 +73,12 @@
 
 **Files:** `AccountBillingPanel.tsx`, `AccountsPage.tsx`
 
-- [ ] **Step 1:** Add `onRequestsPatched` + `onNotice` props; wire from AccountsPage
-- [ ] **Step 2:** Deposit+allocate / move / split / undo call sync helper (not ledger-only)
-- [ ] **Step 3:** Undo → ConfirmDialog → red negative refund payment on request + ledger delete/reverse
-- [ ] **Step 4:** Success notices: deposit, allocate, move, split, undo
+- [x] **Step 1:** Add `onRequestsPatched` + `onNotice` props; wire from AccountsPage
+- [x] **Step 2:** Deposit+allocate / move / split / undo call sync helper (not ledger-only)
+- [x] **Step 3:** Undo → ConfirmDialog → red negative refund payment on request + ledger delete/reverse
+- [x] **Step 4:** Success notices: deposit, allocate, move, split, undo
 - [ ] **Step 5:** Manual smoke of all four Billing actions against two linked requests
-- [ ] **Step 6:** `npm run build` → exit 0
+- [x] **Step 6:** `npm run build` → exit 0
 
 ---
 

@@ -2410,13 +2410,23 @@
     "semantic_hash": ""
   },
   "docs/superpowers/plans/2026-07-20-property-scope-billing-payment-sync.md": {
-    "mtime": 1784571252.619197,
-    "ast_hash": "049db7ccc69dc642701818a37c8298ed",
+    "mtime": 1784574367.520133,
+    "ast_hash": "97d2a0d46d99d151739401308e778dee",
     "semantic_hash": ""
   },
   "plans/055-property-scope-billing-payment-sync.md": {
     "mtime": 1784571225.5642855,
     "ast_hash": "42d5cc1f77eecae9a789b1a427771bda",
+    "semantic_hash": ""
+  },
+  "accountPaymentSync.test.ts": {
+    "mtime": 1784574121.4751608,
+    "ast_hash": "139bcdfa18315ed94995f6f1dd883b2a",
+    "semantic_hash": ""
+  },
+  "accountPaymentSync.ts": {
+    "mtime": 1784574247.2833636,
+    "ast_hash": "da609aa5691b7f1e6bfdb2d2c31d330d",
     "semantic_hash": ""
   }
 }
