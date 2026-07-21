@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-    Phone, Mail, MapPin, X, Plus, Edit, Trash2, ChevronDown,
+    X, Plus, Edit, Trash2,
     PhoneCall, Send, FileText, MessageSquare, History, CalendarDays, GitMerge, Search, Camera,
 } from 'lucide-react';
 import {
@@ -223,7 +223,6 @@ export default function CRMProfileView({
         return mergeChartRowsWithLyComparison(accountChartData, accountChartDataLy, accountChartTab);
     }, [accountChartData, accountChartDataLy, accountChartVsEnabled, accountChartTab]);
 
-    const [expandedContact, setExpandedContact] = useState<number | null>(0);
     const [isContactModalOpen, setIsContactModalOpen] = useState(false);
     const [newContactData, setNewContactData] = useState({
         firstName: '', lastName: '', position: '', email: '', phone: '', city: '', country: ''
@@ -404,7 +403,6 @@ export default function CRMProfileView({
         setNewContactData({ firstName: '', lastName: '', position: '', email: '', phone: '', city: '', country: '' });
         setIsContactModalOpen(false);
         setEditingContactIdx(null);
-        if (editingContactIdx === null) setExpandedContact(updatedContacts.length - 1);
     };
 
     const handleDeleteContact = () => {
@@ -427,7 +425,6 @@ export default function CRMProfileView({
         });
         appendAuditLog?.('Contact removed', deleteConfirm.name);
         setDeleteConfirm({ isOpen: false, idx: null, name: '' });
-        setExpandedContact(null);
     };
 
     const handlePickContactScanFile = () => {
@@ -862,135 +859,8 @@ export default function CRMProfileView({
             <div className="flex-1 overflow-y-auto p-6">
                 {profileTab === 'overview' && (
                 <div className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="p-6 rounded-xl border flex flex-col" style={{ backgroundColor: colors.card, borderColor: colors.border }}>
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.textMuted }}>Contact Information</h3>
-                                {!readOnly && (
-                                    <div className="flex items-center gap-2">
-                                        {onScanContactCard && (
-                                            <>
-                                                <button
-                                                    type="button"
-                                                    onClick={handlePickContactScanFile}
-                                                    className="px-2 py-1 rounded border text-[11px] font-bold flex items-center gap-1.5 hover:bg-white/10 transition-colors disabled:opacity-60"
-                                                    style={{ borderColor: colors.border, color: colors.textMain }}
-                                                    title="Scan or upload business card"
-                                                    disabled={scanBusy}
-                                                >
-                                                    <Camera size={13} />
-                                                    {scanBusy ? 'Scanning...' : 'Scan / Upload'}
-                                                </button>
-                                                <input
-                                                    ref={contactScanInputRef}
-                                                    type="file"
-                                                    accept="image/*"
-                                                    capture="environment"
-                                                    className="hidden"
-                                                    onChange={handleContactScanFileChange}
-                                                />
-                                            </>
-                                        )}
-                                        <button
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setEditingContactIdx(null);
-                                                setNewContactData({ firstName: '', lastName: '', position: '', email: '', phone: '', city: '', country: '' });
-                                                setIsContactModalOpen(true);
-                                            }}
-                                            className="p-1 rounded hover:bg-white/10 transition-colors"
-                                            title="Add Contact Person"
-                                            style={{ color: colors.primary }}>
-                                            <Plus size={16} />
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="space-y-1">
-                                {contactList.map((contact: any, idx: number) => (
-                                    <div key={idx} className="border-b last:border-0" style={{ borderColor: colors.border }}>
-                                        <button
-                                            type="button"
-                                            onClick={() => setExpandedContact(expandedContact === idx ? null : idx)}
-                                            className="w-full flex items-center justify-between py-3 text-left group hover:bg-white/5 px-2 rounded-lg transition-colors"
-                                        >
-                                            <div>
-                                                <p className="font-bold text-sm" style={{ color: colors.textMain }}>{contact.name}</p>
-                                                <p className="text-[10px] uppercase tracking-wider opacity-70" style={{ color: colors.textMuted }}>{contact.position}</p>
-                                            </div>
-                                            <ChevronDown size={14} className={`transition-transform duration-300 ${expandedContact === idx ? 'rotate-180' : ''}`} style={{ color: colors.textMuted }} />
-                                        </button>
-
-                                        {expandedContact === idx && (
-                                            <div className="pb-4 px-2 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
-                                                <div className="flex items-center gap-3">
-                                                    <Mail size={14} style={{ color: colors.primary }} />
-                                                    <div className="flex-1">
-                                                        <p className="text-[10px] uppercase font-bold opacity-70 mb-0.5" style={{ color: colors.textMuted }}>Email</p>
-                                                        <p className="text-sm font-medium break-all" style={{ color: colors.textMain }}>{contact.email || 'N/A'}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-3">
-                                                    <Phone size={14} style={{ color: colors.primary }} />
-                                                    <div className="flex-1">
-                                                        <p className="text-[10px] uppercase font-bold opacity-70 mb-0.5" style={{ color: colors.textMuted }}>Phone</p>
-                                                        <p className="text-sm font-medium" style={{ color: colors.textMain }}>{contact.phone || 'N/A'}</p>
-                                                    </div>
-                                                </div>
-                                                {(contact.city || contact.country) && (
-                                                    <div className="flex items-center gap-3">
-                                                        <MapPin size={14} style={{ color: colors.primary }} />
-                                                        <div className="flex-1">
-                                                            <p className="text-[10px] uppercase font-bold opacity-70 mb-0.5" style={{ color: colors.textMuted }}>Address</p>
-                                                            <p className="text-sm font-medium" style={{ color: colors.textMain }}>{[contact.city, contact.country].filter(Boolean).join(', ')}</p>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {!readOnly && (
-                                                    <div className="pt-2 mt-2 flex justify-end items-center gap-2 border-t" style={{ borderColor: colors.border }}>
-                                                        <button
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                const names = contact.name.split(' ');
-                                                                setNewContactData({
-                                                                    firstName: names[0] || '',
-                                                                    lastName: names.slice(1).join(' ') || '',
-                                                                    position: contact.position || '',
-                                                                    email: contact.email || '',
-                                                                    phone: contact.phone || '',
-                                                                    city: contact.city || '',
-                                                                    country: contact.country || ''
-                                                                });
-                                                                setEditingContactIdx(idx);
-                                                                setIsContactModalOpen(true);
-                                                            }}
-                                                            className="flex items-center gap-2 px-3 py-1.5 rounded text-xs font-bold border hover:bg-white/5 transition-colors"
-                                                            style={{ borderColor: colors.border, color: colors.textMain }}
-                                                        >
-                                                            <Edit size={12} /> Edit
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setDeleteConfirm({ isOpen: true, idx, name: contact.name })}
-                                                            className="flex items-center gap-2 px-3 py-1.5 rounded text-xs font-bold text-red-500 hover:bg-red-500/10 transition-colors"
-                                                        >
-                                                            <Trash2 size={12} /> Delete
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
                     <div
-                        className="lg:col-span-2 p-6 rounded-xl border flex flex-col min-h-[300px]"
+                        className="p-6 rounded-xl border flex flex-col min-h-[300px]"
                         style={{ backgroundColor: colors.card, borderColor: colors.border }}
                     >
                         <div className="flex flex-col gap-3 mb-2 shrink-0">
@@ -1039,7 +909,6 @@ export default function CRMProfileView({
                             />
                         </div>
                     </div>
-                </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="space-y-6">
@@ -1591,6 +1460,120 @@ export default function CRMProfileView({
                     </div>
                 </div>
                 </div>
+                )}
+
+                {profileTab === 'contacts' && (
+                    <div className="p-6 rounded-xl border" style={{ backgroundColor: colors.card, borderColor: colors.border }}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.textMuted }}>Contacts</h3>
+                            {!readOnly && (
+                                <div className="flex items-center gap-2">
+                                    {onScanContactCard && (
+                                        <>
+                                            <button
+                                                type="button"
+                                                onClick={handlePickContactScanFile}
+                                                className="px-2 py-1 rounded border text-[11px] font-bold flex items-center gap-1.5 hover:bg-white/10 transition-colors disabled:opacity-60"
+                                                style={{ borderColor: colors.border, color: colors.textMain }}
+                                                title="Scan or upload business card"
+                                                disabled={scanBusy}
+                                            >
+                                                <Camera size={13} />
+                                                {scanBusy ? 'Scanning...' : 'Scan / Upload'}
+                                            </button>
+                                            <input
+                                                ref={contactScanInputRef}
+                                                type="file"
+                                                accept="image/*"
+                                                capture="environment"
+                                                className="hidden"
+                                                onChange={handleContactScanFileChange}
+                                            />
+                                        </>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setEditingContactIdx(null);
+                                            setNewContactData({ firstName: '', lastName: '', position: '', email: '', phone: '', city: '', country: '' });
+                                            setIsContactModalOpen(true);
+                                        }}
+                                        className="p-1 rounded hover:bg-white/10 transition-colors"
+                                        title="Add Contact Person"
+                                        style={{ color: colors.primary }}
+                                    >
+                                        <Plus size={16} />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {contactList.length === 0 ? (
+                            <p className="text-sm italic py-6 text-center" style={{ color: colors.textMuted }}>
+                                No contact persons yet.
+                            </p>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead className="text-[10px] uppercase tracking-wider font-semibold" style={{ backgroundColor: colors.bg, color: colors.textMuted }}>
+                                        <tr>
+                                            <th className="px-4 py-3">Name</th>
+                                            <th className="px-4 py-3">Position</th>
+                                            <th className="px-4 py-3">Phone</th>
+                                            <th className="px-4 py-3">Email</th>
+                                            <th className="px-4 py-3">City</th>
+                                            {!readOnly && <th className="px-4 py-3 text-right">Actions</th>}
+                                        </tr>
+                                    </thead>
+                                    <tbody className="text-xs">
+                                        {contactList.map((contact: any, idx: number) => (
+                                            <tr key={idx} className="border-t" style={{ borderColor: colors.border }}>
+                                                <td className="px-4 py-3 font-bold" style={{ color: colors.textMain }}>{contact.name || '—'}</td>
+                                                <td className="px-4 py-3" style={{ color: colors.textMain }}>{contact.position || '—'}</td>
+                                                <td className="px-4 py-3" style={{ color: colors.textMain }}>{contact.phone || '—'}</td>
+                                                <td className="px-4 py-3 break-all" style={{ color: colors.textMain }}>{contact.email || '—'}</td>
+                                                <td className="px-4 py-3" style={{ color: colors.textMain }}>{contact.city || '—'}</td>
+                                                {!readOnly && (
+                                                    <td className="px-4 py-3">
+                                                        <div className="flex justify-end items-center gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const names = String(contact.name || '').split(' ');
+                                                                    setNewContactData({
+                                                                        firstName: names[0] || '',
+                                                                        lastName: names.slice(1).join(' ') || '',
+                                                                        position: contact.position || '',
+                                                                        email: contact.email || '',
+                                                                        phone: contact.phone || '',
+                                                                        city: contact.city || '',
+                                                                        country: contact.country || '',
+                                                                    });
+                                                                    setEditingContactIdx(idx);
+                                                                    setIsContactModalOpen(true);
+                                                                }}
+                                                                className="flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-bold border hover:bg-white/5 transition-colors"
+                                                                style={{ borderColor: colors.border, color: colors.textMain }}
+                                                            >
+                                                                <Edit size={12} /> Edit
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setDeleteConfirm({ isOpen: true, idx, name: contact.name })}
+                                                                className="flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-bold text-red-500 hover:bg-red-500/10 transition-colors"
+                                                            >
+                                                                <Trash2 size={12} /> Delete
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                )}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
                 )}
             </div>
 
