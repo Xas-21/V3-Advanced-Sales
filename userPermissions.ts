@@ -32,6 +32,7 @@ export const ALL_PERMISSION_IDS = [
     'accounts.mergeAndAssignOwner',
     'tasks.deleteAny',
     'accounts.delete',
+    'accounts.deleteBillingDeposits',
     'contracts.delete',
     'contracts.templates.delete',
     'requests.delete',
@@ -77,6 +78,7 @@ export const PERMISSION_LABELS: Record<PermissionId, string> = {
         'Accounts: merge duplicate profiles & set account owner (re-links requests, CRM, contracts)',
     'tasks.deleteAny': 'Delete any task (To-Do)',
     'accounts.delete': 'Delete accounts',
+    'accounts.deleteBillingDeposits': 'Accounts: delete free billing deposits',
     'contracts.delete': 'Delete contracts',
     'contracts.templates.delete': 'Delete contract templates (Contracts library)',
     'requests.delete': 'Delete requests',
@@ -143,7 +145,13 @@ export const USER_MODAL_SECTIONS: readonly UserModalPermissionSection[] = [
     {
         id: 'accounts',
         title: 'Accounts',
-        permissions: ['accounts.viewOnly', 'accounts.mergeAndAssignOwner', 'accounts.delete', 'accounts.timelineManual'],
+        permissions: [
+            'accounts.viewOnly',
+            'accounts.mergeAndAssignOwner',
+            'accounts.delete',
+            'accounts.deleteBillingDeposits',
+            'accounts.timelineManual',
+        ],
     },
     {
         id: 'promotions',
@@ -412,6 +420,10 @@ export function canDeleteTasks(user: any): boolean {
 
 export function canDeleteAccounts(user: any): boolean {
     return can(user, 'accounts.delete');
+}
+
+export function canDeleteBillingDeposits(user: any): boolean {
+    return can(user, 'accounts.deleteBillingDeposits');
 }
 
 export function canDeleteContracts(user: any): boolean {

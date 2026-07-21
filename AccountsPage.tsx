@@ -1030,6 +1030,7 @@ export default function AccountsPage({
                         currency={currency}
                         theme={theme}
                         canEdit={canMutateOperational(currentUser)}
+                        currentUser={currentUser}
                         onClose={() => setBillingAccount(null)}
                         onSettleClRequests={async (requestIds) => {
                             const idSet = new Set(requestIds.map(String));
