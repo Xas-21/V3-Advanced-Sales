@@ -4314,17 +4314,18 @@ export default function RequestsManager({
                                         <tr>
                                             <td colSpan={5} className="px-4 py-8 text-center opacity-20 italic">No payments recorded yet.</td>
                                         </tr>
-                                    ) : (
-                                        accForm.payments.map((p, idx) => (
+                                    ) : (() => {
+                                        const clOpen = !!(accForm.collectLater || accForm.paymentStatus === 'CL');
+                                        return accForm.payments.map((p, idx) => (
                                             <tr key={p.id ?? `pay-${idx}`} className="border-t border-white/5 hover:bg-white/5 transition-colors">
                                                 <td className="px-4 py-3 opacity-60">{p.date}</td>
-                                                <td className="px-4 py-3 font-bold" style={{ color: isClPaymentMethod(p.method) ? colors.red : undefined }}>{p.method}</td>
+                                                <td className="px-4 py-3 font-bold" style={{ color: isClPaymentMethod(p.method) && clOpen ? colors.red : undefined }}>{p.method}</td>
                                                 <td className="px-4 py-3 opacity-60">{p.note || '-'}</td>
                                                 <td
                                                     className="px-4 py-3 text-right font-mono font-bold"
                                                     style={{
                                                         color:
-                                                            p.amount < 0 || isClPaymentMethod(p.method)
+                                                            p.amount < 0 || (isClPaymentMethod(p.method) && clOpen)
                                                                 ? colors.red
                                                                 : colors.green,
                                                     }}
@@ -4351,8 +4352,8 @@ export default function RequestsManager({
                                                     </div>
                                                 </td>
                                             </tr>
-                                        ))
-                                    )}
+                                        ));
+                                    })()}
                                 </tbody>
                             </table>
                         </div>
@@ -5447,17 +5448,18 @@ export default function RequestsManager({
                                                     <tr>
                                                         <td colSpan={5} className="px-4 py-8 text-center opacity-20 italic">No payments recorded yet.</td>
                                                     </tr>
-                                                ) : (
-                                                    (request.payments || []).map((p: any, idx: number) => (
+                                                ) : (() => {
+                                                    const clOpen = !!(request.collectLater || request.paymentStatus === 'CL');
+                                                    return (request.payments || []).map((p: any, idx: number) => (
                                                         <tr key={p.id ?? `pay-${idx}`} className="border-t border-white/5 hover:bg-white/5 transition-colors">
                                                             <td className="px-4 py-3 opacity-60">{p.date}</td>
-                                                            <td className="px-4 py-3 font-bold" style={{ color: isClPaymentMethod(p.method) ? colors.red : undefined }}>{p.method}</td>
+                                                            <td className="px-4 py-3 font-bold" style={{ color: isClPaymentMethod(p.method) && clOpen ? colors.red : undefined }}>{p.method}</td>
                                                             <td className="px-4 py-3 opacity-60">{p.note || '-'}</td>
                                                             <td
                                                                 className="px-4 py-3 text-right font-mono font-bold"
                                                                 style={{
                                                                     color:
-                                                                        p.amount < 0 || isClPaymentMethod(p.method)
+                                                                        p.amount < 0 || (isClPaymentMethod(p.method) && clOpen)
                                                                             ? colors.red
                                                                             : colors.green,
                                                                 }}
@@ -5479,8 +5481,8 @@ export default function RequestsManager({
                                                                 </div>
                                                             </td>
                                                         </tr>
-                                                    ))
-                                                )}
+                                                    ));
+                                                })()}
                                             </tbody>
                                         </table>
                                     </div>
