@@ -35,8 +35,8 @@
     "semantic_hash": ""
   },
   "CRMProfileView.tsx": {
-    "mtime": 1784673490.305065,
-    "ast_hash": "65e987c587c622bf847dda60aeacff5e",
+    "mtime": 1784673072.0209923,
+    "ast_hash": "63ab733fff4360c4bf0361c536820f9d",
     "semantic_hash": ""
   },
   "CallDetailsModal.tsx": {
@@ -2230,8 +2230,8 @@
     "semantic_hash": ""
   },
   ".superpowers/sdd/progress.md": {
-    "mtime": 1784673353.7817304,
-    "ast_hash": "1c8d442665ac01a4233da7a94ec1d4ca",
+    "mtime": 1784672859.2191389,
+    "ast_hash": "d3504409b408b57f4020756fd4bcc49c",
     "semantic_hash": ""
   },
   "docs/superpowers/plans/2026-07-19-account-balance-billing.md": {
@@ -2532,16 +2532,6 @@
   ".superpowers/sdd/task-5-brief.md": {
     "mtime": 1784672859.2440555,
     "ast_hash": "5f1523b83f21448999ddb8af598c01c1",
-    "semantic_hash": ""
-  },
-  ".superpowers/sdd/task-5-report.md": {
-    "mtime": 1784673164.5855403,
-    "ast_hash": "9d458cdc3d83d5ffb83fdb1ab665c295",
-    "semantic_hash": ""
-  },
-  ".superpowers/sdd/task-6-brief.md": {
-    "mtime": 1784673353.792705,
-    "ast_hash": "b0ec8e2a0617d540d840e04cee5d9012",
     "semantic_hash": ""
   }
 }
