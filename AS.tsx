@@ -1690,7 +1690,6 @@ export default function AdvancedSalesDashboard() {
         setCrmState(defaultCrmState());
         if (!beginPropertyLoad(crmLoadGate.current, pid)) return;
         const pidStr = String(pid);
-        skipNextCrmPersist.current = true;
         const applyCrmPayload = (payload: any, accs: any[]) => {
             if (!isPropertyLoadCurrent(crmLoadGate.current, pidStr)) return;
             const rawPipeCount = PIPELINE_STAGE_KEYS.reduce((n, k) => {
@@ -1707,6 +1706,7 @@ export default function AdvancedSalesDashboard() {
                 pipeline: filterPipelineForProperty(merged.pipeline, pidStr, accs),
             };
             crmHydratedForPropertyId.current = pidStr;
+            skipNextCrmPersist.current = true;
             setCrmState(scoped);
             window.setTimeout(() => {
                 crmPersistEnabledRef.current = true;
@@ -1756,15 +1756,49 @@ export default function AdvancedSalesDashboard() {
         return () => {
             cancelled = true;
         };
-    }, [activeProperty?.id, fetchAccountsForProperty, crmLiveVersion]);
+    }, [activeProperty?.id, fetchAccountsForProperty]);
+
+    // Live refetch for CRM on WebSocket signal. Does NOT clear state first
+    // (no Calls KPI flicker) and sets skipNextCrmPersist so hydrate is not
+    // re-POSTed (prevents echo loop). Mirrors accounts live refetch above.
+    useEffect(() => {
+        if (crmLiveVersion === 0) return;
+        const pid = activeProperty?.id;
+        if (!beginPropertyLoad(crmLoadGate.current, pid)) return;
+        const pidStr = String(pid);
+        let cancelled = false;
+        fetch(apiUrl(`/api/crm-state?propertyId=${encodeURIComponent(pidStr)}`))
+            .then((res) => (res.ok ? res.json() : null))
+            .then(async (data) => {
+                if (cancelled || !isPropertyLoadCurrent(crmLoadGate.current, pidStr)) return;
+                const accs = await fetchAccountsForProperty(pidStr);
+                if (cancelled || !isPropertyLoadCurrent(crmLoadGate.current, pidStr)) return;
+                const rawPipeCount = PIPELINE_STAGE_KEYS.reduce((n, k) => {
+                    const arr = data?.pipeline?.[k];
+                    return n + (Array.isArray(arr) ? arr.length : 0);
+                }, 0);
+                crmServerCountsRef.current = {
+                    salesCalls: Array.isArray(data?.salesCalls) ? data.salesCalls.length : 0,
+                    pipeline: rawPipeCount,
+                };
+                const merged = mergeCrmStateFromApi(data || {});
+                const scoped: CrmStatePayload = {
+                    salesCalls: filterSalesCallsForProperty(merged.salesCalls, pidStr, accs),
+                    pipeline: filterPipelineForProperty(merged.pipeline, pidStr, accs),
+                };
+                crmHydratedForPropertyId.current = pidStr;
+                skipNextCrmPersist.current = true;
+                setCrmState(scoped);
+            })
+            .catch(() => {});
+        return () => {
+            cancelled = true;
+        };
+    }, [crmLiveVersion, activeProperty?.id, fetchAccountsForProperty]);
 
     useEffect(() => {
         const pid = activeProperty?.id;
         if (!pid) return;
-        if (skipNextCrmPersist.current) {
-            skipNextCrmPersist.current = false;
-            return;
-        }
         try {
             localStorage.setItem(
                 crmLocalStorageKey(String(pid)),
@@ -1775,7 +1809,15 @@ export default function AdvancedSalesDashboard() {
 
     useEffect(() => {
         const pid = activeProperty?.id;
-        if (!pid || crmHydratedForPropertyId.current !== String(pid)) return;
+        if (!pid) return;
+        // Consume hydrate skip before persistEnabled gate so a property-load
+        // apply (persist still false) cannot leave a stale skip that drops a
+        // later real user edit POST.
+        if (skipNextCrmPersist.current) {
+            skipNextCrmPersist.current = false;
+            return;
+        }
+        if (crmHydratedForPropertyId.current !== String(pid)) return;
         if (!crmPersistEnabledRef.current) return;
         const clientPipe = PIPELINE_STAGE_KEYS.reduce(
             (n, k) => n + (crmState.pipeline[k]?.length || 0),
