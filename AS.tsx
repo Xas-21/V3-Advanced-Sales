@@ -132,6 +132,10 @@ import { CURRENCY_OPTIONS, type CurrencyCode, formatCurrencyAmount, resolveCurre
 import { useCurrencyFormatters } from './useCurrencyFormatters';
 import { contactDisplayName } from './accountLeadMapping';
 import {
+    clearMergedAccountTombstones,
+    filterAccountsExcludingMergeTombstones,
+} from './accountMergeUtils';
+import {
     calculateAccFinancialsForRequest,
     calculateNights,
     printBeoDocument,
@@ -1309,6 +1313,7 @@ export default function AdvancedSalesDashboard() {
             if (cancelled || !isPropertyLoadCurrent(accountsLoadGate.current, pidStr)) return;
             skipNextAccountsSync.current = true;
             accountsHydratedForPropertyId.current = pidStr;
+            clearMergedAccountTombstones(pidStr);
             setAccounts(list);
         });
         return () => {
@@ -1328,7 +1333,10 @@ export default function AdvancedSalesDashboard() {
             fetch(apiUrl('/api/accounts/sync'), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ propertyId: String(pid), accounts }),
+                body: JSON.stringify({
+                    propertyId: String(pid),
+                    accounts: filterAccountsExcludingMergeTombstones(accounts, String(pid)),
+                }),
             }).catch((e) => console.warn('[AccountSync] Failed:', e));
         }, 300);
         return () => clearTimeout(t);
@@ -1347,7 +1355,7 @@ export default function AdvancedSalesDashboard() {
             if (cancelled || !isPropertyLoadCurrent(accountsLoadGate.current, pidStr)) return;
             skipNextAccountsSync.current = true;
             accountsHydratedForPropertyId.current = pidStr;
-            setAccounts(list);
+            setAccounts(filterAccountsExcludingMergeTombstones(list, pidStr));
         });
         return () => {
             cancelled = true;
