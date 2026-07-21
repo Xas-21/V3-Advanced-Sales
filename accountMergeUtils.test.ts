@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import {
     applyAccountMergeInMemory,
     clearMergedAccountTombstones,
@@ -9,6 +9,10 @@ import {
 } from './accountMergeUtils';
 
 describe('account merge CRM + requests', () => {
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
     it('repoints sales calls in legacy new bucket and requests by accountId', () => {
         const accounts = [
             { id: 'dest', name: 'Acme', propertyId: 'p1', contacts: [{ email: 'a@x.com', firstName: 'A' }] },
@@ -59,6 +63,7 @@ describe('account merge CRM + requests', () => {
     });
 
     it('persistAccountMergeToBackend POSTs salesCalls + pipeline from nextCrmLeads', async () => {
+        clearMergedAccountTombstones('p1');
         const posts: { url: string; body: any }[] = [];
         vi.stubGlobal(
             'fetch',
@@ -106,6 +111,8 @@ describe('account merge CRM + requests', () => {
         expect(Array.isArray(crmPost!.body.salesCalls)).toBe(true);
         expect(crmPost!.body.salesCalls[0]).toMatchObject({ accountId: 'dest', company: 'New' });
         expect(crmPost!.body.pipeline.waiting[0]).toMatchObject({ accountId: 'dest', company: 'New' });
+        expect(filterAccountsExcludingMergeTombstones([{ id: 'src' }], 'p1')).toEqual([]);
+        clearMergedAccountTombstones('p1');
     });
 });
 

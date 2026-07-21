@@ -1234,6 +1234,120 @@ export default function CRMProfileView({
                 </div>
                 )}
 
+                {profileTab === 'contacts' && (
+                    <div className="p-6 rounded-xl border" style={{ backgroundColor: colors.card, borderColor: colors.border }}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.textMuted }}>Contacts</h3>
+                            {!readOnly && (
+                                <div className="flex items-center gap-2">
+                                    {onScanContactCard && (
+                                        <>
+                                            <button
+                                                type="button"
+                                                onClick={handlePickContactScanFile}
+                                                className="px-2 py-1 rounded border text-[11px] font-bold flex items-center gap-1.5 hover:bg-white/10 transition-colors disabled:opacity-60"
+                                                style={{ borderColor: colors.border, color: colors.textMain }}
+                                                title="Scan or upload business card"
+                                                disabled={scanBusy}
+                                            >
+                                                <Camera size={13} />
+                                                {scanBusy ? 'Scanning...' : 'Scan / Upload'}
+                                            </button>
+                                            <input
+                                                ref={contactScanInputRef}
+                                                type="file"
+                                                accept="image/*"
+                                                capture="environment"
+                                                className="hidden"
+                                                onChange={handleContactScanFileChange}
+                                            />
+                                        </>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setEditingContactIdx(null);
+                                            setNewContactData({ firstName: '', lastName: '', position: '', email: '', phone: '', city: '', country: '' });
+                                            setIsContactModalOpen(true);
+                                        }}
+                                        className="p-1 rounded hover:bg-white/10 transition-colors"
+                                        title="Add Contact Person"
+                                        style={{ color: colors.primary }}
+                                    >
+                                        <Plus size={16} />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {contactList.length === 0 ? (
+                            <p className="text-sm italic py-6 text-center" style={{ color: colors.textMuted }}>
+                                No contact persons yet.
+                            </p>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead className="text-[10px] uppercase tracking-wider font-semibold" style={{ backgroundColor: colors.bg, color: colors.textMuted }}>
+                                        <tr>
+                                            <th className="px-4 py-3">Name</th>
+                                            <th className="px-4 py-3">Position</th>
+                                            <th className="px-4 py-3">Phone</th>
+                                            <th className="px-4 py-3">Email</th>
+                                            <th className="px-4 py-3">City</th>
+                                            {!readOnly && <th className="px-4 py-3 text-right">Actions</th>}
+                                        </tr>
+                                    </thead>
+                                    <tbody className="text-xs">
+                                        {contactList.map((contact: any, idx: number) => (
+                                            <tr key={idx} className="border-t" style={{ borderColor: colors.border }}>
+                                                <td className="px-4 py-3 font-bold" style={{ color: colors.textMain }}>{contact.name || '—'}</td>
+                                                <td className="px-4 py-3" style={{ color: colors.textMain }}>{contact.position || '—'}</td>
+                                                <td className="px-4 py-3" style={{ color: colors.textMain }}>{contact.phone || '—'}</td>
+                                                <td className="px-4 py-3 break-all" style={{ color: colors.textMain }}>{contact.email || '—'}</td>
+                                                <td className="px-4 py-3" style={{ color: colors.textMain }}>{contact.city || '—'}</td>
+                                                {!readOnly && (
+                                                    <td className="px-4 py-3">
+                                                        <div className="flex justify-end items-center gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const names = String(contact.name || '').split(' ');
+                                                                    setNewContactData({
+                                                                        firstName: names[0] || '',
+                                                                        lastName: names.slice(1).join(' ') || '',
+                                                                        position: contact.position || '',
+                                                                        email: contact.email || '',
+                                                                        phone: contact.phone || '',
+                                                                        city: contact.city || '',
+                                                                        country: contact.country || '',
+                                                                    });
+                                                                    setEditingContactIdx(idx);
+                                                                    setIsContactModalOpen(true);
+                                                                }}
+                                                                className="flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-bold border hover:bg-white/5 transition-colors"
+                                                                style={{ borderColor: colors.border, color: colors.textMain }}
+                                                            >
+                                                                <Edit size={12} /> Edit
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setDeleteConfirm({ isOpen: true, idx, name: contact.name })}
+                                                                className="flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-bold text-red-500 hover:bg-red-500/10 transition-colors"
+                                                            >
+                                                                <Trash2 size={12} /> Delete
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                )}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {profileTab === 'contracts' && (
                         <div className="p-6 rounded-xl border" style={{ backgroundColor: colors.card, borderColor: colors.border }}>
                             <div className="flex justify-between items-center mb-4">
@@ -1466,119 +1580,6 @@ export default function CRMProfileView({
                         </div>
                 )}
 
-                {profileTab === 'contacts' && (
-                    <div className="p-6 rounded-xl border" style={{ backgroundColor: colors.card, borderColor: colors.border }}>
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.textMuted }}>Contacts</h3>
-                            {!readOnly && (
-                                <div className="flex items-center gap-2">
-                                    {onScanContactCard && (
-                                        <>
-                                            <button
-                                                type="button"
-                                                onClick={handlePickContactScanFile}
-                                                className="px-2 py-1 rounded border text-[11px] font-bold flex items-center gap-1.5 hover:bg-white/10 transition-colors disabled:opacity-60"
-                                                style={{ borderColor: colors.border, color: colors.textMain }}
-                                                title="Scan or upload business card"
-                                                disabled={scanBusy}
-                                            >
-                                                <Camera size={13} />
-                                                {scanBusy ? 'Scanning...' : 'Scan / Upload'}
-                                            </button>
-                                            <input
-                                                ref={contactScanInputRef}
-                                                type="file"
-                                                accept="image/*"
-                                                capture="environment"
-                                                className="hidden"
-                                                onChange={handleContactScanFileChange}
-                                            />
-                                        </>
-                                    )}
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setEditingContactIdx(null);
-                                            setNewContactData({ firstName: '', lastName: '', position: '', email: '', phone: '', city: '', country: '' });
-                                            setIsContactModalOpen(true);
-                                        }}
-                                        className="p-1 rounded hover:bg-white/10 transition-colors"
-                                        title="Add Contact Person"
-                                        style={{ color: colors.primary }}
-                                    >
-                                        <Plus size={16} />
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-
-                        {contactList.length === 0 ? (
-                            <p className="text-sm italic py-6 text-center" style={{ color: colors.textMuted }}>
-                                No contact persons yet.
-                            </p>
-                        ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left border-collapse">
-                                    <thead className="text-[10px] uppercase tracking-wider font-semibold" style={{ backgroundColor: colors.bg, color: colors.textMuted }}>
-                                        <tr>
-                                            <th className="px-4 py-3">Name</th>
-                                            <th className="px-4 py-3">Position</th>
-                                            <th className="px-4 py-3">Phone</th>
-                                            <th className="px-4 py-3">Email</th>
-                                            <th className="px-4 py-3">City</th>
-                                            {!readOnly && <th className="px-4 py-3 text-right">Actions</th>}
-                                        </tr>
-                                    </thead>
-                                    <tbody className="text-xs">
-                                        {contactList.map((contact: any, idx: number) => (
-                                            <tr key={idx} className="border-t" style={{ borderColor: colors.border }}>
-                                                <td className="px-4 py-3 font-bold" style={{ color: colors.textMain }}>{contact.name || '—'}</td>
-                                                <td className="px-4 py-3" style={{ color: colors.textMain }}>{contact.position || '—'}</td>
-                                                <td className="px-4 py-3" style={{ color: colors.textMain }}>{contact.phone || '—'}</td>
-                                                <td className="px-4 py-3 break-all" style={{ color: colors.textMain }}>{contact.email || '—'}</td>
-                                                <td className="px-4 py-3" style={{ color: colors.textMain }}>{contact.city || '—'}</td>
-                                                {!readOnly && (
-                                                    <td className="px-4 py-3">
-                                                        <div className="flex justify-end items-center gap-2">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    const names = String(contact.name || '').split(' ');
-                                                                    setNewContactData({
-                                                                        firstName: names[0] || '',
-                                                                        lastName: names.slice(1).join(' ') || '',
-                                                                        position: contact.position || '',
-                                                                        email: contact.email || '',
-                                                                        phone: contact.phone || '',
-                                                                        city: contact.city || '',
-                                                                        country: contact.country || '',
-                                                                    });
-                                                                    setEditingContactIdx(idx);
-                                                                    setIsContactModalOpen(true);
-                                                                }}
-                                                                className="flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-bold border hover:bg-white/5 transition-colors"
-                                                                style={{ borderColor: colors.border, color: colors.textMain }}
-                                                            >
-                                                                <Edit size={12} /> Edit
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setDeleteConfirm({ isOpen: true, idx, name: contact.name })}
-                                                                className="flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-bold text-red-500 hover:bg-red-500/10 transition-colors"
-                                                            >
-                                                                <Trash2 size={12} /> Delete
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                )}
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </div>
-                )}
             </div>
 
             {isContactModalOpen && (
