@@ -1,7 +1,10 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import {
     applyAccountMergeInMemory,
+    clearMergedAccountTombstones,
+    filterAccountsExcludingMergeTombstones,
     persistAccountMergeToBackend,
+    rememberMergedAccountTombstone,
     repointCrmLeadsForAccountMerge,
 } from './accountMergeUtils';
 
@@ -103,5 +106,29 @@ describe('account merge CRM + requests', () => {
         expect(Array.isArray(crmPost!.body.salesCalls)).toBe(true);
         expect(crmPost!.body.salesCalls[0]).toMatchObject({ accountId: 'dest', company: 'New' });
         expect(crmPost!.body.pipeline.waiting[0]).toMatchObject({ accountId: 'dest', company: 'New' });
+    });
+});
+
+describe('merge tombstones', () => {
+    beforeEach(() => {
+        clearMergedAccountTombstones('p1');
+    });
+
+    it('filters tombstoned account ids for a property', () => {
+        rememberMergedAccountTombstone('p1', 'src');
+        const list = [
+            { id: 'dest', name: 'Acme' },
+            { id: 'src', name: 'Acme Dup' },
+        ];
+        expect(filterAccountsExcludingMergeTombstones(list, 'p1').map((a) => a.id)).toEqual(['dest']);
+        expect(filterAccountsExcludingMergeTombstones(list, 'p2').map((a) => a.id)).toEqual(['dest', 'src']);
+    });
+
+    it('clearMergedAccountTombstones restores visibility', () => {
+        rememberMergedAccountTombstone('p1', 'src');
+        clearMergedAccountTombstones('p1');
+        expect(
+            filterAccountsExcludingMergeTombstones([{ id: 'src' }], 'p1').map((a) => a.id)
+        ).toEqual(['src']);
     });
 });
