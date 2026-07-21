@@ -415,9 +415,20 @@ Feed Hub redesign + unify Hub Sales Performance with Settings are **Done** in No
 
 **Tracking:** [Advanced Sales Notion board](https://app.notion.com/p/39fdd599118880978cdbc1dab1df9619?v=39fdd5991188806a84bf000c9c200357) via Cursor Notion MCP (`plugin-notion-workspace-notion`).
 
-## Batch M — CRM Calls KPI WebSocket echo (NEW)
+## Batch N — Billing deposit delete permission + stuck CL colors (DONE)
 
-Planned at commit `72e3b70`, 2026-07-21. Focused debug+improve: main dashboard Calls card oscillating 329↔0 with repeating `POST/GET /api/crm-state` + `GET /api/accounts`.
+Planned at commit `87dcd8d`, 2026-07-21. Spec: `docs/superpowers/specs/2026-07-21-billing-deposit-delete-cl-colors-design.md`.
+
+**Canonical plan:** `plans/058-billing-deposit-delete-cl-colors.md`  
+**SDD twin:** `docs/superpowers/plans/2026-07-21-billing-deposit-delete-cl-colors.md`
+
+| Plan | Priority | Effort | Status |
+|------|----------|--------|--------|
+| 058-billing-deposit-delete-cl-colors | P0 | S–M | DONE (merged to local `main` @ `a6c53d5`) |
+
+## Batch M — CRM Calls KPI WebSocket echo (DONE)
+
+Planned at commit `dab0c5d`, 2026-07-21. Focused debug+improve: main dashboard Calls card oscillating 329↔0 with repeating `POST/GET /api/crm-state` + `GET /api/accounts`.
 
 ### Recommended execution order (Batch M)
 
@@ -425,7 +436,7 @@ Planned at commit `72e3b70`, 2026-07-21. Focused debug+improve: main dashboard C
 
 | Plan | Priority | Effort | Status |
 |------|----------|--------|--------|
-| 057-crm-state-websocket-echo-loop | P0 | S | TODO |
+| 057-crm-state-websocket-echo-loop | P0 | S | DONE (merged to local `main` @ `192cc0b`) |
 
 ### Batch M — considered and rejected (Ponytail)
 
@@ -446,4 +457,5 @@ Batch F: Messenger mute/pin/search, read receipts, invite links, media gallery �
 Batch G: react-router URLs + write IDOR + password/ops polish — tracked in Notion.  
 Batch H: account rate periods (catalog + new-request autofill) — tracked in Notion `[037]`.  
 Batch L: lint warn-ratchet restore after plan 055 (+45 → ≤2319).  
-Batch M: CRM persist ↔ WebSocket self-echo on main dashboard Calls KPI only — not CRM.tsx auto-call writers, not backend broadcast design.
+Batch M: CRM persist ↔ WebSocket self-echo on main dashboard Calls KPI only — not CRM.tsx auto-call writers, not backend broadcast design.  
+Batch N: Billing free-deposit delete permission + stuck CL list/payment-record colors.

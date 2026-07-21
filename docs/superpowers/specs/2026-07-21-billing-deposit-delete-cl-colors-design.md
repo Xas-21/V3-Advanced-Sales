@@ -1,7 +1,7 @@
 # Account Billing — Deposit Delete Permission + Stuck CL Colors
 
 **Date:** 2026-07-21  
-**Status:** Approved (awaiting spec file review → implementation plan)  
+**Status:** Implemented — merged to local `main` @ `a6c53d5`  
 **Author:** Brainstormed with user via superpowers:brainstorming
 
 ## 1. Problem / Goal

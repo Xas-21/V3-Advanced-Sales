@@ -1,7 +1,7 @@
 {
   "AS.tsx": {
-    "mtime": 1784657542.3576818,
-    "ast_hash": "c7fcceb1421e6ea0ef8e976f45bbe3c4",
+    "mtime": 1784654261.7142727,
+    "ast_hash": "7f9360b835dba90fa2919389ba8cbf01",
     "semantic_hash": ""
   },
   "AccountLinkedRequestsModal.tsx": {
@@ -15,8 +15,8 @@
     "semantic_hash": ""
   },
   "AccountsPage.tsx": {
-    "mtime": 1784662721.8501997,
-    "ast_hash": "f39d76b9ed5edc6e7d211fec06288c92",
+    "mtime": 1784654261.7142727,
+    "ast_hash": "afac0e770cee2a5cbdb9caa1516a89ba",
     "semantic_hash": ""
   },
   "AddAccountModal.tsx": {
@@ -105,8 +105,8 @@
     "semantic_hash": "42600414548e74d198bc89ebdfabd33a"
   },
   "RequestsManager.tsx": {
-    "mtime": 1784662956.6625872,
-    "ast_hash": "14a1e321a45433a4287e2eda7ab59231",
+    "mtime": 1784655238.9836671,
+    "ast_hash": "c5dd05114b3065c0e86289b9c4858d56",
     "semantic_hash": ""
   },
   "Settings.tsx": {
@@ -890,9 +890,9 @@
     "semantic_hash": "830a93a4828c2b191efd2418ea02d9d6"
   },
   "userPermissions.ts": {
-    "mtime": 1784662721.8583848,
-    "ast_hash": "7954d318a57b89b0ec128b508c5463f3",
-    "semantic_hash": ""
+    "mtime": 1783892591.0686326,
+    "ast_hash": "fea9522f8370a7730bf7a238af34d5fc",
+    "semantic_hash": "fea9522f8370a7730bf7a238af34d5fc"
   },
   "userProfileMetrics.ts": {
     "mtime": 1784497992.1789005,
@@ -1895,8 +1895,8 @@
     "semantic_hash": ""
   },
   "plans/README.md": {
-    "mtime": 1784662598.5159967,
-    "ast_hash": "486b07bf08064945f59b71278072a60e",
+    "mtime": 1784655319.803763,
+    "ast_hash": "ec21dd768ec92d7c715da9cc4b0bef5f",
     "semantic_hash": ""
   },
   "dashboardHub/hubMotion.ts": {
@@ -2275,8 +2275,8 @@
     "semantic_hash": ""
   },
   "AccountBillingPanel.tsx": {
-    "mtime": 1784662721.8481746,
-    "ast_hash": "0bb22d7cd4fcacf60359da6040631ad0",
+    "mtime": 1784654814.1105378,
+    "ast_hash": "6945f929ad7a2d249d930824f0d4e3d9",
     "semantic_hash": ""
   },
   "AlertsBell.tsx": {
@@ -2420,13 +2420,13 @@
     "semantic_hash": ""
   },
   "accountPaymentSync.test.ts": {
-    "mtime": 1784662721.856879,
-    "ast_hash": "0337f32a2de4c9fbbb0ad1b6479b0aea",
+    "mtime": 1784654261.7278185,
+    "ast_hash": "139bcdfa18315ed94995f6f1dd883b2a",
     "semantic_hash": ""
   },
   "accountPaymentSync.ts": {
-    "mtime": 1784662721.856879,
-    "ast_hash": "434e82fe466a1de3b8a07731f01e49e3",
+    "mtime": 1784655112.3759534,
+    "ast_hash": "5694628709178a649ab89576ec8295f0",
     "semantic_hash": ""
   },
   "SystemNoticeModal.tsx": {
@@ -2435,38 +2435,13 @@
     "semantic_hash": ""
   },
   "plans/056-lint-ratchet-plan055-delta.md": {
-    "mtime": 1784655555.7057202,
-    "ast_hash": "347da1f8ce7ef7bf6167ef3836afc259",
+    "mtime": 1784655320.6201677,
+    "ast_hash": "fb150165e14a88d73bb2d2d0e998b7a3",
     "semantic_hash": ""
   },
   "plans/057-crm-state-websocket-echo-loop.md": {
-    "mtime": 1784656760.992301,
-    "ast_hash": "b6889e844b42135ece77add5a35c1b71",
-    "semantic_hash": ""
-  },
-  "docs/superpowers/plans/2026-07-21-billing-deposit-delete-cl-colors.md": {
-    "mtime": 1784660788.1941664,
-    "ast_hash": "2629e647dc458f87d632b0f18cd45e64",
-    "semantic_hash": ""
-  },
-  "docs/superpowers/plans/2026-07-21-new-request-discard-draft.md": {
-    "mtime": 1784662720.155012,
-    "ast_hash": "6a2ebe59703f19a4ee82b3f64537634b",
-    "semantic_hash": ""
-  },
-  "docs/superpowers/specs/2026-07-21-billing-deposit-delete-cl-colors-design.md": {
-    "mtime": 1784662599.34938,
-    "ast_hash": "0eeab313c97698348f737716b4bb21f9",
-    "semantic_hash": ""
-  },
-  "docs/superpowers/specs/2026-07-21-new-request-discard-draft-design.md": {
-    "mtime": 1784662417.7818227,
-    "ast_hash": "b22b3a0f469d60f34ca16a293fe8cab4",
-    "semantic_hash": ""
-  },
-  "plans/058-billing-deposit-delete-cl-colors.md": {
-    "mtime": 1784660788.1941664,
-    "ast_hash": "2629e647dc458f87d632b0f18cd45e64",
+    "mtime": 1784654803.944899,
+    "ast_hash": "96d7f76f03b728193e7e21d928f5f08c",
     "semantic_hash": ""
   }
 }

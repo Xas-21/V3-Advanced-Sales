@@ -7,7 +7,7 @@
 > in `plans/README.md` — unless a reviewer dispatched you and told you they
 > maintain the index.
 >
-> **Drift check (run first)**: `git diff --stat 72e3b70..HEAD -- AS.tsx backend/data_access.py crmStateModel.ts`
+> **Drift check (run first)**: `git diff --stat dab0c5d..HEAD -- AS.tsx backend/data_access.py crmStateModel.ts`
 > If any in-scope file changed since this plan was written, compare the
 > "Current state" excerpts against the live code before proceeding; on a
 > mismatch, treat it as a STOP condition.
@@ -19,7 +19,9 @@
 - **Risk**: LOW
 - **Depends on**: none
 - **Category**: bug
-- **Planned at**: commit `72e3b70`, 2026-07-21
+- **Planned at**: commit `dab0c5d`, 2026-07-21
+- **Review note (2026-07-21)**: Re-checked after lint ratchet commit `dab0c5d`. `git diff --stat 72e3b70..dab0c5d -- AS.tsx backend/data_access.py crmStateModel.ts` is empty — plan excerpts and steps still match live code. Safe to execute.
+- **Execution**: DONE — merged to local `main` @ `192cc0b`. Reviewer **APPROVE**.
 
 ## Why this matters
 
