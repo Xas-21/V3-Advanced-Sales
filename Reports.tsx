@@ -18,7 +18,7 @@ import {
     Layers,
 } from 'lucide-react';
 import { apiUrl } from './backendApi';
-import { beginPropertyLoad, isPropertyLoadCurrent } from './propertyScopedLoad';
+import { usePropertyLoadGate } from './propertyScopedLoad';
 import { requestInProperty } from './userProfileMetrics';
 import { normalizeRequestTypeKey } from './requestTypeUtils';
 import { filterRequestsForAccount, computeAccountMetrics, flattenCrmLeads } from './accountProfileData';
@@ -300,25 +300,26 @@ export default function Reports({
         });
     }, [crmLeads, accounts, pid]);
 
+    const promotionsLoad = usePropertyLoadGate();
+
     useEffect(() => {
         let cancelled = false;
         const propertyId = String(pid || '').trim();
         setPromotionsData([]);
-        const gate = { current: '' };
-        if (!beginPropertyLoad(gate, propertyId)) return;
+        if (!promotionsLoad.begin(propertyId)) return;
         fetch(apiUrl(`/api/promotions?propertyId=${encodeURIComponent(propertyId)}`))
             .then((res) => (res.ok ? res.json() : []))
             .then((rows) => {
-                if (cancelled || !isPropertyLoadCurrent(gate, propertyId)) return;
+                if (cancelled || !promotionsLoad.isCurrent(propertyId)) return;
                 setPromotionsData(Array.isArray(rows) ? rows : []);
             })
             .catch(() => {
-                if (!cancelled && isPropertyLoadCurrent(gate, propertyId)) setPromotionsData([]);
+                if (!cancelled && promotionsLoad.isCurrent(propertyId)) setPromotionsData([]);
             });
         return () => {
             cancelled = true;
         };
-    }, [pid]);
+    }, [pid, promotionsLoad.begin, promotionsLoad.isCurrent]);
 
     const entities = [
         { id: 'Requests' as ReportEntity, icon: BedDouble, label: 'Requests' },

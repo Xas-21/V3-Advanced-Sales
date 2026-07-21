@@ -4,7 +4,7 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { apiUrl } from '../../backendApi';
-import { beginPropertyLoad, isPropertyLoadCurrent } from '../../propertyScopedLoad';
+import { usePropertyLoadGate } from '../../propertyScopedLoad';
 import {
     BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
     AreaChart, Area,
@@ -37,6 +37,7 @@ export default function DashboardHubRoomsPage({ colors }: { colors: any }) {
     const [range, setRange] = useState<RangeKey>('90');
     const pal = palette(colors);
     const { start, prevStart, prevEnd, days } = useMemo(() => rangeBounds(range), [range]);
+    const roomsLoad = usePropertyLoadGate();
 
     useEffect(() => {
         let cancelled = false;
@@ -46,8 +47,7 @@ export default function DashboardHubRoomsPage({ colors }: { colors: any }) {
             setLoading(false);
             return;
         }
-        const gate = { current: '' };
-        if (!beginPropertyLoad(gate, propertyId)) {
+        if (!roomsLoad.begin(propertyId)) {
             setLoading(false);
             return;
         }
@@ -55,17 +55,17 @@ export default function DashboardHubRoomsPage({ colors }: { colors: any }) {
             try {
                 const url = `/api/rooms?propertyId=${encodeURIComponent(propertyId)}`;
                 const r = await fetch(apiUrl(url), { credentials: 'include' }).then((x) => x.json());
-                if (cancelled || !isPropertyLoadCurrent(gate, propertyId)) return;
+                if (cancelled || !roomsLoad.isCurrent(propertyId)) return;
                 const list = Array.isArray(r) ? r : [];
                 setRooms(list.filter((x: any) => !x.propertyId || x.propertyId === propertyId));
             } catch {
-                if (!cancelled && isPropertyLoadCurrent(gate, propertyId)) setRooms([]);
+                if (!cancelled && roomsLoad.isCurrent(propertyId)) setRooms([]);
             } finally {
-                if (!cancelled && isPropertyLoadCurrent(gate, propertyId)) setLoading(false);
+                if (!cancelled && roomsLoad.isCurrent(propertyId)) setLoading(false);
             }
         })();
         return () => { cancelled = true; };
-    }, [propertyId]);
+    }, [propertyId, roomsLoad.begin, roomsLoad.isCurrent]);
 
     const totalRooms = useMemo(() => rooms.reduce((a, r) => a + num(r.count), 0), [rooms]);
     const totalCapacity = useMemo(() => rooms.reduce((a, r) => a + num(r.count) * num(r.capacity), 0), [rooms]);

@@ -3,7 +3,7 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { apiUrl } from '../../backendApi';
-import { beginPropertyLoad, isPropertyLoadCurrent } from '../../propertyScopedLoad';
+import { usePropertyLoadGate } from '../../propertyScopedLoad';
 import {
     ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip,
     CartesianGrid, Legend, AreaChart, Area, ComposedChart, Line,
@@ -34,24 +34,24 @@ export default function DashboardHubAgreementsPage({ colors }: { colors: any }) 
     const [templates, setTemplates] = useState<any[]>([]);
     const [range, setRange] = useState<RangeKey>('90');
     const { start } = useMemo(() => rangeBounds(range), [range]);
+    const templatesLoad = usePropertyLoadGate();
 
     useEffect(() => {
         let alive = true;
         setTemplates([]);
         if (!propertyId) return;
-        const gate = { current: '' };
-        if (!beginPropertyLoad(gate, propertyId)) return;
+        if (!templatesLoad.begin(propertyId)) return;
         (async () => {
             try {
                 const url = `/api/contracts/templates?propertyId=${encodeURIComponent(propertyId)}`;
                 const t = await fetch(apiUrl(url), { credentials: 'include' }).then((x) => x.json());
-                if (alive && isPropertyLoadCurrent(gate, propertyId)) setTemplates(Array.isArray(t) ? t : []);
+                if (alive && templatesLoad.isCurrent(propertyId)) setTemplates(Array.isArray(t) ? t : []);
             } catch {
-                if (alive && isPropertyLoadCurrent(gate, propertyId)) setTemplates([]);
+                if (alive && templatesLoad.isCurrent(propertyId)) setTemplates([]);
             }
         })();
         return () => { alive = false; };
-    }, [propertyId]);
+    }, [propertyId, templatesLoad.begin, templatesLoad.isCurrent]);
 
     const filtered = useMemo(() => requests.filter((r) => {
         if (range === 'all') return true;

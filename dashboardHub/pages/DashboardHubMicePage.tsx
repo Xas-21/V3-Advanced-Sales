@@ -4,7 +4,7 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { apiUrl } from '../../backendApi';
-import { beginPropertyLoad, isPropertyLoadCurrent } from '../../propertyScopedLoad';
+import { usePropertyLoadGate } from '../../propertyScopedLoad';
 import {
     BarChart, Bar, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
     Line, ComposedChart, Area,
@@ -35,6 +35,7 @@ export default function DashboardHubMicePage({ colors }: { colors: any }) {
     const [range, setRange] = useState<RangeKey>('90');
     const pal = palette(colors);
     const { start, prevStart, prevEnd } = useMemo(() => rangeBounds(range), [range]);
+    const venuesLoad = usePropertyLoadGate();
 
     useEffect(() => {
         let cancelled = false;
@@ -44,8 +45,7 @@ export default function DashboardHubMicePage({ colors }: { colors: any }) {
             setLoading(false);
             return;
         }
-        const gate = { current: '' };
-        if (!beginPropertyLoad(gate, propertyId)) {
+        if (!venuesLoad.begin(propertyId)) {
             setLoading(false);
             return;
         }
@@ -53,17 +53,17 @@ export default function DashboardHubMicePage({ colors }: { colors: any }) {
             try {
                 const url = `/api/venues?propertyId=${encodeURIComponent(propertyId)}`;
                 const v = await fetch(apiUrl(url), { credentials: 'include' }).then((x) => x.json());
-                if (cancelled || !isPropertyLoadCurrent(gate, propertyId)) return;
+                if (cancelled || !venuesLoad.isCurrent(propertyId)) return;
                 const list = Array.isArray(v) ? v : [];
                 setVenues(list.filter((x: any) => !x.propertyId || x.propertyId === propertyId));
             } catch {
-                if (!cancelled && isPropertyLoadCurrent(gate, propertyId)) setVenues([]);
+                if (!cancelled && venuesLoad.isCurrent(propertyId)) setVenues([]);
             } finally {
-                if (!cancelled && isPropertyLoadCurrent(gate, propertyId)) setLoading(false);
+                if (!cancelled && venuesLoad.isCurrent(propertyId)) setLoading(false);
             }
         })();
         return () => { cancelled = true; };
-    }, [propertyId]);
+    }, [propertyId, venuesLoad.begin, venuesLoad.isCurrent]);
 
     const allMice = useMemo(() => requests.filter(isMiceRequest), [requests]);
 
