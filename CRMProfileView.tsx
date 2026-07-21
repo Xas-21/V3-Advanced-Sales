@@ -154,11 +154,14 @@ export default function CRMProfileView({
     const [accountChartVsYear, setAccountChartVsYear] = useState(defaultChartVsYear);
     const [showAccountPerfDatePicker, setShowAccountPerfDatePicker] = useState(false);
     const [timelineShowAll, setTimelineShowAll] = useState(false);
+    type ProfileTab = 'overview' | 'contacts' | 'contracts' | 'timeline';
+    const [profileTab, setProfileTab] = useState<ProfileTab>('overview');
     const accountPerfPickerRef = useRef<HTMLDivElement>(null);
 
     const leadIdentityKey = String(lead?.accountId || lead?.id || lead?.company || '');
 
     useEffect(() => {
+        setProfileTab('overview');
         setAccountChartTab('Revenue');
         setTimelineShowAll(false);
         setShowAccountPerfDatePicker(false);
@@ -828,7 +831,36 @@ export default function CRMProfileView({
                 </div>
             )}
 
+            <div className="shrink-0 flex items-center gap-1 px-6 pt-4 pb-2">
+                {(
+                    [
+                        ['overview', 'Overview'],
+                        ['contacts', 'Contacts'],
+                        ['contracts', 'Contracts'],
+                        ['timeline', 'Activity Timeline'],
+                    ] as const
+                ).map(([id, label]) => {
+                    const active = profileTab === id;
+                    return (
+                        <button
+                            key={id}
+                            type="button"
+                            onClick={() => setProfileTab(id)}
+                            className="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
+                            style={{
+                                backgroundColor: active ? colors.primary : 'transparent',
+                                color: active ? '#000' : colors.textMain,
+                                border: `1px solid ${active ? colors.primary : colors.border}`,
+                            }}
+                        >
+                            {label}
+                        </button>
+                    );
+                })}
+            </div>
+
             <div className="flex-1 overflow-y-auto p-6">
+                {profileTab === 'overview' && (
                 <div className="space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="p-6 rounded-xl border flex flex-col" style={{ backgroundColor: colors.card, borderColor: colors.border }}>
@@ -1559,6 +1591,7 @@ export default function CRMProfileView({
                     </div>
                 </div>
                 </div>
+                )}
             </div>
 
             {isContactModalOpen && (
