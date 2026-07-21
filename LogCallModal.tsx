@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { X, Check, PhoneCall, Plus, Tag, Info } from 'lucide-react';
 import { getTagColor, setTagColorForName } from './tagColorSettings';
-import { isRequestDeadlineAutoCall } from './crmActivitiesUtils';
+import { isRequestDeadlineAutoCall, toLocalYmd } from './crmActivitiesUtils';
 
 export type LogCallInterest = 'waiting' | 'interested' | 'not_interested' | '';
 
 export type LogCallFormData = {
+    date: string;
     subject: string;
     description: string;
     nextStep: string;
@@ -19,6 +20,7 @@ export type LogCallFormData = {
 };
 
 const emptyForm = (lead?: any): LogCallFormData => ({
+    date: toLocalYmd(),
     subject: String(lead?.subject || '').trim(),
     description: '',
     nextStep: '',
@@ -70,6 +72,10 @@ export default function LogCallModal({ open, onClose, onSave, lead, theme, readO
         'No need to set a follow-up date. Change the deadline on the request to automatically create another call based on the new deadline.';
 
     const handleSave = () => {
+        if (!String(form.date || '').trim()) {
+            window.alert('Select a call date.');
+            return;
+        }
         if (!form.description.trim()) {
             window.alert('Description is required.');
             return;
@@ -125,6 +131,19 @@ export default function LogCallModal({ open, onClose, onSave, lead, theme, readO
                                 {lead.position ? ` · ${lead.position}` : ''}
                             </p>
                         ) : null}
+                    </div>
+                    <div>
+                        <label className="text-[10px] uppercase font-bold tracking-wider mb-1 block" style={{ color: colors.textMuted }}>
+                            Call date
+                        </label>
+                        <input
+                            type="date"
+                            value={form.date}
+                            onChange={(e) => setForm({ ...form, date: e.target.value })}
+                            disabled={readOnly}
+                            className="w-full px-3 py-2 rounded-lg border text-sm"
+                            style={{ backgroundColor: colors.bg, borderColor: colors.border, color: colors.textMain }}
+                        />
                     </div>
                     <div>
                         <label className="text-[10px] uppercase font-bold tracking-wider mb-1 block" style={{ color: colors.textMuted }}>

@@ -61,7 +61,7 @@ import {
     canLinkRequestPromotions,
 } from './userPermissions';
 import type { LogCallFormData } from './LogCallModal';
-import { appendCallDescription, getCallDueDate, isPermanentCallRecord, isRequestDeadlineAutoCall } from './crmActivitiesUtils';
+import { appendCallDescription, getCallDueDate, isPermanentCallRecord, isRequestDeadlineAutoCall, toLocalYmd } from './crmActivitiesUtils';
 import { deadlineKindForType, requestDeadlineAppliesToRequest } from './requestAlertEngine';
 import { getCallRule, resolveCallSettingsForProperty } from './propertyCallSettings';
 import type { SalesCallLogEntry } from './crmCallReportUtils';
@@ -2224,9 +2224,10 @@ export default function CRM({
         }
 
         const toNotInterested = targetStage === 'notInterested';
+        const callDate = String(data.date || '').trim().slice(0, 10) || toLocalYmd();
         const logEntry: SalesCallLogEntry = {
             id: `log-${Date.now()}`,
-            at: nowIso.slice(0, 10),
+            at: callDate,
             description: data.description.trim(),
             clientFeedback: String(data.clientFeedback || '').trim(),
             nextStep: String(data.nextStep || '').trim(),
@@ -2242,6 +2243,7 @@ export default function CRM({
             callLogs: [...priorCallLogs, logEntry],
             tags: data.tags && data.tags.length ? data.tags : lead.tags,
             interestStatus: String(data.interest || '').trim(),
+            lastContact: callDate,
             callLoggedAt: nowIso,
             activityCompleted: true,
             followUpRequired: toNotInterested ? false : (clearFollowUpOnSource ? false : lead.followUpRequired),
