@@ -13,37 +13,40 @@ import {
     splitBalanceAcrossRequests,
     transferBalanceBetweenRequests,
     undoLedgerLinkedToRequest,
+    type SyncRequest,
 } from './accountPaymentSync';
 import ConfirmDialog from './ConfirmDialog';
 import { formatCompactCurrency } from './formatCompactCurrency';
 import type { CurrencyCode } from './currency';
 import { resolvePaymentMethodsForProperty } from './propertyPaymentMethods';
 
+type BillingTheme = { colors: Record<string, string | undefined> };
+
 export type AccountBillingPanelProps = {
-    account: any;
-    linkedRequests: any[];
+    account: { id?: string; name?: string; company?: string };
+    linkedRequests: SyncRequest[];
     propertyId: string;
     currency: CurrencyCode;
-    theme: any;
+    theme: BillingTheme;
     canEdit: boolean;
     onClose: () => void;
     /** When a deposit clears CL debt for linked requests, mark them Paid (green). */
     onSettleClRequests?: (requestIds: string[]) => void | Promise<void>;
     /** Merge dual-written request payloads into sharedRequests. */
-    onRequestsPatched?: (requests: any[]) => void;
+    onRequestsPatched?: (requests: SyncRequest[]) => void;
     /** In-app system notice (success / error). */
     onNotice?: (title: string, message: string) => void;
 };
 
-function requestTotal(req: any): number {
+function requestTotal(req: SyncRequest): number {
     return parseFloat(String(req?.totalCost ?? req?.grandTotalWithTax ?? '0').replace(/,/g, '')) || 0;
 }
 
-function requestLabel(req: any): string {
+function requestLabel(req: SyncRequest): string {
     return String(req?.confirmationNo || req?.requestName || req?.id || 'Request').trim();
 }
 
-function requestLabelById(requests: any[], requestId?: string): string {
+function requestLabelById(requests: SyncRequest[], requestId?: string): string {
     if (!requestId) return '—';
     const hit = (requests || []).find((r) => String(r?.id) === String(requestId));
     return hit ? requestLabel(hit) : String(requestId);
@@ -53,10 +56,14 @@ function todayIso(): string {
     return new Date().toISOString().slice(0, 10);
 }
 
-function findLinkedRequest(requests: any[], requestId?: string | null): any | undefined {
+function findLinkedRequest(requests: SyncRequest[], requestId?: string | null): SyncRequest | undefined {
     const rid = String(requestId || '').trim();
     if (!rid) return undefined;
     return (requests || []).find((r) => String(r?.id) === rid);
+}
+
+function errMessage(e: unknown, fallback: string): string {
+    return e instanceof Error && e.message ? e.message : fallback;
 }
 
 export default function AccountBillingPanel({
@@ -156,7 +163,7 @@ export default function AccountBillingPanel({
         inline: string,
         noticeTitle: string,
         noticeMessage: string,
-        patched?: any[]
+        patched?: SyncRequest[]
     ) => {
         setError(inline);
         onNotice?.(noticeTitle, noticeMessage);
@@ -175,7 +182,7 @@ export default function AccountBillingPanel({
         const allocateTo = String(depositAllocateRequestId || '').trim();
         setBusy(true);
         setError('');
-        const patched: any[] = [];
+        const patched: SyncRequest[] = [];
         try {
             await postLedgerEntry({
                 type: 'deposit',
@@ -220,11 +227,11 @@ export default function AccountBillingPanel({
             const next = await fetchLedger(accountId, propertyId || undefined);
             setEntries(Array.isArray(next) ? next : []);
             await settleClearedClRequests(Array.isArray(next) ? next : []);
-        } catch (e: any) {
+        } catch (e: unknown) {
             await handlePartialFail(
                 'Deposit failed.',
                 'Deposit failed',
-                e?.message || 'Could not post deposit or allocate to request.',
+                errMessage(e, 'Could not post deposit or allocate to request.'),
                 patched
             );
         } finally {
@@ -236,7 +243,7 @@ export default function AccountBillingPanel({
         if (!canEdit) return;
         setBusy(true);
         setError('');
-        const patched: any[] = [];
+        const patched: SyncRequest[] = [];
         try {
             if (entry.requestId) {
                 const linked = findLinkedRequest(linkedRequests, entry.requestId);
@@ -263,11 +270,11 @@ export default function AccountBillingPanel({
                 onNotice?.('Undone', 'Ledger entry removed.');
             }
             await reload();
-        } catch (e: any) {
+        } catch (e: unknown) {
             await handlePartialFail(
                 'Delete failed.',
                 'Undo failed',
-                e?.message || 'Could not undo ledger entry.',
+                errMessage(e, 'Could not undo ledger entry.'),
                 patched
             );
         } finally {
@@ -294,7 +301,7 @@ export default function AccountBillingPanel({
         }
         setBusy(true);
         setError('');
-        const patched: any[] = [];
+        const patched: SyncRequest[] = [];
         try {
             const { fromRequest, toRequest } = await transferBalanceBetweenRequests({
                 entry,
@@ -309,11 +316,11 @@ export default function AccountBillingPanel({
                 `Allocation moved from ${requestLabel(fromReq)} to ${requestLabel(toReq)}.`
             );
             await reload();
-        } catch (e: any) {
+        } catch (e: unknown) {
             await handlePartialFail(
                 'Transfer failed.',
                 'Move failed',
-                e?.message || 'Could not move allocation between requests.',
+                errMessage(e, 'Could not move allocation between requests.'),
                 patched
             );
         } finally {
@@ -347,7 +354,7 @@ export default function AccountBillingPanel({
         const fromReq = findLinkedRequest(linkedRequests, entry.requestId);
         setBusy(true);
         setError('');
-        const patched: any[] = [];
+        const patched: SyncRequest[] = [];
         try {
             const result = await splitBalanceAcrossRequests({
                 entry,
@@ -370,11 +377,11 @@ export default function AccountBillingPanel({
                 `${formatCompactCurrency(splitAmt, currency)} allocated to ${requestLabel(toReq)}.`
             );
             await reload();
-        } catch (e: any) {
+        } catch (e: unknown) {
             await handlePartialFail(
                 'Split failed.',
                 'Split failed',
-                e?.message || 'Could not split allocation across requests.',
+                errMessage(e, 'Could not split allocation across requests.'),
                 patched
             );
         } finally {

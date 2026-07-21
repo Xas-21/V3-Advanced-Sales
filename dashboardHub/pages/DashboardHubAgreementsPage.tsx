@@ -34,24 +34,24 @@ export default function DashboardHubAgreementsPage({ colors }: { colors: any }) 
     const [templates, setTemplates] = useState<any[]>([]);
     const [range, setRange] = useState<RangeKey>('90');
     const { start } = useMemo(() => rangeBounds(range), [range]);
-    const templatesLoad = usePropertyLoadGate();
+    const { begin: beginTemplatesLoad, isCurrent: isTemplatesLoadCurrent } = usePropertyLoadGate();
 
     useEffect(() => {
         let alive = true;
         setTemplates([]);
         if (!propertyId) return;
-        if (!templatesLoad.begin(propertyId)) return;
+        if (!beginTemplatesLoad(propertyId)) return;
         (async () => {
             try {
                 const url = `/api/contracts/templates?propertyId=${encodeURIComponent(propertyId)}`;
                 const t = await fetch(apiUrl(url), { credentials: 'include' }).then((x) => x.json());
-                if (alive && templatesLoad.isCurrent(propertyId)) setTemplates(Array.isArray(t) ? t : []);
+                if (alive && isTemplatesLoadCurrent(propertyId)) setTemplates(Array.isArray(t) ? t : []);
             } catch {
-                if (alive && templatesLoad.isCurrent(propertyId)) setTemplates([]);
+                if (alive && isTemplatesLoadCurrent(propertyId)) setTemplates([]);
             }
         })();
         return () => { alive = false; };
-    }, [propertyId, templatesLoad.begin, templatesLoad.isCurrent]);
+    }, [propertyId, beginTemplatesLoad, isTemplatesLoadCurrent]);
 
     const filtered = useMemo(() => requests.filter((r) => {
         if (range === 'all') return true;

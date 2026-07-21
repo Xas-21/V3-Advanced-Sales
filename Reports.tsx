@@ -300,26 +300,26 @@ export default function Reports({
         });
     }, [crmLeads, accounts, pid]);
 
-    const promotionsLoad = usePropertyLoadGate();
+    const { begin: beginPromotionsLoad, isCurrent: isPromotionsLoadCurrent } = usePropertyLoadGate();
 
     useEffect(() => {
         let cancelled = false;
         const propertyId = String(pid || '').trim();
         setPromotionsData([]);
-        if (!promotionsLoad.begin(propertyId)) return;
+        if (!beginPromotionsLoad(propertyId)) return;
         fetch(apiUrl(`/api/promotions?propertyId=${encodeURIComponent(propertyId)}`))
             .then((res) => (res.ok ? res.json() : []))
             .then((rows) => {
-                if (cancelled || !promotionsLoad.isCurrent(propertyId)) return;
+                if (cancelled || !isPromotionsLoadCurrent(propertyId)) return;
                 setPromotionsData(Array.isArray(rows) ? rows : []);
             })
             .catch(() => {
-                if (!cancelled && promotionsLoad.isCurrent(propertyId)) setPromotionsData([]);
+                if (!cancelled && isPromotionsLoadCurrent(propertyId)) setPromotionsData([]);
             });
         return () => {
             cancelled = true;
         };
-    }, [pid, promotionsLoad.begin, promotionsLoad.isCurrent]);
+    }, [pid, beginPromotionsLoad, isPromotionsLoadCurrent]);
 
     const entities = [
         { id: 'Requests' as ReportEntity, icon: BedDouble, label: 'Requests' },

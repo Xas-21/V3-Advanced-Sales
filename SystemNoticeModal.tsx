@@ -1,10 +1,14 @@
 import React from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 
+export type SystemNoticeTheme = {
+    colors?: Record<string, string | undefined>;
+};
+
 export type SystemNoticeModalProps = {
     title: string;
     message: string;
-    theme: any;
+    theme: SystemNoticeTheme;
     onClose: () => void;
 };
 

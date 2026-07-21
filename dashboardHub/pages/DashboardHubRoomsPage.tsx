@@ -37,7 +37,7 @@ export default function DashboardHubRoomsPage({ colors }: { colors: any }) {
     const [range, setRange] = useState<RangeKey>('90');
     const pal = palette(colors);
     const { start, prevStart, prevEnd, days } = useMemo(() => rangeBounds(range), [range]);
-    const roomsLoad = usePropertyLoadGate();
+    const { begin: beginRoomsLoad, isCurrent: isRoomsLoadCurrent } = usePropertyLoadGate();
 
     useEffect(() => {
         let cancelled = false;
@@ -47,7 +47,7 @@ export default function DashboardHubRoomsPage({ colors }: { colors: any }) {
             setLoading(false);
             return;
         }
-        if (!roomsLoad.begin(propertyId)) {
+        if (!beginRoomsLoad(propertyId)) {
             setLoading(false);
             return;
         }
@@ -55,17 +55,17 @@ export default function DashboardHubRoomsPage({ colors }: { colors: any }) {
             try {
                 const url = `/api/rooms?propertyId=${encodeURIComponent(propertyId)}`;
                 const r = await fetch(apiUrl(url), { credentials: 'include' }).then((x) => x.json());
-                if (cancelled || !roomsLoad.isCurrent(propertyId)) return;
+                if (cancelled || !isRoomsLoadCurrent(propertyId)) return;
                 const list = Array.isArray(r) ? r : [];
                 setRooms(list.filter((x: any) => !x.propertyId || x.propertyId === propertyId));
             } catch {
-                if (!cancelled && roomsLoad.isCurrent(propertyId)) setRooms([]);
+                if (!cancelled && isRoomsLoadCurrent(propertyId)) setRooms([]);
             } finally {
-                if (!cancelled && roomsLoad.isCurrent(propertyId)) setLoading(false);
+                if (!cancelled && isRoomsLoadCurrent(propertyId)) setLoading(false);
             }
         })();
         return () => { cancelled = true; };
-    }, [propertyId, roomsLoad.begin, roomsLoad.isCurrent]);
+    }, [propertyId, beginRoomsLoad, isRoomsLoadCurrent]);
 
     const totalRooms = useMemo(() => rooms.reduce((a, r) => a + num(r.count), 0), [rooms]);
     const totalCapacity = useMemo(() => rooms.reduce((a, r) => a + num(r.count) * num(r.capacity), 0), [rooms]);

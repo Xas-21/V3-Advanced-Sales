@@ -82,7 +82,7 @@ import {
     type LedgerEntry,
     type LedgerType,
 } from './accountBalance';
-import { reverseBalancePaymentOnRequest } from './accountPaymentSync';
+import { reverseBalancePaymentOnRequest, type SyncPayment, type SyncRequest } from './accountPaymentSync';
 import {
     clearNewRequestDraft,
     readNewRequestDraft,
@@ -845,8 +845,8 @@ export default function RequestsManager({
     const [pendingDeleteRequest, setPendingDeleteRequest] = useState<any | null>(null);
     const [pendingPaymentRemove, setPendingPaymentRemove] = useState<{
         source: 'form' | 'detail';
-        payment: any;
-        request?: any;
+        payment: SyncPayment;
+        request?: SyncRequest;
     } | null>(null);
     const [cancelReason, setCancelReason] = useState('Price too high');
     const [cxlReasons, setCxlReasons] = useState<string[]>(DEFAULT_CXL_REASONS);
@@ -1011,7 +1011,7 @@ export default function RequestsManager({
     }, []);
 
     const mergePatchedRequest = useCallback(
-        (patched: any) => {
+        (patched: SyncRequest) => {
             if (!patched?.id) return;
             const id = String(patched.id);
             setRequests((prev) =>
@@ -2465,8 +2465,9 @@ export default function RequestsManager({
                     });
                     setAccForm({
                         ...accForm,
-                        ...patched,
                         payments: patched.payments || [],
+                        paymentStatus: String(patched.paymentStatus || accForm.paymentStatus || 'Unpaid'),
+                        collectLater: !!patched.collectLater,
                         logs: [
                             ...(accForm.logs || []),
                             {
@@ -2482,10 +2483,10 @@ export default function RequestsManager({
                         'Payment removed',
                         'Balance restored on the linked account.'
                     );
-                } catch (e: any) {
+                } catch (e: unknown) {
                     showSystemNotice(
                         'Remove failed',
-                        e?.message || 'Could not reverse the Balance/CL payment on the ledger.'
+                        (e instanceof Error && e.message ? e.message : 'Could not reverse the Balance/CL payment on the ledger.')
                     );
                 }
                 return;
@@ -2537,10 +2538,10 @@ export default function RequestsManager({
                     'Payment removed',
                     'Balance restored on the linked account.'
                 );
-            } catch (e: any) {
+            } catch (e: unknown) {
                 showSystemNotice(
                     'Remove failed',
-                    e?.message || 'Could not reverse the Balance/CL payment on the ledger.'
+                    (e instanceof Error && e.message ? e.message : 'Could not reverse the Balance/CL payment on the ledger.')
                 );
             }
             return;
@@ -2553,7 +2554,7 @@ export default function RequestsManager({
             if (paymentsMeetOrExceedTotal(paidSum, totalCost)) paymentStatus = 'Paid';
             else if (paidSum > 0) paymentStatus = 'Deposit';
         }
-        await updateRequest(req.id, {
+        await updateRequest(String(req.id), {
             payments: newPayments,
             paidAmount: paidSum.toFixed(2),
             paymentStatus,
@@ -3113,7 +3114,7 @@ export default function RequestsManager({
             setBalanceMode('full');
         };
 
-        const offsetPayment = async (payment: any) => {
+        const offsetPayment = async (payment: SyncPayment) => {
             const amt = Number(payment.amount);
             if (!(amt > 0)) return;
             const netPaid = sumPaymentAmounts(accForm.payments);
@@ -3151,8 +3152,9 @@ export default function RequestsManager({
                     });
                     setAccForm({
                         ...accForm,
-                        ...patched,
                         payments: patched.payments || accForm.payments,
+                        paymentStatus: String(patched.paymentStatus || accForm.paymentStatus || 'Unpaid'),
+                        collectLater: !!patched.collectLater,
                         logs: [
                             ...accForm.logs,
                             {
@@ -3167,10 +3169,10 @@ export default function RequestsManager({
                         'Payment offset',
                         'Balance restored on the linked account.'
                     );
-                } catch (e: any) {
+                } catch (e: unknown) {
                     showSystemNotice(
                         'Offset failed',
-                        e?.message || 'Could not reverse the Balance/CL payment on the ledger.'
+                        (e instanceof Error && e.message ? e.message : 'Could not reverse the Balance/CL payment on the ledger.')
                     );
                 }
                 return;
@@ -3197,7 +3199,7 @@ export default function RequestsManager({
             });
         };
 
-        const removePaymentLine = (payment: any) => {
+        const removePaymentLine = (payment: SyncPayment) => {
             if (!payment?.id) return;
             setPendingPaymentRemove({ source: 'form', payment });
         };
@@ -3259,8 +3261,8 @@ export default function RequestsManager({
                         },
                     },
                 }));
-            } catch (e: any) {
-                showSystemNotice('Upload failed', e?.message || 'Failed to upload file.');
+            } catch (e: unknown) {
+                showSystemNotice('Upload failed', e instanceof Error && e.message ? e.message : 'Failed to upload file.');
             } finally {
                 setUploadingDocs((prev) => ({ ...prev, [docId]: false }));
             }
@@ -5127,7 +5129,7 @@ export default function RequestsManager({
 
                         {(function renderDetailFinancials() {
                             const remainingBalance = Math.max(0, (fin.grandTotalWithTax || 0) - (fin.paidAmount || 0));
-                            const handleOffsetPayment = async (payment: any) => {
+                            const handleOffsetPayment = async (payment: SyncPayment) => {
                                 const amt = Number(payment.amount);
                                 if (!(amt > 0)) return;
                                 const netPaid = sumPaymentAmounts(request.payments || []);
@@ -5165,10 +5167,10 @@ export default function RequestsManager({
                                             'Payment offset',
                                             'Balance restored on the linked account.'
                                         );
-                                    } catch (e: any) {
+                                    } catch (e: unknown) {
                                         showSystemNotice(
                                             'Offset failed',
-                                            e?.message || 'Could not reverse the Balance/CL payment on the ledger.'
+                                            (e instanceof Error && e.message ? e.message : 'Could not reverse the Balance/CL payment on the ledger.')
                                         );
                                     }
                                     return;
@@ -5191,7 +5193,7 @@ export default function RequestsManager({
                                     setSelectedRequest((prev: any) => prev ? { ...prev, payments: newPayments, paidAmount: paidSum.toFixed(2), paymentStatus } : null);
                                 }
                             };
-                            const handleDeletePayment = async (payment: any) => {
+                            const handleDeletePayment = async (payment: SyncPayment) => {
                                 if (!payment?.id) return;
                                 setPendingPaymentRemove({ source: 'detail', payment, request });
                             };

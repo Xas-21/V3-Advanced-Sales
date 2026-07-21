@@ -360,6 +360,16 @@ Do Batch I (038–041) first. Then, roughly by leverage:
 | Source-map leak in prod | Not a finding — Vite `build.sourcemap` defaults to false. |
 | Rewrite auth / session system | Rejected — bcrypt-12 + HMAC signed revocable sessions are already production-grade. |
 
+## Batch L — Lint ratchet restore after plan 055 (DONE)
+
+Planned at commit `72e3b70`, 2026-07-21. CI frontend failed: 2364 warnings vs `--max-warnings 2319` (+45 from plan 055). Copilot suggested fixing all 2364 — rejected; only the delta.
+
+**Canonical plan:** `plans/056-lint-ratchet-plan055-delta.md`
+
+| Plan | Priority | Effort | Status |
+|------|----------|--------|--------|
+| 056-lint-ratchet-plan055-delta | P0 | S | DONE |
+
 ## Batch K — Property refresh (site-wide) + billing payment sync (DONE)
 
 Planned at commit `805923b`, 2026-07-20 via `/improve` + superpowers writing-plans + Ponytail. User-reported: refresh shows other properties’ data; Billing allocate/move/split/undo desync from `request.payments`; offset Balance payment does not restore ledger; browser `alert` on Balance guard.
@@ -405,6 +415,26 @@ Feed Hub redesign + unify Hub Sales Performance with Settings are **Done** in No
 
 **Tracking:** [Advanced Sales Notion board](https://app.notion.com/p/39fdd599118880978cdbc1dab1df9619?v=39fdd5991188806a84bf000c9c200357) via Cursor Notion MCP (`plugin-notion-workspace-notion`).
 
+## Batch M — CRM Calls KPI WebSocket echo (NEW)
+
+Planned at commit `72e3b70`, 2026-07-21. Focused debug+improve: main dashboard Calls card oscillating 329↔0 with repeating `POST/GET /api/crm-state` + `GET /api/accounts`.
+
+### Recommended execution order (Batch M)
+
+1. `057-crm-state-websocket-echo-loop.md` — stop self-echo + KPI flicker (S) **P0**
+
+| Plan | Priority | Effort | Status |
+|------|----------|--------|--------|
+| 057-crm-state-websocket-echo-loop | P0 | S | TODO |
+
+### Batch M — considered and rejected (Ponytail)
+
+| Idea | Why |
+|------|-----|
+| Disable `crm_state` WS broadcast on backend | Masks client bug; breaks legitimate multi-client refresh |
+| Debounce POST longer | Only slows the ~3s cycle; does not break the loop |
+| Fix Calls KPI math separately | Count is correct; 0 comes from clearing CRM on live reload |
+
 ## Audit coverage note
 
 Batch A: performance, security (authz), Docker DX.  
@@ -414,4 +444,6 @@ Batch D: Dashboard Hub analytics tabs (10) + shared chrome — not Feed, not AS 
 Batch E: Messenger group info / profile / admins — not calls, not Hub.  
 Batch F: Messenger mute/pin/search, read receipts, invite links, media gallery — not VoIP.  
 Batch G: react-router URLs + write IDOR + password/ops polish — tracked in Notion.  
-Batch H: account rate periods (catalog + new-request autofill) — tracked in Notion `[037]`.
+Batch H: account rate periods (catalog + new-request autofill) — tracked in Notion `[037]`.  
+Batch L: lint warn-ratchet restore after plan 055 (+45 → ≤2319).  
+Batch M: CRM persist ↔ WebSocket self-echo on main dashboard Calls KPI only — not CRM.tsx auto-call writers, not backend broadcast design.

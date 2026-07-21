@@ -13,6 +13,20 @@ export type SyncPayment = {
   ledgerEntryId?: string;
 };
 
+/** Minimal request shape for dual-write helpers (keeps callers loosely typed). */
+export type SyncRequest = {
+  id?: string;
+  payments?: SyncPayment[];
+  totalCost?: string | number;
+  grandTotalWithTax?: string | number;
+  paidAmount?: number;
+  paymentStatus?: string;
+  collectLater?: boolean;
+  confirmationNo?: string;
+  requestName?: string;
+  [key: string]: unknown;
+};
+
 const AMOUNT_EPS = 0.0001;
 
 const num = (v: unknown): number => {
@@ -135,8 +149,8 @@ export function recomputePaymentStatus(
   return { paidAmount, paymentStatus };
 }
 
-async function persistRequest(request: any): Promise<any> {
-  const payload = { ...request, _update: true };
+async function persistRequest(request: SyncRequest): Promise<SyncRequest> {
+  const payload: SyncRequest = { ...request, _update: true };
   const res = await fetch(apiUrl('/api/requests'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -147,13 +161,17 @@ async function persistRequest(request: any): Promise<any> {
   return payload;
 }
 
-function requestTotalOf(request: any): number {
+function requestTotalOf(request: SyncRequest): number {
   return (
     parseFloat(String(request?.totalCost ?? request?.grandTotalWithTax ?? '0').replace(/,/g, '')) || 0
   );
 }
 
-function applyPaymentsToRequest(request: any, payments: SyncPayment[], collectLater?: boolean): any {
+function applyPaymentsToRequest(
+  request: SyncRequest,
+  payments: SyncPayment[],
+  collectLater?: boolean
+): SyncRequest {
   const { paidAmount, paymentStatus, collectLater: cl } = recomputePaymentStatus(
     payments,
     requestTotalOf(request),
@@ -171,12 +189,12 @@ function applyPaymentsToRequest(request: any, payments: SyncPayment[], collectLa
 export async function allocateBalanceToRequest(args: {
   accountId: string;
   propertyId: string;
-  request: any;
+  request: SyncRequest;
   amount: number;
   date?: string;
   note?: string;
   user?: string;
-}): Promise<{ request: any; ledgerEntry: LedgerEntry }> {
+}): Promise<{ request: SyncRequest; ledgerEntry: LedgerEntry }> {
   const amount = Math.abs(num(args.amount));
   if (!(amount > 0)) throw new Error('allocate amount must be > 0');
   const date = args.date || todayIso();
@@ -208,10 +226,10 @@ export async function allocateBalanceToRequest(args: {
 
 export async function transferBalanceBetweenRequests(args: {
   entry: LedgerEntry;
-  fromRequest: any;
-  toRequest: any;
+  fromRequest: SyncRequest;
+  toRequest: SyncRequest;
   propertyId: string;
-}): Promise<{ fromRequest: any; toRequest: any; ledgerEntry: LedgerEntry }> {
+}): Promise<{ fromRequest: SyncRequest; toRequest: SyncRequest; ledgerEntry: LedgerEntry }> {
   const entry = args.entry;
   const abs = Math.abs(num(entry.amount));
   const ledgerEntry = await transferAllocation(entry.id, String(args.toRequest?.id || ''));
@@ -250,12 +268,12 @@ export async function transferBalanceBetweenRequests(args: {
 
 export async function splitBalanceAcrossRequests(args: {
   entry: LedgerEntry;
-  fromRequest?: any;
-  toRequest: any;
+  fromRequest?: SyncRequest;
+  toRequest: SyncRequest;
   splitAmount: number;
   accountId: string;
   propertyId: string;
-}): Promise<{ fromRequest?: any; toRequest: any; splitLedgerEntry: LedgerEntry }> {
+}): Promise<{ fromRequest?: SyncRequest; toRequest: SyncRequest; splitLedgerEntry: LedgerEntry }> {
   const entry = args.entry;
   const splitAmt = clampSplitAmount(entry.amount, args.splitAmount);
   if (!(splitAmt > 0)) throw new Error('invalid split amount');
@@ -323,9 +341,9 @@ export async function splitBalanceAcrossRequests(args: {
 
 export async function undoLedgerLinkedToRequest(args: {
   entry: LedgerEntry;
-  request: any;
+  request: SyncRequest;
   propertyId: string;
-}): Promise<{ request: any }> {
+}): Promise<{ request: SyncRequest }> {
   const entry = args.entry;
   const abs = Math.abs(num(entry.amount));
   await deleteLedgerEntry(entry.id, args.propertyId || undefined);
@@ -343,12 +361,12 @@ export async function undoLedgerLinkedToRequest(args: {
  * Prefer delete matching ledgerEntryId; else compensating deposit/refund post.
  */
 export async function reverseBalancePaymentOnRequest(args: {
-  request: any;
+  request: SyncRequest;
   payment: SyncPayment;
   accountId: string;
   propertyId: string;
   mode?: 'offset' | 'delete';
-}): Promise<{ request: any }> {
+}): Promise<{ request: SyncRequest }> {
   const payment = args.payment;
   const abs = Math.abs(num(payment.amount));
   const method = String(payment.method || '').trim();

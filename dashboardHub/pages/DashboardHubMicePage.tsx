@@ -35,7 +35,7 @@ export default function DashboardHubMicePage({ colors }: { colors: any }) {
     const [range, setRange] = useState<RangeKey>('90');
     const pal = palette(colors);
     const { start, prevStart, prevEnd } = useMemo(() => rangeBounds(range), [range]);
-    const venuesLoad = usePropertyLoadGate();
+    const { begin: beginVenuesLoad, isCurrent: isVenuesLoadCurrent } = usePropertyLoadGate();
 
     useEffect(() => {
         let cancelled = false;
@@ -45,7 +45,7 @@ export default function DashboardHubMicePage({ colors }: { colors: any }) {
             setLoading(false);
             return;
         }
-        if (!venuesLoad.begin(propertyId)) {
+        if (!beginVenuesLoad(propertyId)) {
             setLoading(false);
             return;
         }
@@ -53,17 +53,17 @@ export default function DashboardHubMicePage({ colors }: { colors: any }) {
             try {
                 const url = `/api/venues?propertyId=${encodeURIComponent(propertyId)}`;
                 const v = await fetch(apiUrl(url), { credentials: 'include' }).then((x) => x.json());
-                if (cancelled || !venuesLoad.isCurrent(propertyId)) return;
+                if (cancelled || !isVenuesLoadCurrent(propertyId)) return;
                 const list = Array.isArray(v) ? v : [];
                 setVenues(list.filter((x: any) => !x.propertyId || x.propertyId === propertyId));
             } catch {
-                if (!cancelled && venuesLoad.isCurrent(propertyId)) setVenues([]);
+                if (!cancelled && isVenuesLoadCurrent(propertyId)) setVenues([]);
             } finally {
-                if (!cancelled && venuesLoad.isCurrent(propertyId)) setLoading(false);
+                if (!cancelled && isVenuesLoadCurrent(propertyId)) setLoading(false);
             }
         })();
         return () => { cancelled = true; };
-    }, [propertyId, venuesLoad.begin, venuesLoad.isCurrent]);
+    }, [propertyId, beginVenuesLoad, isVenuesLoadCurrent]);
 
     const allMice = useMemo(() => requests.filter(isMiceRequest), [requests]);
 
