@@ -1,5 +1,6 @@
 import { contactDisplayName } from './accountLeadMapping';
 import { apiUrl } from './backendApi';
+import { migrateLegacyLeads } from './crmStateModel';
 
 function contactIdentityKey(c: any, fallbackIdx: number): string {
     const e = String(c?.email || '').trim().toLowerCase();
@@ -288,10 +289,15 @@ export async function persistAccountMergeToBackend(opts: {
         }
     }
 
+    const migratedCrm = migrateLegacyLeads(nextCrmLeads);
     const crmRes = await fetch(apiUrl('/api/crm-state'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ propertyId: pid, leads: nextCrmLeads }),
+        body: JSON.stringify({
+            propertyId: pid,
+            salesCalls: migratedCrm.salesCalls,
+            pipeline: migratedCrm.pipeline,
+        }),
     });
     if (!crmRes.ok) {
         const t = await crmRes.text().catch(() => '');
