@@ -39,3 +39,11 @@ export function clearNewRequestDraft(): void {
         /* ignore */
     }
 }
+
+export function confirmDiscardNewRequestDraft(
+    confirmFn: (message: string) => boolean = (message) => window.confirm(message),
+): boolean {
+    if (!confirmFn('Discard this draft?')) return false;
+    clearNewRequestDraft();
+    return true;
+}

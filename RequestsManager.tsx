@@ -85,6 +85,7 @@ import {
 import { reverseBalancePaymentOnRequest, type SyncPayment, type SyncRequest } from './accountPaymentSync';
 import {
     clearNewRequestDraft,
+    confirmDiscardNewRequestDraft,
     readNewRequestDraft,
     writeNewRequestDraft,
 } from './requestDraftStorage';
@@ -1351,6 +1352,26 @@ export default function RequestsManager({
         optsHeadless,
     ]);
 
+    const isDuplicateCreateFlow =
+        Boolean(searchParams?.duplicateFromRequestId || hydratedForDuplicateIdRef.current);
+
+    const handleDiscardNewRequestDraft = () => {
+        if (embedded || optsHeadless || detailHeadless) return;
+        if (isEditing || searchParams?.editRequestId || isDuplicateCreateFlow) return;
+        if (!confirmDiscardNewRequestDraft()) return;
+        setRequestType(null);
+        setStep(1);
+        setSearchParams({ ...getSearchOnlyParams(searchParams), subView: 'list' });
+    };
+
+    const showDiscardNewRequestDraft =
+        !embedded &&
+        !optsHeadless &&
+        !detailHeadless &&
+        !isEditing &&
+        !searchParams?.editRequestId &&
+        !isDuplicateCreateFlow;
+
     const prevSubViewRef = useRef(subView);
     useEffect(() => {
         if (embedded || optsHeadless || detailHeadless) {
@@ -1359,6 +1380,7 @@ export default function RequestsManager({
         }
         if (prevSubViewRef.current === 'new_request' && subView !== 'new_request') {
             clearNewRequestDraft();
+            hydratedForDuplicateIdRef.current = null;
             onRequestWizardFinished?.();
         }
         prevSubViewRef.current = subView;
@@ -2001,10 +2023,7 @@ export default function RequestsManager({
     useEffect(() => {
         if (readOnlyOperational) return;
         const dupId = searchParams?.duplicateFromRequestId;
-        if (!dupId) {
-            hydratedForDuplicateIdRef.current = null;
-            return;
-        }
+        if (!dupId) return;
         if (subView !== 'new_request' || !requests.length) return;
         if (hydratedForDuplicateIdRef.current === dupId) return;
         const req = requests.find((x: any) => String(x.id) === String(dupId));
@@ -2806,7 +2825,7 @@ export default function RequestsManager({
         </div>
     );
 
-    const renderFormLayout = ({ title, icon: Icon, children, onBack, onSave, maxWidthClass }: any) => (
+    const renderFormLayout = ({ title, icon: Icon, children, onBack, onSave, onDiscard, maxWidthClass }: any) => (
         <div className="h-full flex flex-col relative" style={{ backgroundColor: colors.bg }}>
             <div className="flex-1 overflow-y-auto p-6">
                 <div className={`${maxWidthClass || 'max-w-4xl'} mx-auto w-full space-y-6 pb-12`}>
@@ -2822,6 +2841,16 @@ export default function RequestsManager({
 
                     {/* Footer Buttons integrated into form */}
                     <div className="flex items-center justify-end gap-3 pt-8 mt-8 border-t" style={{ borderColor: colors.border }}>
+                        {typeof onDiscard === 'function' && (
+                            <button
+                                type="button"
+                                onClick={onDiscard}
+                                className="px-6 py-3 rounded-xl border font-bold text-xs uppercase tracking-widest hover:bg-white/5 transition-all"
+                                style={{ borderColor: colors.border, color: '#ef4444' }}
+                            >
+                                Discard
+                            </button>
+                        )}
                         <button type="button" onClick={onBack} className="px-6 py-3 rounded-xl border font-bold text-xs uppercase tracking-widest hover:bg-white/5 transition-all"
                             style={{ borderColor: colors.border, color: colors.textMain }}>Back</button>
                         {!readOnlyOperational && (
@@ -3292,6 +3321,7 @@ export default function RequestsManager({
                 setStep(1);
                 setRequestType(null);
             },
+            onDiscard: showDiscardNewRequestDraft ? handleDiscardNewRequestDraft : undefined,
             onSave: () => {
                 handleSaveRequest(accForm, requestType || 'accommodation');
             },
@@ -4387,6 +4417,7 @@ export default function RequestsManager({
             title: "New Event Request",
             icon: Music,
             onBack: () => { setStep(1); setRequestType(null); },
+            onDiscard: showDiscardNewRequestDraft ? handleDiscardNewRequestDraft : undefined,
             onSave: () => { handleSaveRequest(evtForm, 'event'); },
             children: (
                 <>
@@ -4578,6 +4609,7 @@ export default function RequestsManager({
         title: "New Request (Event + Rooms)",
         icon: Box,
         onBack: () => { setStep(1); setRequestType(null); },
+        onDiscard: showDiscardNewRequestDraft ? handleDiscardNewRequestDraft : undefined,
         onSave: () => { handleSaveRequest({ accommodation: accForm, event: evtForm }, 'event_rooms'); },
         children: (
             <>
