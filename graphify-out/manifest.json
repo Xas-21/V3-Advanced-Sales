@@ -105,8 +105,8 @@
     "semantic_hash": "42600414548e74d198bc89ebdfabd33a"
   },
   "RequestsManager.tsx": {
-    "mtime": 1784664524.3369982,
-    "ast_hash": "50df15732426038016ad4d7e7770b243",
+    "mtime": 1784666228.410453,
+    "ast_hash": "7c55cdf58c16a9ecaba8fe6c4cd3534b",
     "semantic_hash": ""
   },
   "Settings.tsx": {
@@ -2230,8 +2230,8 @@
     "semantic_hash": ""
   },
   ".superpowers/sdd/progress.md": {
-    "mtime": 1784664925.2671764,
-    "ast_hash": "36a01f06d1c1e34c154fd61b3e98fc54",
+    "mtime": 1784665521.38712,
+    "ast_hash": "a6ea9736dfbc6d1129a3024adea5ff1a",
     "semantic_hash": ""
   },
   "docs/superpowers/plans/2026-07-19-account-balance-billing.md": {
@@ -2495,8 +2495,8 @@
     "semantic_hash": ""
   },
   ".superpowers/sdd/task-2-report.md": {
-    "mtime": 1784664641.9461102,
-    "ast_hash": "2c92e8f007cad6121fb6edf6732899bc",
+    "mtime": 1784666270.2288828,
+    "ast_hash": "b73d9002c162bffa476c727df4c20773",
     "semantic_hash": ""
   },
   ".superpowers/sdd/task-2-review-package.md": {
@@ -2507,6 +2507,21 @@
   ".superpowers/sdd/task-3-brief.md": {
     "mtime": 1784664925.279918,
     "ast_hash": "c6cf8e6d068ebcb40e2d823da84e792b",
+    "semantic_hash": ""
+  },
+  ".superpowers/sdd/final-review-package.md": {
+    "mtime": 1784665521.6333992,
+    "ast_hash": "e58791fe22df8bc90d75a0c0fc6243e0",
+    "semantic_hash": ""
+  },
+  ".superpowers/sdd/task-3-report.md": {
+    "mtime": 1784665156.0028093,
+    "ast_hash": "7d770c016023956d37336d0348dd3f90",
+    "semantic_hash": ""
+  },
+  ".superpowers/sdd/task-3-review-package.md": {
+    "mtime": 1784665194.0040717,
+    "ast_hash": "fd6fc31908acddfb19f811665551a1f9",
     "semantic_hash": ""
   }
 }

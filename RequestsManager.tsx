@@ -1352,9 +1352,12 @@ export default function RequestsManager({
         optsHeadless,
     ]);
 
+    const isDuplicateCreateFlow =
+        Boolean(searchParams?.duplicateFromRequestId || hydratedForDuplicateIdRef.current);
+
     const handleDiscardNewRequestDraft = () => {
         if (embedded || optsHeadless || detailHeadless) return;
-        if (isEditing || searchParams?.editRequestId || searchParams?.duplicateFromRequestId) return;
+        if (isEditing || searchParams?.editRequestId || isDuplicateCreateFlow) return;
         if (!confirmDiscardNewRequestDraft()) return;
         setRequestType(null);
         setStep(1);
@@ -1367,7 +1370,7 @@ export default function RequestsManager({
         !detailHeadless &&
         !isEditing &&
         !searchParams?.editRequestId &&
-        !searchParams?.duplicateFromRequestId;
+        !isDuplicateCreateFlow;
 
     const prevSubViewRef = useRef(subView);
     useEffect(() => {
@@ -1377,6 +1380,7 @@ export default function RequestsManager({
         }
         if (prevSubViewRef.current === 'new_request' && subView !== 'new_request') {
             clearNewRequestDraft();
+            hydratedForDuplicateIdRef.current = null;
             onRequestWizardFinished?.();
         }
         prevSubViewRef.current = subView;
@@ -2019,10 +2023,7 @@ export default function RequestsManager({
     useEffect(() => {
         if (readOnlyOperational) return;
         const dupId = searchParams?.duplicateFromRequestId;
-        if (!dupId) {
-            hydratedForDuplicateIdRef.current = null;
-            return;
-        }
+        if (!dupId) return;
         if (subView !== 'new_request' || !requests.length) return;
         if (hydratedForDuplicateIdRef.current === dupId) return;
         const req = requests.find((x: any) => String(x.id) === String(dupId));
