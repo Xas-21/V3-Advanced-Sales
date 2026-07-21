@@ -31,6 +31,19 @@ export default defineConfig({
         watch: {
             usePolling: process.env.CHOKIDAR_USEPOLLING === 'true',
             interval: 1000,
+            // Bind-mount + polling scans the whole tree; skip heavy/non-source dirs.
+            ignored: [
+                '**/node_modules/**',
+                '**/.git/**',
+                '**/.worktrees/**',
+                '**/worktrees/**',
+                '**/graphify-out/**',
+                '**/dist/**',
+                '**/backend/**',
+                '**/docs/**',
+                '**/plans/**',
+                '**/testsprite_tests/**',
+            ],
         },
         proxy: {
             // Host `npx vite` cannot resolve Docker DNS `as-backend`; use localhost.
