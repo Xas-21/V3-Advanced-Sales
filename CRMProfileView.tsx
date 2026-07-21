@@ -860,7 +860,7 @@ export default function CRMProfileView({
                 {profileTab === 'overview' && (
                 <div className="space-y-6">
                     <div
-                        className="p-6 rounded-xl border flex flex-col min-h-[300px]"
+                        className="p-6 rounded-xl border flex flex-col"
                         style={{ backgroundColor: colors.card, borderColor: colors.border }}
                     >
                         <div className="flex flex-col gap-3 mb-2 shrink-0">
@@ -898,7 +898,9 @@ export default function CRMProfileView({
                                 </div>
                             </div>
                         </div>
-                        <div className="flex-1 w-full min-h-[220px]">
+                        {/* Explicit height: after contacts left the Overview grid, flex-1+min-h no longer
+                            gives ResponsiveContainer a definite size (height 100% collapsed to blank). */}
+                        <div className="w-full h-[280px]">
                             <AccountProfilePerformanceChart
                                 chartTab={accountChartTab}
                                 chartData={accountChartDataDisplay}
