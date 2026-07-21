@@ -1229,7 +1229,12 @@ export default function CRMProfileView({
                                 )}
                             </div>
                         </div>
+                    </div>
+                </div>
+                </div>
+                )}
 
+                {profileTab === 'contracts' && (
                         <div className="p-6 rounded-xl border" style={{ backgroundColor: colors.card, borderColor: colors.border }}>
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.textMuted }}>Contracts</h3>
@@ -1356,7 +1361,9 @@ export default function CRMProfileView({
                                 </div>
                             )}
                         </div>
+                )}
 
+                {profileTab === 'timeline' && (
                         <div className="p-6 rounded-xl border" style={{ backgroundColor: colors.card, borderColor: colors.border }}>
                             <h3 className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: colors.textMuted }}>Activity Timeline</h3>
                             <div className="space-y-4">
@@ -1457,9 +1464,6 @@ export default function CRMProfileView({
                                 )}
                             </div>
                         </div>
-                    </div>
-                </div>
-                </div>
                 )}
 
                 {profileTab === 'contacts' && (
