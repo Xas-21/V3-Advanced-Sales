@@ -85,7 +85,6 @@ import {
 import { reverseBalancePaymentOnRequest, type SyncPayment, type SyncRequest } from './accountPaymentSync';
 import {
     clearNewRequestDraft,
-    confirmDiscardNewRequestDraft,
     readNewRequestDraft,
     writeNewRequestDraft,
 } from './requestDraftStorage';
@@ -843,6 +842,7 @@ export default function RequestsManager({
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [showStatusModal, setShowStatusModal] = useState(false);
     const [showDeleteRequestConfirm, setShowDeleteRequestConfirm] = useState(false);
+    const [showDiscardDraftConfirm, setShowDiscardDraftConfirm] = useState(false);
     const [pendingDeleteRequest, setPendingDeleteRequest] = useState<any | null>(null);
     const [pendingPaymentRemove, setPendingPaymentRemove] = useState<{
         source: 'form' | 'detail';
@@ -1358,7 +1358,12 @@ export default function RequestsManager({
     const handleDiscardNewRequestDraft = () => {
         if (embedded || optsHeadless || detailHeadless) return;
         if (isEditing || searchParams?.editRequestId || isDuplicateCreateFlow) return;
-        if (!confirmDiscardNewRequestDraft()) return;
+        setShowDiscardDraftConfirm(true);
+    };
+
+    const confirmDiscardNewRequestDraftAction = () => {
+        clearNewRequestDraft();
+        setShowDiscardDraftConfirm(false);
         setRequestType(null);
         setStep(1);
         setSearchParams({ ...getSearchOnlyParams(searchParams), subView: 'list' });
@@ -3310,8 +3315,8 @@ export default function RequestsManager({
             return BedDouble;
         };
 
-        const formMaxWidth =
-            requestType === 'event_rooms' || requestType === 'series' ? 'max-w-6xl' : 'max-w-4xl';
+        // ponytail: wide enough for SAR 9,999,999.00 in Section 6 4-up cards; was max-w-4xl for rooms/event
+        const formMaxWidth = 'max-w-6xl';
 
         return renderFormLayout({
             title: getFormTitle(),
@@ -4195,34 +4200,34 @@ export default function RequestsManager({
                             </div>
                         </>
                     ) : (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                            <div className="p-4 rounded-xl bg-black/10 border border-white/5">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                            <div className="p-4 rounded-xl bg-black/10 border border-white/5 min-w-0">
                                 <p className="text-[10px] font-bold uppercase opacity-40 mb-1">
                                     {requestType === 'event' ? 'DDR (Daily Delegate Rate)' : 'ADR (Avg Daily Rate)'}
                                 </p>
-                                <p className="text-2xl font-mono font-bold" style={{ color: colors.textMain }}>
+                                <p className="text-lg sm:text-xl lg:text-2xl font-mono font-bold leading-snug break-words" style={{ color: colors.textMain }}>
                                     {formatMoney(requestType === 'event' ? fin.ddr : fin.adr)}
                                 </p>
                             </div>
-                            <div className="p-4 rounded-xl bg-black/10 border border-white/5">
+                            <div className="p-4 rounded-xl bg-black/10 border border-white/5 min-w-0">
                                 <p className="text-[10px] font-bold uppercase opacity-40 mb-1">
                                     {requestType === 'event' ? 'Total attendees' : 'Total Room Nights'}
                                 </p>
-                                <p className="text-2xl font-bold" style={{ color: colors.textMain }}>
+                                <p className="text-lg sm:text-xl lg:text-2xl font-bold leading-snug" style={{ color: colors.textMain }}>
                                     {requestType === 'event' ? (fin.totalEventAttendeeDays ?? fin.totalEventPax) : fin.totalRoomNights}
                                 </p>
                             </div>
-                            <div className="p-4 rounded-xl bg-black/10 border border-white/5">
+                            <div className="p-4 rounded-xl bg-black/10 border border-white/5 min-w-0">
                                 <p className="text-[10px] font-bold uppercase opacity-40 mb-1">
                                     {requestType === 'event' ? 'Total Days' : 'Total Rooms'}
                                 </p>
-                                <p className="text-2xl font-bold" style={{ color: colors.textMain }}>
+                                <p className="text-lg sm:text-xl lg:text-2xl font-bold leading-snug" style={{ color: colors.textMain }}>
                                     {requestType === 'event' ? fin.totalEventDays : fin.totalRooms}
                                 </p>
                             </div>
-                            <div className="p-4 rounded-xl bg-black/10 border border-white/5">
+                            <div className="p-4 rounded-xl bg-black/10 border border-white/5 min-w-0">
                                 <p className="text-[10px] font-bold uppercase opacity-40 mb-1">Paid Amount</p>
-                                <p className="text-2xl font-mono font-bold" style={{ color: (accForm.collectLater || accForm.paymentStatus === 'CL') ? colors.red : colors.green }}>{formatMoney(fin.paidAmount)}</p>
+                                <p className="text-lg sm:text-xl lg:text-2xl font-mono font-bold leading-snug break-words" style={{ color: (accForm.collectLater || accForm.paymentStatus === 'CL') ? colors.red : colors.green }}>{formatMoney(fin.paidAmount)}</p>
                             </div>
                         </div>
                     )}
@@ -4234,32 +4239,32 @@ export default function RequestsManager({
                                 <div className="space-y-6">
                                     <div className="space-y-3">
                                         <h5 className="text-[10px] font-black uppercase opacity-40 tracking-wider">Accommodation</h5>
-                                        <div className="flex justify-between items-center p-3 rounded-lg bg-black/10 group">
-                                            <span className="text-sm opacity-60">Rooms Cost (Before Tax)</span>
-                                            <span className="font-mono font-bold">{formatMoney(fin.roomsCostNoTax)}</span>
+                                        <div className="flex justify-between items-center gap-3 p-3 rounded-lg bg-black/10 group min-w-0">
+                                            <span className="text-sm opacity-60 shrink-0">Rooms Cost (Before Tax)</span>
+                                            <span className="font-mono font-bold text-right break-words min-w-0">{formatMoney(fin.roomsCostNoTax)}</span>
                                         </div>
-                                        <div className="flex justify-between items-center p-3 rounded-lg bg-black/10 group">
-                                            <span className="text-sm opacity-60">Rooms Cost (Incl. Tax)</span>
-                                            <span className="font-mono font-bold" style={{ color: colors.primary }}>{formatMoney(fin.roomsCostWithTax)}</span>
+                                        <div className="flex justify-between items-center gap-3 p-3 rounded-lg bg-black/10 group min-w-0">
+                                            <span className="text-sm opacity-60 shrink-0">Rooms Cost (Incl. Tax)</span>
+                                            <span className="font-mono font-bold text-right break-words min-w-0" style={{ color: colors.primary }}>{formatMoney(fin.roomsCostWithTax)}</span>
                                         </div>
-                                        <div className="flex justify-between items-center p-3 rounded-lg bg-black/10 group">
-                                            <span className="text-sm opacity-60">Transportation (Before Tax)</span>
-                                            <span className="font-mono font-bold">{formatMoney(fin.transCostNoTax)}</span>
+                                        <div className="flex justify-between items-center gap-3 p-3 rounded-lg bg-black/10 group min-w-0">
+                                            <span className="text-sm opacity-60 shrink-0">Transportation (Before Tax)</span>
+                                            <span className="font-mono font-bold text-right break-words min-w-0">{formatMoney(fin.transCostNoTax)}</span>
                                         </div>
-                                        <div className="flex justify-between items-center p-3 rounded-lg bg-black/10 group">
-                                            <span className="text-sm opacity-60">Transportation (Incl. Tax)</span>
-                                            <span className="font-mono font-bold" style={{ color: colors.primary }}>{formatMoney(fin.transCostWithTax)}</span>
+                                        <div className="flex justify-between items-center gap-3 p-3 rounded-lg bg-black/10 group min-w-0">
+                                            <span className="text-sm opacity-60 shrink-0">Transportation (Incl. Tax)</span>
+                                            <span className="font-mono font-bold text-right break-words min-w-0" style={{ color: colors.primary }}>{formatMoney(fin.transCostWithTax)}</span>
                                         </div>
                                     </div>
                                     <div className="space-y-3">
                                         <h5 className="text-[10px] font-black uppercase opacity-40 tracking-wider">Event</h5>
-                                        <div className="flex justify-between items-center p-3 rounded-lg bg-black/10 group">
-                                            <span className="text-sm opacity-60">Event Cost (Before Tax)</span>
-                                            <span className="font-mono font-bold">{formatMoney(fin.eventCostNoTax)}</span>
+                                        <div className="flex justify-between items-center gap-3 p-3 rounded-lg bg-black/10 group min-w-0">
+                                            <span className="text-sm opacity-60 shrink-0">Event Cost (Before Tax)</span>
+                                            <span className="font-mono font-bold text-right break-words min-w-0">{formatMoney(fin.eventCostNoTax)}</span>
                                         </div>
-                                        <div className="flex justify-between items-center p-3 rounded-lg bg-black/10 group">
-                                            <span className="text-sm opacity-60">Event Cost (Incl. Tax)</span>
-                                            <span className="font-mono font-bold" style={{ color: colors.primary }}>{formatMoney(fin.eventCostWithTax)}</span>
+                                        <div className="flex justify-between items-center gap-3 p-3 rounded-lg bg-black/10 group min-w-0">
+                                            <span className="text-sm opacity-60 shrink-0">Event Cost (Incl. Tax)</span>
+                                            <span className="font-mono font-bold text-right break-words min-w-0" style={{ color: colors.primary }}>{formatMoney(fin.eventCostWithTax)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -4267,48 +4272,44 @@ export default function RequestsManager({
                             <div className="space-y-3">
                                 {requestType !== 'event' && (
                                     <>
-                                        <div className="flex justify-between items-center p-3 rounded-lg bg-black/10 group">
-                                            <span className="text-sm opacity-60">Rooms Cost (Before Tax)</span>
-                                            <span className="font-mono font-bold">{formatMoney(fin.roomsCostNoTax)}</span>
+                                        <div className="flex justify-between items-center gap-3 p-3 rounded-lg bg-black/10 group min-w-0">
+                                            <span className="text-sm opacity-60 shrink-0">Rooms Cost (Before Tax)</span>
+                                            <span className="font-mono font-bold text-right break-words min-w-0">{formatMoney(fin.roomsCostNoTax)}</span>
                                         </div>
-                                        <div className="flex justify-between items-center p-3 rounded-lg bg-black/10 group">
-                                            <span className="text-sm opacity-60">Rooms Cost (Incl. 15% Tax)</span>
-                                            <span className="font-mono font-bold" style={{ color: colors.primary }}>{formatMoney(fin.roomsCostWithTax)}</span>
+                                        <div className="flex justify-between items-center gap-3 p-3 rounded-lg bg-black/10 group min-w-0">
+                                            <span className="text-sm opacity-60 shrink-0">Rooms Cost (Incl. 15% Tax)</span>
+                                            <span className="font-mono font-bold text-right break-words min-w-0" style={{ color: colors.primary }}>{formatMoney(fin.roomsCostWithTax)}</span>
                                         </div>
                                     </>
                                 )}
-                                <div className="flex justify-between items-center p-3 rounded-lg bg-black/10 group">
-                                    <span className="text-sm opacity-60">Transportation (Before Tax)</span>
-                                    <span className="font-mono font-bold">{formatMoney(fin.transCostNoTax)}</span>
+                                <div className="flex justify-between items-center gap-3 p-3 rounded-lg bg-black/10 group min-w-0">
+                                    <span className="text-sm opacity-60 shrink-0">Transportation (Before Tax)</span>
+                                    <span className="font-mono font-bold text-right break-words min-w-0">{formatMoney(fin.transCostNoTax)}</span>
                                 </div>
-                                <div className="flex justify-between items-center p-3 rounded-lg bg-black/10 group">
-                                    <span className="text-sm opacity-60">Transportation (Incl. 15% Tax)</span>
-                                    <span className="font-mono font-bold" style={{ color: colors.primary }}>{formatMoney(fin.transCostWithTax)}</span>
+                                <div className="flex justify-between items-center gap-3 p-3 rounded-lg bg-black/10 group min-w-0">
+                                    <span className="text-sm opacity-60 shrink-0">Transportation (Incl. 15% Tax)</span>
+                                    <span className="font-mono font-bold text-right break-words min-w-0" style={{ color: colors.primary }}>{formatMoney(fin.transCostWithTax)}</span>
                                 </div>
-                                <div className="flex justify-between items-center p-3 rounded-lg bg-black/10 group">
-                                    <span className="text-sm opacity-60">Event Cost (Before Tax)</span>
-                                    <span className="font-mono font-bold">{formatMoney(fin.eventCostNoTax)}</span>
+                                <div className="flex justify-between items-center gap-3 p-3 rounded-lg bg-black/10 group min-w-0">
+                                    <span className="text-sm opacity-60 shrink-0">Event Cost (Before Tax)</span>
+                                    <span className="font-mono font-bold text-right break-words min-w-0">{formatMoney(fin.eventCostNoTax)}</span>
                                 </div>
-                                <div className="flex justify-between items-center p-3 rounded-lg bg-black/10 group">
-                                    <span className="text-sm opacity-60">Event Cost (Incl. 15% Tax)</span>
-                                    <span className="font-mono font-bold" style={{ color: colors.primary }}>{formatMoney(fin.eventCostWithTax)}</span>
+                                <div className="flex justify-between items-center gap-3 p-3 rounded-lg bg-black/10 group min-w-0">
+                                    <span className="text-sm opacity-60 shrink-0">Event Cost (Incl. 15% Tax)</span>
+                                    <span className="font-mono font-bold text-right break-words min-w-0" style={{ color: colors.primary }}>{formatMoney(fin.eventCostWithTax)}</span>
                                 </div>
                             </div>
                             )}
                         </div>
 
-                        <div className="flex flex-col justify-end gap-6">
-                            <div className="p-6 rounded-2xl bg-primary/5 border border-primary/20 flex justify-between items-center">
-                                <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Grand Total Amount (Before Tax)</p>
-                                    <p className="text-2xl font-mono font-bold opacity-60">{formatMoney(fin.grandTotalNoTax)}</p>
-                                </div>
+                        <div className="flex flex-col justify-end gap-6 min-w-0">
+                            <div className="p-6 rounded-2xl bg-primary/5 border border-primary/20 min-w-0">
+                                <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Grand Total Amount (Before Tax)</p>
+                                <p className="text-xl sm:text-2xl font-mono font-bold opacity-60 leading-snug break-words">{formatMoney(fin.grandTotalNoTax)}</p>
                             </div>
-                            <div className="p-6 rounded-2xl bg-primary/10 border-2 border-primary/30 flex justify-between items-center shadow-xl shadow-primary/5">
-                                <div>
-                                    <p className="text-xs font-black uppercase tracking-widest text-primary mb-1">Grand Total Amount (Including Tax)</p>
-                                    <p className="text-4xl font-mono font-black" style={{ color: colors.textMain }}>{formatMoney(fin.grandTotalWithTax)}</p>
-                                </div>
+                            <div className="p-6 rounded-2xl bg-primary/10 border-2 border-primary/30 shadow-xl shadow-primary/5 min-w-0">
+                                <p className="text-xs font-black uppercase tracking-widest text-primary mb-1">Grand Total Amount (Including Tax)</p>
+                                <p className="text-2xl sm:text-3xl lg:text-4xl font-mono font-black leading-snug break-words" style={{ color: colors.textMain }}>{formatMoney(fin.grandTotalWithTax)}</p>
                             </div>
                         </div>
                     </div>
@@ -4989,7 +4990,7 @@ export default function RequestsManager({
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-8 bg-black/5">
-                    <div className={`${isEventRooms ? 'max-w-6xl' : 'max-w-5xl'} mx-auto w-full min-w-0 space-y-8`}>
+                    <div className="max-w-6xl mx-auto w-full min-w-0 space-y-8">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="p-6 rounded-2xl border bg-current/5 space-y-4" style={{ backgroundColor: colors.card, borderColor: colors.border }}>
                                 <h3 className="text-xs font-black uppercase opacity-30 tracking-widest">Section 1: Basic</h3>
@@ -5329,34 +5330,34 @@ export default function RequestsManager({
                                         </div>
                                     </>
                                 ) : (
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                                        <div className="p-4 rounded-xl bg-black/10 border border-white/5">
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                                        <div className="p-4 rounded-xl bg-black/10 border border-white/5 min-w-0">
                                             <p className="text-[10px] font-bold uppercase opacity-40 mb-1">
                                                 {detailType === 'event' ? 'DDR (Daily Delegate Rate)' : 'ADR (Avg Daily Rate)'}
                                             </p>
-                                            <p className="text-2xl font-mono font-bold" style={{ color: colors.textMain }}>
+                                            <p className="text-lg sm:text-xl lg:text-2xl font-mono font-bold leading-snug break-words" style={{ color: colors.textMain }}>
                                                 {formatMoney(detailType === 'event' ? fin.ddr : fin.adr)}
                                             </p>
                                         </div>
-                                        <div className="p-4 rounded-xl bg-black/10 border border-white/5">
+                                        <div className="p-4 rounded-xl bg-black/10 border border-white/5 min-w-0">
                                             <p className="text-[10px] font-bold uppercase opacity-40 mb-1">
                                                 {detailType === 'event' ? 'Total Attendees' : 'Total Room Nights'}
                                             </p>
-                                            <p className="text-2xl font-bold" style={{ color: colors.textMain }}>
+                                            <p className="text-lg sm:text-xl lg:text-2xl font-bold leading-snug" style={{ color: colors.textMain }}>
                                                 {detailType === 'event' ? (fin.totalEventAttendeeDays ?? fin.totalEventPax) : fin.totalRoomNights}
                                             </p>
                                         </div>
-                                        <div className="p-4 rounded-xl bg-black/10 border border-white/5">
+                                        <div className="p-4 rounded-xl bg-black/10 border border-white/5 min-w-0">
                                             <p className="text-[10px] font-bold uppercase opacity-40 mb-1">
                                                 {detailType === 'event' ? 'Total Days' : 'Total Rooms'}
                                             </p>
-                                            <p className="text-2xl font-bold" style={{ color: colors.textMain }}>
+                                            <p className="text-lg sm:text-xl lg:text-2xl font-bold leading-snug" style={{ color: colors.textMain }}>
                                                 {detailType === 'event' ? fin.totalEventDays : fin.totalRooms}
                                             </p>
                                         </div>
-                                        <div className="p-4 rounded-xl bg-black/10 border border-white/5">
+                                        <div className="p-4 rounded-xl bg-black/10 border border-white/5 min-w-0">
                                             <p className="text-[10px] font-bold uppercase opacity-40 mb-1">Paid Amount</p>
-                                            <p className="text-2xl font-mono font-bold" style={{ color: (request.collectLater || request.paymentStatus === 'CL') ? colors.red : colors.green }}>{formatMoney(fin.paidAmount)}</p>
+                                            <p className="text-lg sm:text-xl lg:text-2xl font-mono font-bold leading-snug break-words" style={{ color: (request.collectLater || request.paymentStatus === 'CL') ? colors.red : colors.green }}>{formatMoney(fin.paidAmount)}</p>
                                         </div>
                                     </div>
                                 )}
@@ -5368,32 +5369,32 @@ export default function RequestsManager({
                                             <div className="space-y-6">
                                                 <div className="space-y-3">
                                                     <h5 className="text-[10px] font-black uppercase opacity-40 tracking-wider">Accommodation</h5>
-                                                    <div className="flex justify-between items-center p-3 rounded-lg bg-black/10 group">
-                                                        <span className="text-sm opacity-60">Rooms Cost (Before Tax)</span>
-                                                        <span className="font-mono font-bold">{formatMoney(fin.roomsCostNoTax)}</span>
+                                                    <div className="flex justify-between items-center gap-3 p-3 rounded-lg bg-black/10 group min-w-0">
+                                                        <span className="text-sm opacity-60 shrink-0">Rooms Cost (Before Tax)</span>
+                                                        <span className="font-mono font-bold text-right break-words min-w-0">{formatMoney(fin.roomsCostNoTax)}</span>
                                                     </div>
-                                                    <div className="flex justify-between items-center p-3 rounded-lg bg-black/10 group">
-                                                        <span className="text-sm opacity-60">Rooms Cost (Incl. Tax)</span>
-                                                        <span className="font-mono font-bold" style={{ color: colors.primary }}>{formatMoney(fin.roomsCostWithTax)}</span>
+                                                    <div className="flex justify-between items-center gap-3 p-3 rounded-lg bg-black/10 group min-w-0">
+                                                        <span className="text-sm opacity-60 shrink-0">Rooms Cost (Incl. Tax)</span>
+                                                        <span className="font-mono font-bold text-right break-words min-w-0" style={{ color: colors.primary }}>{formatMoney(fin.roomsCostWithTax)}</span>
                                                     </div>
-                                                    <div className="flex justify-between items-center p-3 rounded-lg bg-black/10 group">
-                                                        <span className="text-sm opacity-60">Transportation (Before Tax)</span>
-                                                        <span className="font-mono font-bold">{formatMoney(fin.transCostNoTax)}</span>
+                                                    <div className="flex justify-between items-center gap-3 p-3 rounded-lg bg-black/10 group min-w-0">
+                                                        <span className="text-sm opacity-60 shrink-0">Transportation (Before Tax)</span>
+                                                        <span className="font-mono font-bold text-right break-words min-w-0">{formatMoney(fin.transCostNoTax)}</span>
                                                     </div>
-                                                    <div className="flex justify-between items-center p-3 rounded-lg bg-black/10 group">
-                                                        <span className="text-sm opacity-60">Transportation (Incl. Tax)</span>
-                                                        <span className="font-mono font-bold" style={{ color: colors.primary }}>{formatMoney(fin.transCostWithTax)}</span>
+                                                    <div className="flex justify-between items-center gap-3 p-3 rounded-lg bg-black/10 group min-w-0">
+                                                        <span className="text-sm opacity-60 shrink-0">Transportation (Incl. Tax)</span>
+                                                        <span className="font-mono font-bold text-right break-words min-w-0" style={{ color: colors.primary }}>{formatMoney(fin.transCostWithTax)}</span>
                                                     </div>
                                                 </div>
                                                 <div className="space-y-3">
                                                     <h5 className="text-[10px] font-black uppercase opacity-40 tracking-wider">Event</h5>
-                                                    <div className="flex justify-between items-center p-3 rounded-lg bg-black/10 group">
-                                                        <span className="text-sm opacity-60">Event Cost (Before Tax)</span>
-                                                        <span className="font-mono font-bold">{formatMoney(fin.eventCostNoTax)}</span>
+                                                    <div className="flex justify-between items-center gap-3 p-3 rounded-lg bg-black/10 group min-w-0">
+                                                        <span className="text-sm opacity-60 shrink-0">Event Cost (Before Tax)</span>
+                                                        <span className="font-mono font-bold text-right break-words min-w-0">{formatMoney(fin.eventCostNoTax)}</span>
                                                     </div>
-                                                    <div className="flex justify-between items-center p-3 rounded-lg bg-black/10 group">
-                                                        <span className="text-sm opacity-60">Event Cost (Incl. Tax)</span>
-                                                        <span className="font-mono font-bold" style={{ color: colors.primary }}>{formatMoney(fin.eventCostWithTax)}</span>
+                                                    <div className="flex justify-between items-center gap-3 p-3 rounded-lg bg-black/10 group min-w-0">
+                                                        <span className="text-sm opacity-60 shrink-0">Event Cost (Incl. Tax)</span>
+                                                        <span className="font-mono font-bold text-right break-words min-w-0" style={{ color: colors.primary }}>{formatMoney(fin.eventCostWithTax)}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -5401,48 +5402,44 @@ export default function RequestsManager({
                                         <div className="space-y-3">
                                             {detailType !== 'event' && (
                                                 <>
-                                                    <div className="flex justify-between items-center p-3 rounded-lg bg-black/10 group">
-                                                        <span className="text-sm opacity-60">Rooms Cost (Before Tax)</span>
-                                                        <span className="font-mono font-bold">{formatMoney(fin.roomsCostNoTax)}</span>
+                                                    <div className="flex justify-between items-center gap-3 p-3 rounded-lg bg-black/10 group min-w-0">
+                                                        <span className="text-sm opacity-60 shrink-0">Rooms Cost (Before Tax)</span>
+                                                        <span className="font-mono font-bold text-right break-words min-w-0">{formatMoney(fin.roomsCostNoTax)}</span>
                                                     </div>
-                                                    <div className="flex justify-between items-center p-3 rounded-lg bg-black/10 group">
-                                                        <span className="text-sm opacity-60">Rooms Cost (Incl. Tax)</span>
-                                                        <span className="font-mono font-bold" style={{ color: colors.primary }}>{formatMoney(fin.roomsCostWithTax)}</span>
+                                                    <div className="flex justify-between items-center gap-3 p-3 rounded-lg bg-black/10 group min-w-0">
+                                                        <span className="text-sm opacity-60 shrink-0">Rooms Cost (Incl. Tax)</span>
+                                                        <span className="font-mono font-bold text-right break-words min-w-0" style={{ color: colors.primary }}>{formatMoney(fin.roomsCostWithTax)}</span>
                                                     </div>
                                                 </>
                                             )}
-                                            <div className="flex justify-between items-center p-3 rounded-lg bg-black/10 group">
-                                                <span className="text-sm opacity-60">Transportation (Before Tax)</span>
-                                                <span className="font-mono font-bold">{formatMoney(fin.transCostNoTax)}</span>
+                                            <div className="flex justify-between items-center gap-3 p-3 rounded-lg bg-black/10 group min-w-0">
+                                                <span className="text-sm opacity-60 shrink-0">Transportation (Before Tax)</span>
+                                                <span className="font-mono font-bold text-right break-words min-w-0">{formatMoney(fin.transCostNoTax)}</span>
                                             </div>
-                                            <div className="flex justify-between items-center p-3 rounded-lg bg-black/10 group">
-                                                <span className="text-sm opacity-60">Transportation (Incl. Tax)</span>
-                                                <span className="font-mono font-bold" style={{ color: colors.primary }}>{formatMoney(fin.transCostWithTax)}</span>
+                                            <div className="flex justify-between items-center gap-3 p-3 rounded-lg bg-black/10 group min-w-0">
+                                                <span className="text-sm opacity-60 shrink-0">Transportation (Incl. Tax)</span>
+                                                <span className="font-mono font-bold text-right break-words min-w-0" style={{ color: colors.primary }}>{formatMoney(fin.transCostWithTax)}</span>
                                             </div>
-                                            <div className="flex justify-between items-center p-3 rounded-lg bg-black/10 group">
-                                                <span className="text-sm opacity-60">Event Cost (Before Tax)</span>
-                                                <span className="font-mono font-bold">{formatMoney(fin.eventCostNoTax)}</span>
+                                            <div className="flex justify-between items-center gap-3 p-3 rounded-lg bg-black/10 group min-w-0">
+                                                <span className="text-sm opacity-60 shrink-0">Event Cost (Before Tax)</span>
+                                                <span className="font-mono font-bold text-right break-words min-w-0">{formatMoney(fin.eventCostNoTax)}</span>
                                             </div>
-                                            <div className="flex justify-between items-center p-3 rounded-lg bg-black/10 group">
-                                                <span className="text-sm opacity-60">Event Cost (Incl. Tax)</span>
-                                                <span className="font-mono font-bold" style={{ color: colors.primary }}>{formatMoney(fin.eventCostWithTax)}</span>
+                                            <div className="flex justify-between items-center gap-3 p-3 rounded-lg bg-black/10 group min-w-0">
+                                                <span className="text-sm opacity-60 shrink-0">Event Cost (Incl. Tax)</span>
+                                                <span className="font-mono font-bold text-right break-words min-w-0" style={{ color: colors.primary }}>{formatMoney(fin.eventCostWithTax)}</span>
                                             </div>
                                         </div>
                                         )}
                                     </div>
 
-                                    <div className="flex flex-col justify-end gap-6">
-                                        <div className="p-6 rounded-2xl bg-primary/5 border border-primary/20 flex justify-between items-center">
-                                            <div>
-                                                <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Grand Total Amount (Before Tax)</p>
-                                                <p className="text-2xl font-mono font-bold opacity-60">{formatMoney(fin.grandTotalNoTax)}</p>
-                                            </div>
+                                    <div className="flex flex-col justify-end gap-6 min-w-0">
+                                        <div className="p-6 rounded-2xl bg-primary/5 border border-primary/20 min-w-0">
+                                            <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Grand Total Amount (Before Tax)</p>
+                                            <p className="text-xl sm:text-2xl font-mono font-bold opacity-60 leading-snug break-words">{formatMoney(fin.grandTotalNoTax)}</p>
                                         </div>
-                                        <div className="p-6 rounded-2xl bg-primary/10 border-2 border-primary/30 flex justify-between items-center shadow-xl shadow-primary/5">
-                                            <div>
-                                                <p className="text-xs font-black uppercase tracking-widest text-primary mb-1">Grand Total Amount (Including Tax)</p>
-                                                <p className="text-4xl font-mono font-black" style={{ color: colors.textMain }}>{formatMoney(fin.grandTotalWithTax)}</p>
-                                            </div>
+                                        <div className="p-6 rounded-2xl bg-primary/10 border-2 border-primary/30 shadow-xl shadow-primary/5 min-w-0">
+                                            <p className="text-xs font-black uppercase tracking-widest text-primary mb-1">Grand Total Amount (Including Tax)</p>
+                                            <p className="text-2xl sm:text-3xl lg:text-4xl font-mono font-black leading-snug break-words" style={{ color: colors.textMain }}>{formatMoney(fin.grandTotalWithTax)}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -6726,6 +6723,17 @@ export default function RequestsManager({
                         </div>
                     </div>
                 )}
+                <ConfirmDialog
+                    isOpen={showDiscardDraftConfirm}
+                    title="Discard draft?"
+                    message="Discard this draft?"
+                    confirmLabel="Yes"
+                    cancelLabel="Cancel"
+                    danger
+                    onConfirm={confirmDiscardNewRequestDraftAction}
+                    onCancel={() => setShowDiscardDraftConfirm(false)}
+                />
+
                 <ConfirmDialog
                     isOpen={showDeleteRequestConfirm}
                     title="Confirm Request Deletion"

@@ -3,7 +3,6 @@ import {
   writeNewRequestDraft,
   readNewRequestDraft,
   clearNewRequestDraft,
-  confirmDiscardNewRequestDraft,
 } from './requestDraftStorage';
 
 const PID = 'P-TEST';
@@ -19,7 +18,7 @@ function seedDraft() {
   });
 }
 
-describe('confirmDiscardNewRequestDraft', () => {
+describe('clearNewRequestDraft', () => {
   beforeEach(() => {
     const store = new Map<string, string>();
     vi.stubGlobal('sessionStorage', {
@@ -34,22 +33,10 @@ describe('confirmDiscardNewRequestDraft', () => {
     clearNewRequestDraft();
   });
 
-  it('returns false and keeps draft when confirm is cancelled', () => {
+  it('removes a seeded draft so the next new request starts fresh', () => {
     seedDraft();
-    const ok = confirmDiscardNewRequestDraft(() => false);
-    expect(ok).toBe(false);
     expect(readNewRequestDraft(PID)?.requestType).toBe('accommodation');
-  });
-
-  it('clears draft and returns true when confirm is accepted', () => {
-    seedDraft();
-    const messages: string[] = [];
-    const ok = confirmDiscardNewRequestDraft((msg) => {
-      messages.push(msg);
-      return true;
-    });
-    expect(ok).toBe(true);
-    expect(messages).toEqual(['Discard this draft?']);
+    clearNewRequestDraft();
     expect(readNewRequestDraft(PID)).toBeNull();
   });
 });
