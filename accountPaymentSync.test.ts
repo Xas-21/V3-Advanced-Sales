@@ -85,8 +85,40 @@ describe('accountPaymentSync pure helpers', () => {
       paymentStatus: 'Unpaid',
     });
 
+    // Fully paid while collectLater was set → settle CL
     expect(recomputePaymentStatus(payments, 5000, true)).toEqual({
       paidAmount: 5000,
+      paymentStatus: 'Paid',
+      collectLater: false,
+    });
+
+    // Open CL (underpaid) still CL
+    expect(recomputePaymentStatus(payments, 10000, true)).toEqual({
+      paidAmount: 5000,
+      paymentStatus: 'CL',
+      collectLater: true,
+    });
+
+    // Stale CL flag after undo/refund to zero with no CL payment lines → Unpaid
+    expect(recomputePaymentStatus(afterRefund, 5000, true)).toEqual({
+      paidAmount: 0,
+      paymentStatus: 'Unpaid',
+      collectLater: false,
+    });
+
+    // Fully covering CL line settles
+    const withClLine: SyncPayment[] = [
+      { id: 'cl1', amount: 5000, method: 'CL' },
+    ];
+    expect(recomputePaymentStatus(withClLine, 5000, true)).toEqual({
+      paidAmount: 5000,
+      paymentStatus: 'Paid',
+      collectLater: false,
+    });
+
+    // Underpaid CL line stays open
+    expect(recomputePaymentStatus([{ id: 'cl2', amount: 1000, method: 'CL' }], 5000, true)).toEqual({
+      paidAmount: 1000,
       paymentStatus: 'CL',
       collectLater: true,
     });

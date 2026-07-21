@@ -19,6 +19,7 @@ import ConfirmDialog from './ConfirmDialog';
 import { formatCompactCurrency } from './formatCompactCurrency';
 import type { CurrencyCode } from './currency';
 import { resolvePaymentMethodsForProperty } from './propertyPaymentMethods';
+import { canDeleteBillingDeposits } from './userPermissions';
 
 type BillingTheme = { colors: Record<string, string | undefined> };
 
@@ -29,6 +30,7 @@ export type AccountBillingPanelProps = {
     currency: CurrencyCode;
     theme: BillingTheme;
     canEdit: boolean;
+    currentUser?: any;
     onClose: () => void;
     /** When a deposit clears CL debt for linked requests, mark them Paid (green). */
     onSettleClRequests?: (requestIds: string[]) => void | Promise<void>;
@@ -66,6 +68,10 @@ function errMessage(e: unknown, fallback: string): string {
     return e instanceof Error && e.message ? e.message : fallback;
 }
 
+function isFreeDeposit(entry: LedgerEntry): boolean {
+    return entry.type === 'deposit' && !String(entry.requestId || '').trim();
+}
+
 export default function AccountBillingPanel({
     account,
     linkedRequests,
@@ -73,6 +79,7 @@ export default function AccountBillingPanel({
     currency,
     theme,
     canEdit,
+    currentUser,
     onClose,
     onSettleClRequests,
     onRequestsPatched,
@@ -241,6 +248,12 @@ export default function AccountBillingPanel({
 
     const runUndo = async (entry: LedgerEntry) => {
         if (!canEdit) return;
+        if (isFreeDeposit(entry) && !canDeleteBillingDeposits(currentUser)) {
+            const msg = 'You do not have permission to delete free account deposits.';
+            setError(msg);
+            onNotice?.('Permission denied', msg);
+            return;
+        }
         setBusy(true);
         setError('');
         const patched: SyncRequest[] = [];
@@ -650,7 +663,8 @@ export default function AccountBillingPanel({
                                                             {amt >= 0 ? '+' : ''}
                                                             {formatCompactCurrency(amt, currency)}
                                                         </span>
-                                                        {canEdit ? (
+                                                        {canEdit &&
+                                                        (!isFreeDeposit(entry) || canDeleteBillingDeposits(currentUser)) ? (
                                                             <button
                                                                 type="button"
                                                                 disabled={busy}

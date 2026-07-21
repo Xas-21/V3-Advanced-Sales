@@ -135,10 +135,23 @@ export function recomputePaymentStatus(
   collectLater?: boolean
 ): { paidAmount: number; paymentStatus: string; collectLater?: boolean } {
   const paidAmount = sumPaymentAmounts(payments);
+  const total = num(requestTotal);
+  const isClMethod = (method: unknown) =>
+    String(method || '').trim().toUpperCase() === 'CL';
+  const hasPositiveClLine = (payments || []).some(
+    (p) => isClMethod(p.method) && num(p.amount) > 0
+  );
+
   if (collectLater) {
+    if (total > 0 && paymentsMeetOrExceedTotal(paidAmount, total)) {
+      return { paidAmount, paymentStatus: 'Paid', collectLater: false };
+    }
+    if (!(paidAmount > 0) && !hasPositiveClLine) {
+      return { paidAmount, paymentStatus: 'Unpaid', collectLater: false };
+    }
     return { paidAmount, paymentStatus: 'CL', collectLater: true };
   }
-  const total = num(requestTotal);
+
   let paymentStatus = 'Unpaid';
   if (total > 0) {
     if (paymentsMeetOrExceedTotal(paidAmount, total)) paymentStatus = 'Paid';
