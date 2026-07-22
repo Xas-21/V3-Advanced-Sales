@@ -97,6 +97,15 @@ def storage_mode() -> str:
     return "postgres" if get_database_url() else "unavailable"
 
 
+def legacy_blobs_enabled() -> bool:
+    """Neon-era blob tables (accounts_rows / requests_rows / app_collection_*).
+
+    Default OFF — the app uses normalized tables via data_access.
+    Set AS_KEEP_LEGACY_BLOBS=1 only for migration/debug against a blob clone.
+    """
+    return str(os.environ.get("AS_KEEP_LEGACY_BLOBS", "")).strip().lower() in {"1", "true", "yes"}
+
+
 def set_force_file_storage_after_pg_failure(reason: str | None = None) -> None:
     """Call when Postgres bootstrap fails so login/API keep working on local JSON."""
     global _FORCE_FILE_STORAGE, _POOL, _DB_SCHEMA_READY, _SPECIAL_TABLES_READY, _SPECIAL_MIGRATION_DONE
@@ -156,6 +165,9 @@ def _collection_key(file_path: str) -> str:
 def _ensure_db_schema():
     global _DB_SCHEMA_READY
     if _DB_SCHEMA_READY:
+        return
+    if not legacy_blobs_enabled():
+        _DB_SCHEMA_READY = True
         return
     with _connect() as conn:
         with conn.cursor() as cur:
@@ -413,6 +425,9 @@ def _ensure_special_tables():
     global _SPECIAL_TABLES_READY
     if _SPECIAL_TABLES_READY:
         return
+    if not legacy_blobs_enabled():
+        _SPECIAL_TABLES_READY = True
+        return
     pool = _get_pool()
     with pool.connection() as conn:
         with conn.cursor() as cur:
@@ -472,6 +487,9 @@ def _ensure_special_tables():
 def _ensure_general_tables():
     global _GENERAL_TABLES_READY
     if _GENERAL_TABLES_READY:
+        return
+    if not legacy_blobs_enabled():
+        _GENERAL_TABLES_READY = True
         return
     pool = _get_pool()
     with pool.connection() as conn:
@@ -653,6 +671,9 @@ def _ensure_special_migration():
     global _SPECIAL_MIGRATION_DONE
     if _SPECIAL_MIGRATION_DONE:
         return
+    if not legacy_blobs_enabled():
+        _SPECIAL_MIGRATION_DONE = True
+        return
     _ensure_db_schema()
     _ensure_special_tables()
     _migrate_collection_into_rows("requests", "requests_rows")
@@ -663,6 +684,9 @@ def _ensure_special_migration():
 def _ensure_general_migration():
     global _GENERAL_MIGRATION_DONE
     if _GENERAL_MIGRATION_DONE:
+        return
+    if not legacy_blobs_enabled():
+        _GENERAL_MIGRATION_DONE = True
         return
     _ensure_db_schema()
     _ensure_general_tables()

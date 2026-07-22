@@ -1357,25 +1357,27 @@ export default function RequestsManager({
 
     const handleDiscardNewRequestDraft = () => {
         if (embedded || optsHeadless || detailHeadless) return;
-        if (isEditing || searchParams?.editRequestId || isDuplicateCreateFlow) return;
         setShowDiscardDraftConfirm(true);
     };
 
     const confirmDiscardNewRequestDraftAction = () => {
         clearNewRequestDraft();
         setShowDiscardDraftConfirm(false);
+        setIsEditing(false);
+        hydratedForDuplicateIdRef.current = null;
         setRequestType(null);
         setStep(1);
-        setSearchParams({ ...getSearchOnlyParams(searchParams), subView: 'list' });
+        const next = { ...getSearchOnlyParams(searchParams), subView: 'list' as const };
+        delete next.editRequestId;
+        delete next.duplicateFromRequestId;
+        setSearchParams(next);
     };
 
+    // New / edit / duplicate all use the same form layout; Discard abandons without saving.
     const showDiscardNewRequestDraft =
         !embedded &&
         !optsHeadless &&
-        !detailHeadless &&
-        !isEditing &&
-        !searchParams?.editRequestId &&
-        !isDuplicateCreateFlow;
+        !detailHeadless;
 
     const prevSubViewRef = useRef(subView);
     useEffect(() => {
@@ -2102,8 +2104,17 @@ export default function RequestsManager({
                 : String(formData.promotionId || '').trim();
             
             const existingReq = formData.id ? requests.find((r: any) => r.id === formData.id) : null;
-            const isUpdate = !!existingReq;
+            // Duplicate must always create a new row — never update the source request.
+            const isUpdate = !!existingReq && !isDuplicateCreateFlow;
             let updatedLogs = [...(formData.logs || [])];
+            // Drop stale child PKs on create so backend idx-scoped ids stay unique.
+            if (!isUpdate) {
+                updatedLogs = updatedLogs.map((log: any) => {
+                    if (!log || typeof log !== 'object') return log;
+                    const { id: _drop, ...rest } = log;
+                    return rest;
+                });
+            }
 
             if (!isUpdate) {
                 updatedLogs.unshift({
@@ -2290,7 +2301,11 @@ export default function RequestsManager({
                 ...formData,
                 rooms: savedRooms,
                 mealPlan: mealPlanForPayload || String(formData.mealPlan ?? '').trim() || '—',
-                id: isUpdate ? String(formData.id || '').trim() : generateRequestId(),
+                id: isUpdate
+                    ? String(formData.id || '').trim()
+                    : (isDuplicateCreateFlow && String(formData.id || '').trim()
+                        ? String(formData.id).trim()
+                        : generateRequestId()),
                 // Backend collision guard: existing ids need an explicit update flag (or matching createdAt).
                 ...(isUpdate ? { _update: true } : {}),
                 requestName: formData.requestName || 'Unnamed Request',
@@ -6725,8 +6740,8 @@ export default function RequestsManager({
                 )}
                 <ConfirmDialog
                     isOpen={showDiscardDraftConfirm}
-                    title="Discard draft?"
-                    message="Discard this draft?"
+                    title="Discard?"
+                    message="Discard unsaved changes and leave this form?"
                     confirmLabel="Yes"
                     cancelLabel="Cancel"
                     danger

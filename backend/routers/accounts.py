@@ -98,8 +98,24 @@ def delete_account_endpoint(account_id: str):
 
 @router.get("/accounts/{account_id}/delete-impact")
 def account_delete_impact(account_id: str):
-    # FK-cascaded delete: account_contacts, account_activities removed with it.
-    return {"accountId": str(account_id), "linkedRequests": 0, "contacts": 0, "activities": 0}
+    from utils import _get_pool
+
+    aid = str(account_id)
+    pool = _get_pool()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) AS n FROM requests WHERE account_id = %s;", (aid,))
+            linked = int((cur.fetchone() or {}).get("n") or 0)
+            cur.execute("SELECT COUNT(*) AS n FROM account_contacts WHERE account_id = %s;", (aid,))
+            contacts = int((cur.fetchone() or {}).get("n") or 0)
+            cur.execute("SELECT COUNT(*) AS n FROM account_activities WHERE account_id = %s;", (aid,))
+            activities = int((cur.fetchone() or {}).get("n") or 0)
+    return {
+        "accountId": aid,
+        "linkedRequests": linked,
+        "contacts": contacts,
+        "activities": activities,
+    }
 
 
 @router.post("/accounts/scan-extract")

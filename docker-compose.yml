@@ -1,8 +1,32 @@
 services:
-  # Live local DB: container as-postgres-V2 / volume as-postgres-v2-data.
-  # Alias `as-postgres` matches DATABASE_URL host. User/db come from .env
-  # (existing volume keeps its original role — do not recreate this volume casually).
+  # App DB (V3): container as-postgres-v3 / volume as-postgres-v3-data.
+  # Alias `as-postgres` matches DATABASE_URL host for as-backend.
   as-postgres:
+    image: postgres:18-alpine
+    container_name: as-postgres-v3
+    environment:
+      - POSTGRES_USER=neondb_owner
+      - POSTGRES_PASSWORD=${V3_DB_PASSWORD:-as_v3_local_clone}
+      - POSTGRES_DB=neondb
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U neondb_owner -d neondb
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    ports:
+      - 127.0.0.1:5434:5432
+    volumes:
+      - as-postgres-v3-data:/var/lib/postgresql
+    networks:
+      default:
+        aliases:
+          - as-postgres
+
+  # Reference-only V2 blob DB — host port 5433; no `as-postgres` alias.
+  as-postgres-v2-ref:
     image: postgres:18-alpine
     container_name: as-postgres-V2
     environment:
@@ -21,10 +45,6 @@ services:
       - 127.0.0.1:5433:5432
     volumes:
       - as-postgres-v2-data:/var/lib/postgresql
-    networks:
-      default:
-        aliases:
-          - as-postgres
 
   as-backend:
     build:
@@ -80,4 +100,9 @@ services:
 volumes:
   as-frontend-node-modules:
   as-postgres-v2-data:
+    name: v3-advanced-sales_as-postgres-v2-data
+    external: true
+  as-postgres-v3-data:
+    name: as-postgres-v3-data
+    external: true
   as-uploads-data:

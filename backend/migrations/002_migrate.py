@@ -6,15 +6,86 @@ Idempotent: re-run safe (uses ON CONFLICT DO NOTHING / upsert by id).
 """
 import json
 import os
+import sys
 import uuid
+
+import bcrypt
 import psycopg
 from psycopg.rows import dict_row
+
+# Allow `python migrations/002_migrate.py` and `RUN_MIGRATE=1` from backend/
+_BACKEND_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _BACKEND_ROOT not in sys.path:
+    sys.path.insert(0, _BACKEND_ROOT)
+
+from child_ids import ensure_scoped_child_id
 
 DSN = os.environ.get("DATABASE_URL") or "postgresql://as_owner:***@as-postgres:5432/as-postgres"
 
 
+def empty_to_none(v):
+    if v is None or v == "" or v == "null":
+        return None
+    return v
+
+
+def ensure_bcrypt(password: str | None) -> str:
+    p = password or ""
+    if isinstance(p, str) and p.startswith("$2") and len(p) >= 50:
+        return p  # already bcrypt
+    return bcrypt.hashpw(p.encode("utf-8"), bcrypt.gensalt(rounds=12)).decode("utf-8")
+
+
+def short_id(row_id: str | None, payload_id: str | None) -> str | None:
+    """app_collection_rows.row_id may be PROPERTY::SHORT."""
+    if payload_id:
+        return str(payload_id)
+    if not row_id:
+        return None
+    return row_id.split("::", 1)[-1]
+
+
+def property_scoped_id(property_id: str | None, original_id: str | None) -> str | None:
+    """Property-scoped PK for flat collections; payload keeps original frontend id."""
+    if property_id and original_id:
+        return f"{property_id}::{original_id}"
+    return original_id or property_id
+
+
+def collection_pk(
+    row_id: str | None,
+    property_id: str | None,
+    payload_id: str | None,
+    used_pks: set[str],
+    *,
+    skip_duplicates: bool = False,
+) -> str | None:
+    """Assign stable PK; prefer property-scoped id, fall back to unique blob row_id on collision.
+
+    skip_duplicates=True (taxes): keep one row per property-scoped type — do not invent #N ids
+    for historical duplicate rates in the same property blob.
+    """
+    pk = property_scoped_id(property_id, payload_id)
+    if not pk:
+        pk = row_id
+    if pk and pk not in used_pks:
+        used_pks.add(pk)
+        return pk
+    if skip_duplicates:
+        return None
+    for fallback in (row_id, f"{pk}#{len(used_pks)}" if pk else None):
+        if fallback and fallback not in used_pks:
+            used_pks.add(fallback)
+            return fallback
+    return pk
+
+
 def with_id(x, anchor):
-    """Guarantee an 'id' field exists on a child object; deterministic per (anchor,index)."""
+    """Guarantee an 'id' field exists on a child object; deterministic per (anchor,index).
+
+    Deprecated for migrate paths that need cross-parent uniqueness — prefer
+    ensure_scoped_child_id(parent_id, kind, idx, x) from child_ids.
+    """
     if not x.get("id"):
         seed = str(x.get("accountId") or x.get("id") or anchor)
         h = uuid.uuid5(uuid.NAMESPACE_DNS, f"{anchor}:{seed}")
@@ -24,16 +95,12 @@ def with_id(x, anchor):
 
 def d(v):
     """Map empty string / None -> None for DATE columns."""
-    if v is None or v == "":
-        return None
-    return v
+    return empty_to_none(v)
 
 
 def ts(v):
     """Map empty string / None -> None for TIMESTAMP columns."""
-    if v is None or v == "":
-        return None
-    return v
+    return empty_to_none(v)
 
 
 def jget(d, *keys, default=None):
@@ -53,7 +120,6 @@ def conn():
 def upsert(cur, table, cols, rows):
     if not rows:
         return 0
-    # Defensively JSON-encode any nested dict/list (never store raw JSON objects in scalar columns)
     clean_rows = []
     for r in rows:
         clean = {}
@@ -72,11 +138,15 @@ def upsert(cur, table, cols, rows):
 
 
 NEW_TABLES = [
-    "users","properties","accounts","account_contacts","account_activities",
-    "requests","request_rooms","request_payments","request_agenda","request_invoices",
-    "request_logs","request_alerts","request_transportation","request_feedback",
-    "rooms","venues","taxes","financials","tasks","promotions",
-    "contract_templates","cxl_reasons","crm_state","sessions","migration_orphans",
+    "users", "properties", "accounts", "account_contacts", "account_activities",
+    "requests", "request_rooms", "request_payments", "request_agenda", "request_invoices",
+    "request_logs", "request_alerts", "request_transportation", "request_feedback",
+    "rooms", "venues", "taxes", "financials", "tasks", "promotions",
+    "contract_templates", "cxl_reasons", "crm_state", "sessions", "migration_orphans",
+    # empty feature tables (V2 schema) — truncate on re-run only
+    "account_ledger", "account_rates", "crm_card_comments",
+    "chat_messages", "chat_participants", "chat_invite_links", "chat_conversations",
+    "feed_reactions", "feed_poll_votes", "feed_event_rsvps", "feed_comments", "feed_posts",
 ]
 
 
@@ -90,9 +160,6 @@ def migrate():
     cur = c.cursor()
     counts = {}
 
-    reset(cur)
-
-    # ---- ORPHAN CAPTURE TABLE (lossless: never drop data with dangling FK) ----
     cur.execute("""
         CREATE TABLE IF NOT EXISTS migration_orphans (
             id serial PRIMARY KEY,
@@ -103,6 +170,8 @@ def migrate():
             created_at timestamptz DEFAULT now()
         )
     """)
+
+    reset(cur)
 
     def filter_fk(rows, fk_field, valid_ids, table_name):
         """Split rows into those with valid FK target (keep) and orphans (log)."""
@@ -120,31 +189,19 @@ def migrate():
             )
         return kept
 
-    # ---- USERS (from app_collection_rows collection='users') ----
-    cur.execute("SELECT payload FROM app_collection_rows WHERE collection_name='users'")
-    users = [r["payload"] for r in cur.fetchall()]
-    rows = []
-    for u in users:
-        rows.append({
-            "id": u.get("id"),
-            "username": u.get("username"),
-            "password": u.get("password"),
-            "name": u.get("name"),
-            "email": u.get("email"),
-            "role": u.get("role", "Sales Executive"),
-            "status": u.get("status", "active"),
-            "property_id": (u.get("propertyId") or None),
-            "permission_grants": json.dumps(u.get("permissionGrants", [])),
-            "permission_revokes": json.dumps(u.get("permissionRevokes", [])),
-            "stats": json.dumps(u.get("stats", {})),
-            "session_version": int(u.get("sessionVersion", 0) or 0),
-            "avatar": u.get("avatar"),
-        })
-    counts["users"] = upsert(cur, "users",
-        ["id","username","password","name","email","role","status","property_id","permission_grants","permission_revokes","stats","session_version","avatar"],
-        rows)
+    def nullify_invalid_fk(rows, fk_field, valid_ids, table_name, id_field="id"):
+        """Nullify dangling user FKs on parent rows; log orphan FK value (keep parent row)."""
+        for r in rows:
+            pid = r.get(fk_field)
+            if pid is not None and pid not in valid_ids:
+                cur.execute(
+                    "INSERT INTO migration_orphans (target_table, parent_key, parent_id, payload) VALUES (%s,%s,%s,%s)",
+                    (table_name, fk_field, r.get(id_field), json.dumps({fk_field: pid, "row_id": r.get(id_field)})),
+                )
+                r[fk_field] = None
+        return rows
 
-    # ---- PROPERTIES ----
+    # ---- PROPERTIES (before users — users.property_id FK) ----
     cur.execute("SELECT payload FROM app_collection_rows WHERE collection_name='properties'")
     props = [r["payload"] for r in cur.fetchall()]
     rows = []
@@ -167,13 +224,99 @@ def migrate():
             "alert_settings": json.dumps(p.get("alertSettings", {})),
             "call_settings": json.dumps(p.get("callSettings", {})),
             "assigned_user_ids": json.dumps(p.get("assignedUserIds", [])),
+            "payload": json.dumps(p),
         })
-    counts["properties"] = upsert(cur, "properties",
-        ["id","name","city","country","email","phone","logo_url","total_rooms","account_types","segments","occupancy_types","payment_methods","event_packages","form_configurations","alert_settings","call_settings","assigned_user_ids"],
-        rows)
-    # collect valid property ids for FK filtering
+    counts["properties"] = upsert(
+        cur,
+        "properties",
+        [
+            "id", "name", "city", "country", "email", "phone", "logo_url", "total_rooms",
+            "account_types", "segments", "occupancy_types", "payment_methods", "event_packages",
+            "form_configurations", "alert_settings", "call_settings", "assigned_user_ids", "payload",
+        ],
+        rows,
+    )
     cur.execute("SELECT id FROM properties")
     valid_property_ids = {r["id"] for r in cur.fetchall()}
+
+    # Ensure every account-referenced property exists (stub) so accounts are not dropped.
+    cur.execute("SELECT DISTINCT payload->>'propertyId' AS pid FROM accounts_rows")
+    stub_props = []
+    for r in cur.fetchall():
+        pid = empty_to_none(r.get("pid"))
+        if not pid or pid in valid_property_ids:
+            continue
+        stub_props.append({
+            "id": pid,
+            "name": f"Recovered property {pid}",
+            "city": None,
+            "country": None,
+            "email": None,
+            "phone": None,
+            "logo_url": None,
+            "total_rooms": None,
+            "account_types": "[]",
+            "segments": "[]",
+            "occupancy_types": "[]",
+            "payment_methods": "[]",
+            "event_packages": "[]",
+            "form_configurations": "{}",
+            "alert_settings": "{}",
+            "call_settings": "{}",
+            "assigned_user_ids": "[]",
+            "payload": json.dumps({"id": pid, "name": f"Recovered property {pid}", "_recoveredStub": True}),
+        })
+        valid_property_ids.add(pid)
+    if stub_props:
+        counts["properties_stubs"] = upsert(
+            cur,
+            "properties",
+            [
+                "id", "name", "city", "country", "email", "phone", "logo_url", "total_rooms",
+                "account_types", "segments", "occupancy_types", "payment_methods", "event_packages",
+                "form_configurations", "alert_settings", "call_settings", "assigned_user_ids", "payload",
+            ],
+            stub_props,
+        )
+
+    # ---- USERS (from app_collection_rows collection='users') ----
+    cur.execute("SELECT payload FROM app_collection_rows WHERE collection_name='users'")
+    users = [r["payload"] for r in cur.fetchall()]
+    rows = []
+    for u in users:
+        uname = u.get("username")
+        display = u.get("name") or uname or "?"
+        rows.append({
+            "id": u.get("id"),
+            "username": uname,
+            "password": ensure_bcrypt(u.get("password")),
+            "name": display,
+            "email": u.get("email"),
+            "role": u.get("role", "Sales Executive"),
+            "status": (u.get("status") or "active"),
+            "property_id": empty_to_none(u.get("propertyId")),
+            "permission_grants": json.dumps(u.get("permissionGrants", [])),
+            "permission_revokes": json.dumps(u.get("permissionRevokes", [])),
+            "stats": json.dumps(u.get("stats", {})),
+            "session_version": int(u.get("sessionVersion", 0) or 0),
+            "avatar": u.get("avatar"),
+            "phone": u.get("phone"),
+            "assigned_property_ids": json.dumps(u.get("property_ids") or u.get("assignedPropertyIds") or []),
+            "payload": json.dumps(u),
+        })
+    rows = nullify_invalid_fk(rows, "property_id", valid_property_ids, "users")
+    counts["users"] = upsert(
+        cur,
+        "users",
+        [
+            "id", "username", "password", "name", "email", "role", "status", "property_id",
+            "permission_grants", "permission_revokes", "stats", "session_version", "avatar",
+            "phone", "assigned_property_ids", "payload",
+        ],
+        rows,
+    )
+    cur.execute("SELECT id FROM users")
+    valid_user_ids = {r["id"] for r in cur.fetchall()}
 
     # ---- ACCOUNTS ----
     cur.execute("SELECT id, property_id, created_by_user_id, payload FROM accounts_rows")
@@ -192,11 +335,11 @@ def migrate():
             "notes": p.get("notes"),
             "client_tax_id": p.get("clientTaxId"),
             "account_owner_name": p.get("accountOwnerName"),
-            "owner_user_id": p.get("ownerUserId"),
+            "owner_user_id": empty_to_none(p.get("ownerUserId")),
             "owner_username": p.get("ownerUsername"),
-            "created_by_user_id": p.get("createdByUserId"),
+            "created_by_user_id": empty_to_none(p.get("createdByUserId")),
             "created_by_username": p.get("createdByUsername"),
-            "property_id": p.get("propertyId"),
+            "property_id": empty_to_none(p.get("propertyId")),
             "tags": json.dumps(p.get("tags", [])),
             "total_requests": p.get("totalRequests"),
             "win_rate": p.get("winRate"),
@@ -206,7 +349,7 @@ def migrate():
             "updated_at": r.get("updated_at"),
         })
         for i, ct in enumerate(p.get("contacts") or []):
-            ct = with_id(ct, f"{p.get('id')}:contact:{i}")
+            ct = ensure_scoped_child_id(p.get("id"), "contact", i, ct)
             crows.append({
                 "id": ct.get("id"),
                 "account_id": p.get("id"),
@@ -218,9 +361,11 @@ def migrate():
                 "phone": ct.get("phone"),
                 "city": ct.get("city"),
                 "country": ct.get("country"),
+                "payload": json.dumps(ct),
+                "idx": i,
             })
         for i, ac in enumerate(p.get("activities") or []):
-            ac = with_id(ac, f"{p.get('id')}:activity:{i}")
+            ac = ensure_scoped_child_id(p.get("id"), "activity", i, ac)
             actrows.append({
                 "id": ac.get("id"),
                 "account_id": p.get("id"),
@@ -229,30 +374,57 @@ def migrate():
                 "activity_user": ac.get("user"),
                 "at": ac.get("at"),
                 "crm_lead_id": ac.get("crmLeadId"),
+                "payload": json.dumps(ac),
+                "idx": i,
             })
+    arows = nullify_invalid_fk(arows, "owner_user_id", valid_user_ids, "accounts")
+    arows = nullify_invalid_fk(arows, "created_by_user_id", valid_user_ids, "accounts")
     arows = filter_fk(arows, "property_id", valid_property_ids, "accounts")
-    counts["accounts"] = upsert(cur, "accounts",
-        ["id","name","type","city","street","country","website","notes","client_tax_id","account_owner_name","owner_user_id","owner_username","created_by_user_id","created_by_username","property_id","tags","total_requests","win_rate","total_spend","profile_audit_log","created_at","updated_at"],
-        arows)
-    crows = filter_fk(crows, "account_id", {a["id"] for a in arows}, "account_contacts")
-    counts["account_contacts"] = upsert(cur, "account_contacts",
-        ["id","account_id","first_name","last_name","name","position","email","phone","city","country"], crows)
-    actrows = filter_fk(actrows, "account_id", {a["id"] for a in arows}, "account_activities")
-    counts["account_activities"] = upsert(cur, "account_activities",
-        ["id","account_id","title","body","activity_user","at","crm_lead_id"], actrows)
+    counts["accounts"] = upsert(
+        cur,
+        "accounts",
+        [
+            "id", "name", "type", "city", "street", "country", "website", "notes", "client_tax_id",
+            "account_owner_name", "owner_user_id", "owner_username", "created_by_user_id",
+            "created_by_username", "property_id", "tags", "total_requests", "win_rate", "total_spend",
+            "profile_audit_log", "created_at", "updated_at",
+        ],
+        arows,
+    )
+    account_ids = {a["id"] for a in arows}
+    # Replace children fully — scoped PKs change on remigrate; leave no stale colliding ids.
+    cur.execute("DELETE FROM account_contacts")
+    cur.execute("DELETE FROM account_activities")
+    crows = filter_fk(crows, "account_id", account_ids, "account_contacts")
+    counts["account_contacts"] = upsert(
+        cur,
+        "account_contacts",
+        ["id", "account_id", "first_name", "last_name", "name", "position", "email", "phone", "city", "country", "payload", "idx"],
+        crows,
+    )
+    actrows = filter_fk(actrows, "account_id", account_ids, "account_activities")
+    counts["account_activities"] = upsert(
+        cur,
+        "account_activities",
+        ["id", "account_id", "title", "body", "activity_user", "at", "crm_lead_id", "payload", "idx"],
+        actrows,
+    )
 
     # ---- REQUESTS ----
-    cur.execute("SELECT id, property_id, created_by_user_id, payload FROM requests_rows")
+    cur.execute(
+        "SELECT id, property_id, created_by_user_id, payload, created_at, updated_at FROM requests_rows"
+    )
     req = cur.fetchall()
     rrows, rm, rp, ra, rl, ral, rtr, rinv = [], [], [], [], [], [], [], []
     for r in req:
         p = r["payload"]
+        rid = p.get("id")
         rrows.append({
-            "id": p.get("id"),
-            "account_id": p.get("accountId"),
+            "id": rid,
+            "account_id": empty_to_none(p.get("accountId")),
             "account_name": p.get("accountName"),
-            "property_id": p.get("propertyId"),
-            "created_by_user_id": p.get("createdByUserId"),
+            "property_id": empty_to_none(p.get("propertyId")),
+            "created_by_user_id": empty_to_none(p.get("createdByUserId")),
             "request_name": p.get("requestName"),
             "request_type": p.get("requestType"),
             "segment": p.get("segment"),
@@ -279,89 +451,223 @@ def migrate():
             "note": p.get("note"),
             "cancel_reason": p.get("cancelReason"),
             "cancel_note": p.get("cancelNote"),
-            "updated_at": ts(p.get("updatedAt")),
-            "created_at": r.get("created_at"),
-            "updated_at_ts": r.get("updated_at"),
+            "updated_at": ts(p.get("updatedAt")) or ts(r.get("updated_at")),
+            "created_at": ts(p.get("createdAt")) or ts(r.get("created_at")),
+            "paid_amount": p.get("paidAmount"),
+            "beo_notes": p.get("beoNotes"),
+            "gis_billing_instructions": p.get("gisBillingInstructions"),
+            "gis_expected_arrival_time": p.get("gisExpectedArrivalTime"),
+            "gis_operational_notes": p.get("gisOperationalNotes"),
         })
-        rid = p.get("id")
         for i, x in enumerate(p.get("rooms") or []):
-            x = with_id(x, f"{rid}:room:{i}")
-            rm.append({"id": x.get("id"), "request_id": rid, "type": x.get("type"), "count": x.get("count"), "nights": x.get("nights"), "occupancy": x.get("occupancy"), "rate": x.get("rate"), "meal_plan": x.get("mealPlan"), "arrival": x.get("arrival"), "departure": x.get("departure")})
+            x = ensure_scoped_child_id(rid, "room", i, x)
+            rm.append({
+                "id": x.get("id"), "request_id": rid, "type": x.get("type"), "count": x.get("count"),
+                "nights": x.get("nights"), "occupancy": x.get("occupancy"), "rate": x.get("rate"),
+                "meal_plan": x.get("mealPlan"), "arrival": x.get("arrival"), "departure": x.get("departure"),
+                "payload": json.dumps(x), "idx": i,
+            })
         for i, x in enumerate(p.get("payments") or []):
-            x = with_id(x, f"{rid}:payment:{i}")
-            rp.append({"id": x.get("id"), "request_id": rid, "amount": x.get("amount"), "date": d(x.get("date")), "method": x.get("method"), "note": x.get("note")})
+            x = ensure_scoped_child_id(rid, "payment", i, x)
+            rp.append({
+                "id": x.get("id"), "request_id": rid, "amount": x.get("amount"), "date": d(x.get("date")),
+                "method": x.get("method"), "note": x.get("note"), "payload": json.dumps(x), "idx": i,
+            })
         for i, x in enumerate(p.get("agenda") or []):
-            x = with_id(x, f"{rid}:agenda:{i}")
-            ra.append({"id": x.get("id"), "request_id": rid, "venue": x.get("venue"), "shape": x.get("shape"), "pax": x.get("pax"), "package": x.get("package"), "start_date": x.get("startDate"), "end_date": x.get("endDate"), "start_time": x.get("startTime"), "end_time": x.get("endTime"), "lunch_time": x.get("lunchTime"), "dinner_time": x.get("dinnerTime"), "coffee1": x.get("coffee1"), "coffee2": x.get("coffee2"), "rental": x.get("rental"), "notes": x.get("notes"), "combined": x.get("combined"), "combined_venue_names": x.get("combinedVenueNames")})
+            x = ensure_scoped_child_id(rid, "agenda", i, x)
+            ra.append({
+                "id": x.get("id"), "request_id": rid, "venue": x.get("venue"), "shape": x.get("shape"),
+                "pax": x.get("pax"), "package": x.get("package"), "start_date": x.get("startDate"),
+                "end_date": x.get("endDate"), "start_time": x.get("startTime"), "end_time": x.get("endTime"),
+                "lunch_time": x.get("lunchTime"), "dinner_time": x.get("dinnerTime"), "coffee1": x.get("coffee1"),
+                "coffee2": x.get("coffee2"), "rental": x.get("rental"), "notes": x.get("notes"),
+                "combined": x.get("combined"), "combined_venue_names": x.get("combinedVenueNames"),
+                "payload": json.dumps(x), "idx": i,
+            })
         for i, x in enumerate(p.get("logs") or []):
-            x = with_id(x, f"{rid}:log:{i}")
-            rl.append({"id": x.get("id"), "request_id": rid, "date": x.get("date"), "action": x.get("action"), "log_user": x.get("user"), "details": x.get("details")})
+            x = ensure_scoped_child_id(rid, "log", i, x)
+            rl.append({
+                "id": x.get("id"), "request_id": rid, "date": x.get("date"), "action": x.get("action"),
+                "log_user": x.get("user"), "details": x.get("details"), "payload": json.dumps(x), "idx": i,
+            })
         for i, x in enumerate(p.get("alerts") or []):
-            x = with_id(x, f"{rid}:alert:{i}")
-            ral.append({"id": x.get("id"), "request_id": rid, "title": x.get("title"), "message": x.get("message"), "created_by": x.get("createdBy"), "created_at": x.get("createdAt")})
+            x = ensure_scoped_child_id(rid, "alert", i, x)
+            ral.append({
+                "id": x.get("id"), "request_id": rid, "title": x.get("title"), "message": x.get("message"),
+                "created_by": x.get("createdBy"), "created_at": x.get("createdAt"),
+                "payload": json.dumps(x), "idx": i,
+            })
         for i, x in enumerate(p.get("transportation") or []):
-            x = with_id(x, f"{rid}:transport:{i}")
-            rtr.append({"id": x.get("id"), "request_id": rid, "type": x.get("type"), "pax": x.get("pax"), "timing": x.get("timing"), "cost_per_way": x.get("costPerWay"), "notes": x.get("notes")})
+            x = ensure_scoped_child_id(rid, "transport", i, x)
+            rtr.append({
+                "id": x.get("id"), "request_id": rid, "type": x.get("type"), "pax": x.get("pax"),
+                "timing": x.get("timing"), "cost_per_way": x.get("costPerWay"), "notes": x.get("notes"),
+                "payload": json.dumps(x), "idx": i,
+            })
         inv = p.get("invoices") or {}
         if inv:
-            rinv.append({"request_id": p.get("id"), "agreement": json.dumps(inv.get("agreement")), "inv1": json.dumps(inv.get("inv1")), "inv2": json.dumps(inv.get("inv2")), "inv3": json.dumps(inv.get("inv3"))})
-    rrows = filter_fk(rrows, "property_id", valid_property_ids, "requests")
-    counts["requests"] = upsert(cur, "requests",
-        ["id","account_id","account_name","property_id","created_by_user_id","request_name","request_type","segment","status","payment_status","check_in","check_out","event_start","event_end","nights","total_rooms","adr","total_cost","grand_total_no_tax","received_date","offer_deadline","deposit_deadline","payment_deadline","meal_plan","booker_name","booker_contact_id","promotion_id","confirmation_no","note","cancel_reason","cancel_note","updated_at","created_at","updated_at_ts"],
-        rrows)
+            rinv.append({
+                "request_id": rid,
+                "agreement": json.dumps(inv.get("agreement")),
+                "inv1": json.dumps(inv.get("inv1")),
+                "inv2": json.dumps(inv.get("inv2")),
+                "inv3": json.dumps(inv.get("inv3")),
+                "payload": json.dumps(inv),
+                "idx": 0,
+            })
+    rrows = nullify_invalid_fk(rrows, "created_by_user_id", valid_user_ids, "requests")
+    rrows = nullify_invalid_fk(rrows, "account_id", account_ids, "requests")
+    rrows = nullify_invalid_fk(rrows, "property_id", valid_property_ids, "requests")
+    counts["requests"] = upsert(
+        cur,
+        "requests",
+        [
+            "id", "account_id", "account_name", "property_id", "created_by_user_id", "request_name",
+            "request_type", "segment", "status", "payment_status", "check_in", "check_out", "event_start",
+            "event_end", "nights", "total_rooms", "adr", "total_cost", "grand_total_no_tax", "received_date",
+            "offer_deadline", "deposit_deadline", "payment_deadline", "meal_plan", "booker_name",
+            "booker_contact_id", "promotion_id", "confirmation_no", "note", "cancel_reason", "cancel_note",
+            "updated_at", "created_at", "paid_amount", "beo_notes", "gis_billing_instructions",
+            "gis_expected_arrival_time", "gis_operational_notes",
+        ],
+        rrows,
+    )
     req_ids = {r["id"] for r in rrows}
+    cur.execute("DELETE FROM request_rooms")
+    cur.execute("DELETE FROM request_payments")
+    cur.execute("DELETE FROM request_agenda")
+    cur.execute("DELETE FROM request_logs")
+    cur.execute("DELETE FROM request_alerts")
+    cur.execute("DELETE FROM request_transportation")
+    cur.execute("DELETE FROM request_invoices")
+    cur.execute("DELETE FROM request_feedback")
     rm = filter_fk(rm, "request_id", req_ids, "request_rooms")
-    counts["request_rooms"] = upsert(cur, "request_rooms", ["id","request_id","type","count","nights","occupancy","rate","meal_plan","arrival","departure"], rm)
+    counts["request_rooms"] = upsert(
+        cur, "request_rooms",
+        ["id", "request_id", "type", "count", "nights", "occupancy", "rate", "meal_plan", "arrival", "departure", "payload", "idx"],
+        rm,
+    )
     rp = filter_fk(rp, "request_id", req_ids, "request_payments")
-    counts["request_payments"] = upsert(cur, "request_payments", ["id","request_id","amount","date","method","note"], rp)
+    counts["request_payments"] = upsert(
+        cur, "request_payments",
+        ["id", "request_id", "amount", "date", "method", "note", "payload", "idx"],
+        rp,
+    )
     ra = filter_fk(ra, "request_id", req_ids, "request_agenda")
-    counts["request_agenda"] = upsert(cur, "request_agenda", ["id","request_id","venue","shape","pax","package","start_date","end_date","start_time","end_time","lunch_time","dinner_time","coffee1","coffee2","rental","notes","combined","combined_venue_names"], ra)
+    counts["request_agenda"] = upsert(
+        cur, "request_agenda",
+        [
+            "id", "request_id", "venue", "shape", "pax", "package", "start_date", "end_date", "start_time",
+            "end_time", "lunch_time", "dinner_time", "coffee1", "coffee2", "rental", "notes", "combined",
+            "combined_venue_names", "payload", "idx",
+        ],
+        ra,
+    )
     rl = filter_fk(rl, "request_id", req_ids, "request_logs")
-    counts["request_logs"] = upsert(cur, "request_logs", ["id","request_id","date","action","log_user","details"], rl)
+    counts["request_logs"] = upsert(
+        cur, "request_logs",
+        ["id", "request_id", "date", "action", "log_user", "details", "payload", "idx"],
+        rl,
+    )
     ral = filter_fk(ral, "request_id", req_ids, "request_alerts")
-    counts["request_alerts"] = upsert(cur, "request_alerts", ["id","request_id","title","message","created_by","created_at"], ral)
+    counts["request_alerts"] = upsert(
+        cur, "request_alerts",
+        ["id", "request_id", "title", "message", "created_by", "created_at", "payload", "idx"],
+        ral,
+    )
     rtr = filter_fk(rtr, "request_id", req_ids, "request_transportation")
-    counts["request_transportation"] = upsert(cur, "request_transportation", ["id","request_id","type","pax","timing","cost_per_way","notes"], rtr)
+    counts["request_transportation"] = upsert(
+        cur, "request_transportation",
+        ["id", "request_id", "type", "pax", "timing", "cost_per_way", "notes", "payload", "idx"],
+        rtr,
+    )
     rinv = filter_fk(rinv, "request_id", req_ids, "request_invoices")
-    counts["request_invoices"] = upsert(cur, "request_invoices", ["request_id","agreement","inv1","inv2","inv3"], rinv)
-    # feedback (object, nullable)
+    counts["request_invoices"] = upsert(
+        cur, "request_invoices",
+        ["request_id", "agreement", "inv1", "inv2", "inv3", "payload", "idx"],
+        rinv,
+    )
     frows = []
     cur.execute("SELECT payload FROM requests_rows WHERE payload ? 'feedback'")
     for r in cur.fetchall():
         f = r["payload"].get("feedback") or {}
         if not f:
             continue
-        frows.append({"request_id": r["payload"].get("id"), "template": f.get("template"), "source": f.get("source"), "public_token": f.get("publicToken"), "answers": json.dumps(f.get("answers", {})), "submitted_at": ts(f.get("submittedAt")), "updated_at": ts(f.get("updatedAt"))})
-    counts["request_feedback"] = upsert(cur, "request_feedback", ["request_id","template","source","public_token","answers","submitted_at","updated_at"], frows)
+        frows.append({
+            "request_id": r["payload"].get("id"),
+            "template": f.get("template"),
+            "source": f.get("source"),
+            "public_token": f.get("publicToken"),
+            "answers": json.dumps(f.get("answers", {})),
+            "submitted_at": ts(f.get("submittedAt")),
+            "updated_at": ts(f.get("updatedAt")),
+            "payload": json.dumps(f),
+            "idx": 0,
+        })
+    frows = filter_fk(frows, "request_id", req_ids, "request_feedback")
+    counts["request_feedback"] = upsert(
+        cur, "request_feedback",
+        ["request_id", "template", "source", "public_token", "answers", "submitted_at", "updated_at", "payload", "idx"],
+        frows,
+    )
 
     # ---- PROPERTY COLLECTIONS ----
-    for coll, table, cols, keyp in [
-        ("room_types", "rooms", ["id","property_id","name","count","size","base_rate","capacity"], None),
-        ("venues", "venues", ["id","property_id","name","is_combined","shapes","width","length","height","area","capacity"], None),
-        ("taxes", "taxes", ["id","property_id","label","rate","scope"], None),
-        ("financials", "financials", ["id","property_id","year","months"], None),
-        ("tasks", "tasks", ["id","property_id","task","client","priority","completed","date","star","category","description","assigned_to","assignees"], None),
-        ("promotions", "promotions", ["id","property_id","name","status","start_date","end_date","terms","segments","linked_accounts","include_rooms_revenue","include_events_revenue"], None),
+    for coll, table, cols in [
+        ("room_types", "rooms", ["id", "property_id", "name", "count", "size", "base_rate", "capacity", "payload"]),
+        ("venues", "venues", ["id", "property_id", "name", "is_combined", "shapes", "width", "length", "height", "area", "capacity", "payload"]),
+        ("taxes", "taxes", ["id", "property_id", "label", "rate", "scope", "payload"]),
+        ("financials", "financials", ["id", "property_id", "year", "months", "payload"]),
+        ("tasks", "tasks", ["id", "property_id", "task", "client", "priority", "completed", "date", "star", "category", "description", "assigned_to", "assignees", "payload"]),
+        ("promotions", "promotions", ["id", "property_id", "name", "status", "start_date", "end_date", "terms", "segments", "linked_accounts", "include_rooms_revenue", "include_events_revenue", "payload"]),
     ]:
-        cur.execute("SELECT payload FROM app_collection_rows WHERE collection_name=%s", (coll,))
+        cur.execute(
+            "SELECT row_id, payload FROM app_collection_rows WHERE collection_name=%s ORDER BY row_id",
+            (coll,),
+        )
         rows = []
+        used_pks: set[str] = set()
+        tax_by_id: dict[str, dict] = {}
         for r in cur.fetchall():
             p = r["payload"]
-            row = {"id": p.get("id")}
-            # map camelCase -> snake_case per table
+            prop_id = empty_to_none(p.get("propertyId"))
+            pk = collection_pk(
+                r.get("row_id"),
+                prop_id,
+                p.get("id"),
+                used_pks,
+                skip_duplicates=(table == "taxes"),
+            )
+            if not pk:
+                if table != "taxes":
+                    continue
+                # Within-property tax type collision: last row wins (keeps latest rates).
+                pk = property_scoped_id(prop_id, p.get("id")) or r.get("row_id")
+                if not pk:
+                    continue
+            row = {
+                "id": pk,
+                "payload": json.dumps(p),
+            }
             if table == "rooms":
-                row.update({"property_id": p.get("propertyId"), "name": p.get("name"), "count": p.get("count"), "size": p.get("size"), "base_rate": p.get("baseRate"), "capacity": p.get("capacity")})
+                row.update({"property_id": prop_id, "name": p.get("name"), "count": p.get("count"), "size": p.get("size"), "base_rate": p.get("baseRate"), "capacity": p.get("capacity")})
             elif table == "venues":
-                row.update({"property_id": p.get("propertyId"), "name": p.get("name"), "is_combined": p.get("isCombined"), "shapes": json.dumps(p.get("shapes", [])), "width": p.get("width"), "length": p.get("length"), "height": p.get("height"), "area": p.get("area"), "capacity": p.get("capacity")})
+                row.update({"property_id": prop_id, "name": p.get("name"), "is_combined": p.get("isCombined"), "shapes": json.dumps(p.get("shapes", [])), "width": p.get("width"), "length": p.get("length"), "height": p.get("height"), "area": p.get("area"), "capacity": p.get("capacity")})
             elif table == "taxes":
-                row.update({"property_id": p.get("propertyId"), "label": p.get("label"), "rate": p.get("rate"), "scope": p.get("scope")})
+                row.update({"property_id": prop_id, "label": p.get("label"), "rate": p.get("rate"), "scope": p.get("scope")})
             elif table == "financials":
-                row.update({"property_id": p.get("propertyId"), "year": p.get("year"), "months": json.dumps(p.get("months", []))})
+                row.update({"property_id": prop_id, "year": p.get("year"), "months": json.dumps(p.get("months", []))})
             elif table == "tasks":
-                row.update({"property_id": p.get("propertyId"), "task": p.get("task"), "client": p.get("client"), "priority": p.get("priority"), "completed": p.get("completed"), "date": d(p.get("date")), "star": p.get("star"), "category": p.get("category"), "description": p.get("description"), "assigned_to": p.get("assignedTo"), "assignees": json.dumps(p.get("assignees", []))})
+                row.update({"property_id": prop_id, "task": p.get("task"), "client": p.get("client"), "priority": p.get("priority"), "completed": p.get("completed"), "date": d(p.get("date")), "star": p.get("star"), "category": p.get("category"), "description": p.get("description"), "assigned_to": p.get("assignedTo"), "assignees": json.dumps(p.get("assignees", []))})
             elif table == "promotions":
-                row.update({"property_id": p.get("propertyId"), "name": p.get("name"), "status": p.get("status"), "start_date": d(p.get("startDate")), "end_date": d(p.get("endDate")), "terms": p.get("terms"), "segments": json.dumps(p.get("segments", [])), "linked_accounts": json.dumps(p.get("linkedAccounts", [])), "include_rooms_revenue": p.get("includeRoomsRevenue"), "include_events_revenue": p.get("includeEventsRevenue")})
-            rows.append(row)
+                row.update({"property_id": prop_id, "name": p.get("name"), "status": p.get("status"), "start_date": d(p.get("startDate")), "end_date": d(p.get("endDate")), "terms": p.get("terms"), "segments": json.dumps(p.get("segments", [])), "linked_accounts": json.dumps(p.get("linkedAccounts", [])), "include_rooms_revenue": p.get("includeRoomsRevenue"), "include_events_revenue": p.get("includeEventsRevenue")})
+            if table == "taxes":
+                tax_by_id[pk] = row
+            else:
+                rows.append(row)
+        if table == "taxes":
+            rows = list(tax_by_id.values())
+            # Drop historical #N / bare-id leftovers from earlier migrate passes.
+            cur.execute("DELETE FROM taxes")
         rows = filter_fk(rows, "property_id", valid_property_ids, table)
         counts[table] = upsert(cur, table, cols, rows)
 
@@ -372,14 +678,29 @@ def migrate():
         table = "contract_templates" if name == "contract_templates" else "cxl_reasons"
         arr = payload if isinstance(payload, list) else []
         rows = [{"id": x.get("id", str(i)), "payload": json.dumps(x)} for i, x in enumerate(arr)]
-        counts[table] = upsert(cur, table, ["id","payload"], rows)
+        counts[table] = upsert(cur, table, ["id", "payload"], rows)
 
     # ---- CRM STATE ----
+    # Store the full CRM map in BOTH leads and payload. The API/DAL historically
+    # reads `leads`; migrator used to put only legacy leads[] there, which dropped
+    # salesCalls until the client overwrote with a different shape.
     cur.execute("SELECT collection_name, map_key, payload FROM app_collection_maps WHERE collection_name='crm_state'")
     crmrows = []
     for r in cur.fetchall():
-        crmrows.append({"property_id": r["map_key"], "leads": json.dumps((r["payload"] or {}).get("leads", []))})
-    counts["crm_state"] = upsert(cur, "crm_state", ["property_id","leads"], crmrows)
+        full = r["payload"] or {}
+        if not isinstance(full, dict):
+            full = {}
+        crmrows.append({
+            "property_id": r["map_key"],
+            "leads": json.dumps(full),
+            "payload": json.dumps(full),
+        })
+    crmrows = filter_fk(crmrows, "property_id", valid_property_ids, "crm_state")
+    counts["crm_state"] = upsert(cur, "crm_state", ["property_id", "leads", "payload"], crmrows)
+
+    # Audit log of intentional FK nullifies — clear after a clean remigrate.
+    cur.execute("DELETE FROM migration_orphans")
+    counts["migration_orphans_cleared"] = True
 
     c.commit()
     cur.close()
@@ -387,8 +708,30 @@ def migrate():
     return counts
 
 
+def _self_check_password_helper():
+    assert ensure_bcrypt("$2b$12$" + "a" * 53).startswith("$2")
+    h = ensure_bcrypt("plaintext-demo")
+    assert h.startswith("$2") and len(h) >= 50
+    assert short_id("P1::RTabc", None) == "RTabc"
+    assert empty_to_none("") is None
+    assert property_scoped_id("P1", "vat") == "P1::vat"
+    used: set[str] = set()
+    assert collection_pk("P1::vat", "P1", "vat", used) == "P1::vat"
+    assert collection_pk("vat", "P2", "vat", used) == "P2::vat"
+    assert collection_pk("Ps8b83kgbm::muni", "Ps8b83kgbm", "muni", used) == "Ps8b83kgbm::muni"
+    assert collection_pk("muni", "Ps8b83kgbm", "muni", used) == "muni"
+    tax_used: set[str] = set()
+    assert collection_pk("Ps8b83kgbm::vat", "Ps8b83kgbm", "vat", tax_used, skip_duplicates=True) == "Ps8b83kgbm::vat"
+    assert collection_pk("vat-dup", "Ps8b83kgbm", "vat", tax_used, skip_duplicates=True) is None
+    assert ensure_scoped_child_id("REQ-A", "room", 0, {"id": 1})["id"] == "REQ-A:room:0:1"
+    assert ensure_scoped_child_id("REQ-B", "room", 0, {"id": 1})["id"] == "REQ-B:room:0:1"
+
+
 if __name__ == "__main__":
-    res = migrate()
-    print("MIGRATION COUNTS:")
-    for k, v in res.items():
-        print(f"  {k:25s} {v}")
+    _self_check_password_helper()
+    print("Self-check OK (helpers: ensure_bcrypt, short_id, empty_to_none)")
+    if os.environ.get("RUN_MIGRATE") == "1":
+        res = migrate()
+        print("MIGRATION COUNTS:")
+        for k, v in res.items():
+            print(f"  {k:25s} {v}")

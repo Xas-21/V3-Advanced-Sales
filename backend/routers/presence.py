@@ -53,7 +53,9 @@ async def get_presence(
         with conn.cursor() as cur:
             cur.execute(
                 """SELECT id, name, username, role, avatar FROM users
-                   WHERE id = ANY(%s) AND status = 'active' ORDER BY name;""",
+                   WHERE id = ANY(%s)
+                     AND LOWER(COALESCE(status, '')) = 'active'
+                   ORDER BY name;""",
                 (online_ids,),
             )
             return [

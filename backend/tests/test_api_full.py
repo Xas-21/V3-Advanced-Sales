@@ -267,6 +267,60 @@ def test_patch_user_property_id_preserves_session_version(test_admin):
     u2 = next((x for x in r3.json() if str(x.get("id")) == uid), None)
     assert u2 is not None
     assert pid in (u2.get("property_ids") or [])
+    assert int(u2.get("sessionVersion") or 0) == v0
+
+
+def test_patch_user_permission_grants_bumps_session_version(test_admin):
+    """Permission overrides must bump session_version so clients re-auth."""
+    import psycopg
+    import uuid
+    from security import hash_password
+    from utils import get_database_url
+
+    client.post(
+        "/api/login",
+        json={"username": test_admin["username"], "password": test_admin["password"]},
+    )
+    uid = f"U-{uuid.uuid4().hex[:10]}"
+    conn = psycopg.connect(get_database_url())
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO users (id, username, password, name, role, status, property_id,
+                                      permission_grants, permission_revokes, session_version)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, 0)""",
+                (
+                    uid,
+                    f"perm_bump_{secrets.token_hex(3)}",
+                    hash_password(f"Pytest@{secrets.token_hex(6)}"),
+                    "Perm Bump",
+                    "General Manager",
+                    "active",
+                    PROP_ID,
+                    '["mutate.operational"]',
+                    "[]",
+                ),
+            )
+        conn.commit()
+    finally:
+        conn.close()
+    try:
+        r = client.patch(
+            f"/api/users/{uid}",
+            json={"permissionGrants": ["accounts.viewOnly"]},
+        )
+        assert r.status_code == 200, r.text
+        body = r.json().get("user") or {}
+        assert body.get("permissionGrants") == ["accounts.viewOnly"]
+        assert int(body.get("sessionVersion") or 0) == 1
+    finally:
+        conn = psycopg.connect(get_database_url())
+        try:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM users WHERE id = %s", (uid,))
+            conn.commit()
+        finally:
+            conn.close()
 
 
 def test_login_invalid():

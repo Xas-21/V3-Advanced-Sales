@@ -44,6 +44,40 @@ _CLIENT_ALIASES = {
     "assignedPropertyIds": "assigned_property_ids",
 }
 
+# Changing these must invalidate existing sessions so clients pick up authz.
+_SESSION_BUMP_KEYS = frozenset({
+    "permission_grants", "permission_revokes", "role", "status",
+})
+
+
+def _jsonish_list(val) -> list:
+    if val is None:
+        return []
+    if isinstance(val, str):
+        try:
+            val = json.loads(val)
+        except Exception:
+            return []
+    return list(val) if isinstance(val, list) else []
+
+
+def _authz_changed(existing: dict, updates: dict) -> bool:
+    """True when role/status/permission overrides actually differ from DB row."""
+    for key in _SESSION_BUMP_KEYS:
+        if key not in updates:
+            continue
+        new_val = updates[key]
+        old_val = existing.get(key)
+        if key in ("permission_grants", "permission_revokes"):
+            if sorted(map(str, _jsonish_list(old_val))) != sorted(map(str, _jsonish_list(new_val))):
+                return True
+        elif key == "status":
+            if str(old_val or "").strip().lower() != str(new_val or "").strip().lower():
+                return True
+        elif str(old_val or "") != str(new_val or ""):
+            return True
+    return False
+
 
 def _normalize_user_patch(patch: dict) -> dict:
     out: dict = {}
@@ -126,7 +160,7 @@ def get_user(user_id: str, session_id: str | None = Cookie(default=None, alias=S
 
 @router.patch("/{user_id}")
 def patch_user(user_id: str, patch: dict, session_id: str | None = Cookie(default=None, alias=SESSION_COOKIE_NAME)):
-    admin = require_admin(session_id)
+    require_admin(session_id)
     if not isinstance(patch, dict):
         raise HTTPException(status_code=400, detail="Expected JSON object body")
 
@@ -138,8 +172,12 @@ def patch_user(user_id: str, patch: dict, session_id: str | None = Cookie(defaul
             if not row:
                 raise HTTPException(status_code=404, detail="User not found")
             updates = _normalize_user_patch(patch)
-            if "assigned_property_ids" in updates and isinstance(updates["assigned_property_ids"], list):
-                updates["assigned_property_ids"] = json.dumps(updates["assigned_property_ids"])
+            if "status" in updates and updates["status"] is not None:
+                updates["status"] = str(updates["status"]).strip().lower() or "active"
+            bump = _authz_changed(row, updates)
+            for json_key in ("assigned_property_ids", "permission_grants", "permission_revokes"):
+                if json_key in updates and isinstance(updates[json_key], (list, dict)):
+                    updates[json_key] = json.dumps(updates[json_key])
             if not updates:
                 raise HTTPException(status_code=400, detail="No updatable fields provided")
             set_clause = ", ".join(f"{_SQL_COLS[k]} = %s" for k in updates)
@@ -147,6 +185,11 @@ def patch_user(user_id: str, patch: dict, session_id: str | None = Cookie(defaul
             cur.execute(f"UPDATE users SET {set_clause} WHERE id = %s RETURNING *;", params)
             new_row = cur.fetchone()
             conn.commit()
+    if bump:
+        new_ver = auth_db.bump_session_version_and_revoke(user_id)
+        if new_row is not None:
+            new_row = dict(new_row)
+            new_row["session_version"] = new_ver
     return {"message": "User updated successfully", "user": _row_to_client(new_row)}
 
 
@@ -174,6 +217,9 @@ def create_or_update_user(user_data: dict, session_id: str | None = Cookie(defau
                 # Password is not in _SQL_COLS — handle separately so password-only
                 # admin resets never KeyError / emit an empty SET clause.
                 updates = {k: v for k, v in updates.items() if k in _SQL_COLS}
+                if "status" in updates and updates["status"] is not None:
+                    updates["status"] = str(updates["status"]).strip().lower() or "active"
+                bump = _authz_changed(existing, updates)
                 for json_key in ("assigned_property_ids", "permission_grants", "permission_revokes"):
                     if json_key in updates and isinstance(updates[json_key], (list, dict)):
                         updates[json_key] = json.dumps(updates[json_key])
@@ -184,6 +230,7 @@ def create_or_update_user(user_data: dict, session_id: str | None = Cookie(defau
                     if not ok:
                         raise HTTPException(status_code=400, detail=msg)
                     password_hash = hash_password(str(raw_pw))
+                    bump = True
                 if not updates and password_hash is None:
                     raise HTTPException(status_code=400, detail="No updatable fields provided")
                 set_parts = [f"{_SQL_COLS[k]} = %s" for k in updates]
@@ -198,7 +245,7 @@ def create_or_update_user(user_data: dict, session_id: str | None = Cookie(defau
                 )
                 new_row = cur.fetchone()
                 conn.commit()
-                if password_hash is not None:
+                if bump:
                     new_ver = auth_db.bump_session_version_and_revoke(str(existing_id))
                     if new_row is not None:
                         new_row = dict(new_row)

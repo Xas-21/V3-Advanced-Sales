@@ -14,6 +14,7 @@ Design rules (per owner directive):
   field loss during the migration.
 - Real-time broadcasts: mutations trigger WebSocket events to connected clients.
 """
+from child_ids import resolve_child_pk, scoped_child_id
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -197,6 +198,18 @@ def _upsert_doc(
     return payload
 
 
+def _doc_with_row_id(payload: dict, row_id: str) -> dict:
+    """Return a copy of payload whose `id` matches the DB primary key.
+
+    Migrated rows often keep a short id inside payload (e.g. \"muni\") while the
+    table PK is property-scoped (\"Ps8…::muni\"). Returning the short id makes
+    POST /api/taxes create a second row on Save Configuration.
+    """
+    out = dict(payload)
+    out["id"] = str(row_id)
+    return out
+
+
 def _list_doc(table: str, property_id: Optional[str]) -> list:
     pool = _get_pool()
     order = "id ASC" if table in _NO_TS else "updated_at DESC, id ASC"
@@ -207,31 +220,35 @@ def _list_doc(table: str, property_id: Optional[str]) -> list:
                     pid = str(property_id)
                     cur.execute(
                         sql.SQL(
-                            "SELECT payload FROM {tbl} WHERE property_id = %s OR property_id IS NULL ORDER BY " + order
+                            "SELECT id, payload FROM {tbl} WHERE property_id = %s OR property_id IS NULL ORDER BY " + order
                         ).format(tbl=sql.Identifier(table)),
                         (pid,),
                     )
                 else:
                     cur.execute(
-                        sql.SQL("SELECT payload FROM {tbl} ORDER BY " + order).format(
+                        sql.SQL("SELECT id, payload FROM {tbl} ORDER BY " + order).format(
                             tbl=sql.Identifier(table)
                         )
                     )
             elif table == "properties":
                 # properties is the tenant root; list all, tenant-scope on payload.
                 cur.execute(
-                    sql.SQL("SELECT payload FROM {tbl} ORDER BY " + order).format(
+                    sql.SQL("SELECT id, payload FROM {tbl} ORDER BY " + order).format(
                         tbl=sql.Identifier(table)
                     )
                 )
             else:
                 cur.execute(
-                    sql.SQL("SELECT payload FROM {tbl} ORDER BY " + order).format(
+                    sql.SQL("SELECT id, payload FROM {tbl} ORDER BY " + order).format(
                         tbl=sql.Identifier(table)
                     )
                 )
             rows = cur.fetchall()
-    out = [r["payload"] for r in rows if isinstance(r.get("payload"), dict)]
+    out = [
+        _doc_with_row_id(r["payload"], r["id"])
+        for r in rows
+        if isinstance(r.get("payload"), dict) and r.get("id") is not None
+    ]
     scope = _tenant_scope()
     if table == "properties":
         # Property documents are tenant roots: their own `id` is the property key
@@ -255,11 +272,13 @@ def _get_doc(table: str, row_id: str) -> Optional[dict]:
     with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                sql.SQL("SELECT payload FROM {tbl} WHERE id = %s").format(tbl=sql.Identifier(table)),
+                sql.SQL("SELECT id, payload FROM {tbl} WHERE id = %s").format(tbl=sql.Identifier(table)),
                 (str(row_id),),
             )
             row = cur.fetchone()
-    return row["payload"] if row and isinstance(row.get("payload"), dict) else None
+    if not row or not isinstance(row.get("payload"), dict):
+        return None
+    return _doc_with_row_id(row["payload"], row["id"])
 
 
 def _delete_doc(table: str, row_id: str, property_id: Optional[str] = None):
@@ -416,8 +435,12 @@ def get_flat(table: str, row_id: str) -> Optional[dict]:
 def upsert_flat(table: str, data: dict, id_prefix: str = "X") -> dict:
     item = {**(data if isinstance(data, dict) else {})}
     row_id = str(item.get("id") or _gen_id(id_prefix))
-    item["id"] = row_id
     property_id = str(item.get("propertyId") or "").strip() or None
+    # Taxes / rooms / venues / etc. may arrive with a short blob id like "muni".
+    # Persist under "{propertyId}::{id}" so Save does not fork a second row.
+    if table in {"taxes", "rooms", "venues", "tasks", "promotions", "financials"} and property_id and "::" not in row_id:
+        row_id = f"{property_id}::{row_id}"
+    item["id"] = row_id
     if table in _FLAT_WITH_PID:
         existing = _get_doc(table, row_id)
         existing_pid = None
@@ -470,6 +493,23 @@ def upsert_payload_only(table: str, data: dict, id_prefix: str = "T") -> dict:
 
 
 # crm_state: keyed by property_id -------------------------------------------- #
+def _crm_block_score(block: Optional[dict]) -> int:
+    """Prefer the richer CRM blob (salesCalls + pipeline cards)."""
+    if not isinstance(block, dict):
+        return -1
+    sc = block.get("salesCalls")
+    n = len(sc) if isinstance(sc, list) else 0
+    pipe = block.get("pipeline") if isinstance(block.get("pipeline"), dict) else {}
+    for v in pipe.values():
+        if isinstance(v, list):
+            n += len(v)
+    # Legacy shape: leads.new held sales calls
+    leads = block.get("leads") if isinstance(block.get("leads"), dict) else {}
+    if isinstance(leads.get("new"), list):
+        n += len(leads["new"])
+    return n
+
+
 def get_crm_state(property_id: str) -> Optional[dict]:
     pid = str(property_id or "global").strip() or "global"
     # Tenant isolation: a scoped user may only read their properties' pipeline.
@@ -479,9 +519,20 @@ def get_crm_state(property_id: str) -> Optional[dict]:
     pool = _get_pool()
     with pool.connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT leads FROM crm_state WHERE property_id = %s;", (pid,))
+            cur.execute(
+                "SELECT leads, payload FROM crm_state WHERE property_id = %s;",
+                (pid,),
+            )
             row = cur.fetchone()
-    return row["leads"] if row and isinstance(row.get("leads"), dict) else None
+    if not row:
+        return None
+    leads = row.get("leads") if isinstance(row.get("leads"), dict) else None
+    payload = row.get("payload") if isinstance(row.get("payload"), dict) else None
+    # Migrator stores the full CRM map in payload; older writes only touched leads.
+    # Prefer whichever block actually has salesCalls/pipeline data.
+    if _crm_block_score(payload) >= _crm_block_score(leads):
+        return payload or leads
+    return leads or payload
 
 
 def upsert_crm_state(property_id: str, leads: dict) -> dict:
@@ -492,11 +543,14 @@ def upsert_crm_state(property_id: str, leads: dict) -> dict:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO crm_state (property_id, leads, updated_at)
-                VALUES (%s, %s, NOW())
-                ON CONFLICT (property_id) DO UPDATE SET leads = EXCLUDED.leads, updated_at = NOW();
+                INSERT INTO crm_state (property_id, leads, payload, updated_at)
+                VALUES (%s, %s, %s, NOW())
+                ON CONFLICT (property_id) DO UPDATE SET
+                    leads = EXCLUDED.leads,
+                    payload = EXCLUDED.payload,
+                    updated_at = NOW();
                 """,
-                (pid, Json(leads)),
+                (pid, Json(leads), Json(leads)),
             )
             conn.commit()
     _broadcast_change("updated", "crm_state", {"propertyId": pid}, pid if pid != "global" else None)
@@ -682,14 +736,17 @@ def _load_request_children_maps(cur, request_ids: list) -> dict:
     for key, table in _REQUEST_ARRAY_CHILD_TABLES:
         cur.execute(
             sql.SQL(
-                "SELECT request_id, payload FROM {} WHERE request_id = ANY(%s) ORDER BY request_id, idx"
+                "SELECT request_id, id, payload FROM {} WHERE request_id = ANY(%s) ORDER BY request_id, idx"
             ).format(sql.Identifier(table)),
             (ids,),
         )
         bucket = out[key]
         for row in cur.fetchall():
             rid = row["request_id"]
-            bucket.setdefault(rid, []).append(row["payload"])
+            payload = row["payload"]
+            if isinstance(payload, dict):
+                payload = _doc_with_row_id(payload, row["id"])
+            bucket.setdefault(rid, []).append(payload)
 
     cur.execute(
         "SELECT request_id, payload FROM request_invoices WHERE request_id = ANY(%s) ORDER BY request_id, idx",
@@ -919,9 +976,9 @@ def upsert_request(data: dict) -> dict:
                 else:
                     arr = item.get(key)
                     if isinstance(arr, list):
-                        for c in arr:
+                        for idx, c in enumerate(arr):
                             if isinstance(c, dict):
-                                _insert_child(cur, child_table, req_id, idgen, c)
+                                _insert_child(cur, child_table, req_id, idgen, c, idx=idx)
             conn.commit()
     item["updatedAt"] = _NOW().isoformat()
     
@@ -932,8 +989,18 @@ def upsert_request(data: dict) -> dict:
     return item
 
 
-def _insert_child(cur, table: str, request_id: str, idgen, child: dict):
-    cid = str(child.get("id") or (idgen() if callable(idgen) else _gen_id("C")))
+def _insert_child(cur, table: str, request_id: str, idgen, child: dict, idx: int = 0):
+    kind = {
+        "request_rooms": "room",
+        "request_payments": "payment",
+        "request_agenda": "agenda",
+        "request_logs": "log",
+        "request_alerts": "alert",
+        "request_transportation": "transport",
+    }.get(table, "child")
+    # Always rebuild PK from current idx — never reuse a full scoped id as-is
+    # (prepended logs would collide on parent:log:0).
+    cid = resolve_child_pk(request_id, kind, idx, child.get("id"))
     child_full = {**child, "id": cid, "request_id": request_id}
     if table in ("request_invoices", "request_feedback"):
         # keyed by request_id (PK), no separate id column
@@ -1076,10 +1143,16 @@ def _row_to_account_dict(a, cur):
         pal = None
     ou = a["owner_user_id"]
     owner_user = {"id": ou, "username": a["owner_username"], "name": USERS.get(ou, a["owner_username"])} if ou else None
-    cur.execute("SELECT payload FROM account_contacts WHERE account_id=%s ORDER BY idx", (a["id"],))
-    contacts = [r["payload"] for r in cur.fetchall()]
-    cur.execute("SELECT payload FROM account_activities WHERE account_id=%s ORDER BY idx", (a["id"],))
-    activities = [r["payload"] for r in cur.fetchall()]
+    cur.execute("SELECT id, payload FROM account_contacts WHERE account_id=%s ORDER BY idx", (a["id"],))
+    contacts = [
+        _doc_with_row_id(r["payload"], r["id"]) if isinstance(r.get("payload"), dict) else r.get("payload")
+        for r in cur.fetchall()
+    ]
+    cur.execute("SELECT id, payload FROM account_activities WHERE account_id=%s ORDER BY idx", (a["id"],))
+    activities = [
+        _doc_with_row_id(r["payload"], r["id"]) if isinstance(r.get("payload"), dict) else r.get("payload")
+        for r in cur.fetchall()
+    ]
     return {
         "id": a["id"], "name": a["name"], "type": a["type"], "city": a["city"],
         "street": a["street"], "country": a["country"], "website": a["website"],
@@ -1219,13 +1292,13 @@ def upsert_account(data: dict) -> dict:
             )
             # nested children
             cur.execute("DELETE FROM account_contacts WHERE account_id = %s;", (acc_id,))
-            for c in item.get("contacts") or []:
+            for idx, c in enumerate(item.get("contacts") or []):
                 if isinstance(c, dict):
-                    _insert_account_contact(cur, acc_id, c)
+                    _insert_account_contact(cur, acc_id, c, idx=idx)
             cur.execute("DELETE FROM account_activities WHERE account_id = %s;", (acc_id,))
-            for a in item.get("activities") or []:
+            for idx, a in enumerate(item.get("activities") or []):
                 if isinstance(a, dict):
-                    _insert_account_activity(cur, acc_id, a)
+                    _insert_account_activity(cur, acc_id, a, idx=idx)
             # Keep the denormalized account_name on linked requests in sync so the
             # requests list / reports reflect a rename without re-editing each request.
             renamed_count = _cascade_account_rename_to_requests(cur, acc_id, item.get("name"))
@@ -1243,19 +1316,24 @@ def upsert_account(data: dict) -> dict:
     return item
 
 
-def _insert_account_contact(cur, account_id: str, c: dict):
-    cid = str(c.get("id") or _gen_id("AC"))
+def _insert_account_contact(cur, account_id: str, c: dict, idx: int = 0):
+    raw = c.get("id")
+    if raw is not None and str(raw).strip() != "":
+        sraw = str(raw).strip()
+        cid = sraw if sraw.startswith(f"{account_id}:") else scoped_child_id(account_id, "contact", idx, sraw)
+    else:
+        cid = scoped_child_id(account_id, "contact", idx, None)
     c_full = {**c, "id": cid, "account_id": account_id}
     cur.execute(
         """
         INSERT INTO account_contacts (
-            id, account_id, first_name, last_name, name, position, email, phone, city, country, payload
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            id, account_id, first_name, last_name, name, position, email, phone, city, country, payload, idx
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (id) DO UPDATE SET
             account_id = EXCLUDED.account_id, first_name = EXCLUDED.first_name,
             last_name = EXCLUDED.last_name, name = EXCLUDED.name, position = EXCLUDED.position,
             email = EXCLUDED.email, phone = EXCLUDED.phone, city = EXCLUDED.city,
-            country = EXCLUDED.country, payload = EXCLUDED.payload;
+            country = EXCLUDED.country, payload = EXCLUDED.payload, idx = EXCLUDED.idx;
         """,
         (
             cid,
@@ -1269,32 +1347,39 @@ def _insert_account_contact(cur, account_id: str, c: dict):
             c.get("city"),
             c.get("country"),
             Json(c_full),
+            idx,
         ),
     )
 
 
-def _insert_account_activity(cur, account_id: str, a: dict):
-    aid = str(a.get("id") or _gen_id("ACT"))
+def _insert_account_activity(cur, account_id: str, a: dict, idx: int = 0):
+    raw = a.get("id")
+    if raw is not None and str(raw).strip() != "":
+        sraw = str(raw).strip()
+        aid = sraw if sraw.startswith(f"{account_id}:") else scoped_child_id(account_id, "activity", idx, sraw)
+    else:
+        aid = scoped_child_id(account_id, "activity", idx, None)
     a_full = {**a, "id": aid, "account_id": account_id}
     cur.execute(
         """
         INSERT INTO account_activities (
-            id, account_id, title, body, activity_user, at, crm_lead_id, payload
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            id, account_id, title, body, activity_user, at, crm_lead_id, payload, idx
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (id) DO UPDATE SET
             account_id = EXCLUDED.account_id, title = EXCLUDED.title, body = EXCLUDED.body,
             activity_user = EXCLUDED.activity_user, at = EXCLUDED.at,
-            crm_lead_id = EXCLUDED.crm_lead_id, payload = EXCLUDED.payload;
+            crm_lead_id = EXCLUDED.crm_lead_id, payload = EXCLUDED.payload, idx = EXCLUDED.idx;
         """,
         (
             aid,
             account_id,
             a.get("title"),
             a.get("body"),
-            a.get("activityUser"),
+            a.get("activityUser") or a.get("user"),
             _as_datetime(a.get("at")),
             a.get("crmLeadId"),
             Json(a_full),
+            idx,
         ),
     )
 

@@ -285,16 +285,30 @@ def list_messageable_users(
         with conn.cursor() as cur:
             if is_admin(user) and not scope:
                 cur.execute(
-                    "SELECT id, name, username, role, avatar, property_id FROM users WHERE status='active' AND id != %s ORDER BY name;",
+                    """SELECT id, name, username, role, avatar, property_id FROM users
+                       WHERE LOWER(COALESCE(status, '')) = 'active' AND id != %s
+                       ORDER BY name;""",
                     (user["id"],),
                 )
             elif scope:
+                # Match primary property_id, assigned_property_ids[], OR properties.assigned_user_ids.
+                # Status in Neon/migrated data is often title-case "Active".
                 cur.execute(
-                    """SELECT id, name, username, role, avatar, property_id FROM users
-                       WHERE status='active' AND id != %s
-                       AND (property_id = %s OR assigned_property_ids @> %s::jsonb)
-                       ORDER BY name;""",
-                    (user["id"], scope, json.dumps([scope])),
+                    """SELECT DISTINCT u.id, u.name, u.username, u.role, u.avatar, u.property_id
+                       FROM users u
+                       LEFT JOIN properties p ON p.id = %s
+                       WHERE LOWER(COALESCE(u.status, '')) = 'active'
+                         AND u.id != %s
+                         AND (
+                           u.property_id = %s
+                           OR u.assigned_property_ids @> %s::jsonb
+                           OR (
+                             jsonb_typeof(p.assigned_user_ids) = 'array'
+                             AND p.assigned_user_ids @> to_jsonb(u.id::text)
+                           )
+                         )
+                       ORDER BY u.name;""",
+                    (scope, user["id"], scope, json.dumps([scope])),
                 )
             else:
                 return []
