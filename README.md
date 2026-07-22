@@ -99,7 +99,7 @@ docker exec -e PGPASSWORD="$DB_PASSWORD" as-postgres \
 
 - **`AS.tsx`** — Main dashboard shell, KPI cards, navigation
 - **`CRM.tsx`** — Pipeline management
-- **`RequestsManager.tsx`** — Booking request wizard
+- **`RequestsManager.tsx`** — Booking request wizard (Discard on new/edit/duplicate)
 - **`Contracts.tsx` / `Reports.tsx` / `Settings.tsx`**
 - **`dashboardHub/`** — Analytics tabs + Social Feed
 

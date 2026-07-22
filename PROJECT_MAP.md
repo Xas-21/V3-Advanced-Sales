@@ -119,7 +119,7 @@ backend/
 ```
 AS.tsx                   — Main app shell, routing, KPIs
 CRM.tsx                  — CRM pipeline
-RequestsManager.tsx      — Booking request wizard
+RequestsManager.tsx      — Booking request wizard (Discard on new/edit/duplicate)
 Contracts.tsx            — Contract manager
 Reports.tsx              — Reports & analytics
 Settings.tsx             — System config (users, properties, taxes)
