@@ -1,8 +1,35 @@
 # API + Remote MCP Control Plane — Design Spec
 
 **Date:** 2026-07-22  
-**Status:** Approved (awaiting implementation plan)  
+**Status:** Approved (implementation plan next)  
 **Author:** Brainstormed with user via superpowers:brainstorming
+
+## 0. Post-approval adjustments (2026-07-22 codebase review)
+
+Other agents landed work after this spec was drafted. The design stands, with these
+concrete corrections for implementers:
+
+1. **Permission vocabulary** — Use real IDs from `userPermissions.ts`
+   (`nav.dashboard`, `mutate.operational`, `promotions.view`, `accounts.delete`,
+   `requests.delete`, `settings.admin`, …). Do **not** invent `view_dashboard` /
+   `view_requests` / `view_accounts`. KPI snapshot requires `nav.dashboard`.
+2. **Key admin gate** — Settings → Dev and `/api/api-keys*` are **admin-only**
+   in v1 (`require_admin` / `isSystemAdmin`), matching Properties / User Mgmt /
+   Configurations. No new `manage_api_keys` permission in v1.
+3. **Router auth today** — Data routers use global `Depends(require_user)` in
+   `main.py`. Cookie sessions stay as-is for the browser. **API-key actors must
+   get server-side permission + property checks** on the v1 surface (browser
+   session behavior unchanged in v1 to avoid breaking the UI).
+4. **Settings.tsx** — Recently expanded (taxonomy drag-reorder, profile property
+   load-on-mount). Add Dev as a fifth admin tab; prefer a dedicated
+   `SettingsDevPanel.tsx` so Settings.tsx does not grow further.
+5. **Migration number** — Next script is `014_api_keys.py` (013 is crm card comments).
+6. **MCP mount** — Adding Streamable HTTP requires a FastAPI **lifespan** that
+   runs `mcp.session_manager.run()`; migrate existing
+   `@app.on_event("startup/shutdown")` into that lifespan.
+7. **Auth/session hardening** — `c2325b7` bumps `session_version` when permission
+   grants change and stabilizes child IDs / presence. API keys are independent of
+   cookie sessions; rotating/revoking a key must not require session bumps.
 
 ## 1. Problem / Goal
 
