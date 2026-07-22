@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from typing import Optional
 
 from data_access import delete_flat, list_flat, upsert_flat
+from sort_order import sort_by_sort_order
 import uuid
 
 router = APIRouter(prefix="/api/venues")
@@ -9,7 +10,7 @@ router = APIRouter(prefix="/api/venues")
 
 @router.get("")
 def get_venues(propertyId: Optional[str] = None):
-    return list_flat("venues", propertyId)
+    return sort_by_sort_order(list_flat("venues", propertyId))
 
 
 @router.post("")

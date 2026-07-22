@@ -37,6 +37,7 @@ import {
     shiftRangeToComparisonYear,
 } from './chartVsYearCompare';
 import type { AccountProfileChartTab } from './AccountProfilePerformanceChart';
+import { listAssignedProperties } from './userPropertyAccess';
 
 const AccountProfilePerformanceChart = lazy(() => import('./AccountProfilePerformanceChart'));
 
@@ -96,10 +97,6 @@ export function UserPerformanceDashboard({
     handleProfileChangePassword,
     onOpenTasks,
 }: UserPerformanceDashboardProps) {
-        const assignedProperties = properties.filter(
-            (p) => p.assignedUserIds?.includes(user.id) || p.id === user.propertyId
-        );
-
         const mergedUser = useMemo(() => {
             const fromList = users.find((u: any) => String(u?.id) === String(user?.id));
             if (!fromList) return user;
@@ -116,6 +113,11 @@ export function UserPerformanceDashboard({
                 },
             };
         }, [users, user]);
+
+        const assignedProperties = useMemo(
+            () => listAssignedProperties(mergedUser, properties || []),
+            [mergedUser, properties],
+        );
 
         const rollingThreeMonthRange = (d: Date) => {
             const y = d.getFullYear();

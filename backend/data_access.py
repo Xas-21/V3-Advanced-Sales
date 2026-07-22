@@ -441,14 +441,19 @@ def upsert_flat(table: str, data: dict, id_prefix: str = "X") -> dict:
     if table in {"taxes", "rooms", "venues", "tasks", "promotions", "financials"} and property_id and "::" not in row_id:
         row_id = f"{property_id}::{row_id}"
     item["id"] = row_id
+    existing = _get_doc(table, row_id)
     if table in _FLAT_WITH_PID:
-        existing = _get_doc(table, row_id)
         existing_pid = None
         if existing:
             existing_pid = str(existing.get("propertyId") or "").strip() or None
         _assert_upsert_write_access(existing_pid, property_id, row_exists=bool(existing))
     else:
         _assert_write_access(property_id)
+    # Partial POSTs (e.g. paymentMethods-only) must not wipe the rest of the document.
+    if isinstance(existing, dict) and existing:
+        item = {**existing, **item, "id": row_id}
+        if property_id is None:
+            property_id = str(item.get("propertyId") or "").strip() or None
     typed = _EXTRACTORS.get(table, lambda _: {})(item)
     _upsert_doc(table, row_id, property_id, item, typed)
     _broadcast_change("updated", table, item, property_id)

@@ -10,9 +10,12 @@
 - `AS.tsx` — main dashboard shell, routing, KPIs
 - `CRM.tsx` — CRM pipeline, accounts, activities
 - `RequestsManager.tsx` — booking request wizard
-- `Contracts.tsx`, `Reports.tsx`, `Settings.tsx` — feature modules
+- `Contracts.tsx`, `Reports.tsx`, `Settings.tsx` — feature modules (Settings taxonomy DnD + staff assignment)
+- `sortOrder.ts`, `userPropertyAccess.ts` — room/venue order + multi-property access helpers
 - `backend/main.py` — FastAPI entry; routers in `backend/routers/`
+- `backend/sort_order.py` — rooms/venues list sort by `sortOrder`
 - `backend/utils.py` — shared backend helpers
+- `backend/data_access.py` — `upsert_flat` merges partial property POSTs (do not wipe payload)
 
 ## Local feature work (Docker Compose)
 

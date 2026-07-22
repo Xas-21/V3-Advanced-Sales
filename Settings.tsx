@@ -4,7 +4,7 @@ import {
     User, Upload, Save, Edit, Plus, Trash2, X, Check, Mail, Phone, Shield,
     MapPin, Layout, Box, FileText, List, ChevronDown, ChevronRight, ChevronUp, Monitor,
     TrendingUp, Calculator, CalendarDays, ChevronLeft, CheckSquare, Zap, CheckCircle2, Download, Clock,
-    UserMinus, RefreshCw, Tags, UtensilsCrossed, Bell, CreditCard
+    UserMinus, RefreshCw, Tags, UtensilsCrossed, Bell, CreditCard, GripVertical
 } from 'lucide-react';
 import { apiUrl } from './backendApi';
 import {
@@ -30,6 +30,7 @@ import {
     saveOccupancyTypesForProperty,
     OCCUPANCY_TYPES_CHANGED_EVENT,
 } from './propertyOccupancyTypes';
+import { moveItem, nextSortOrder, withReassignedSortOrder } from './sortOrder';
 import {
     resolvePaymentMethodsForProperty,
     savePaymentMethodsForProperty,
@@ -46,7 +47,7 @@ import {
     type PermissionId,
 } from './userPermissions';
 import { checkPasswordPolicy } from './passwordPolicy';
-import { nextUserPropertyAccess } from './userPropertyAccess';
+import { nextUserPropertyAccess, userIsAssignedToProperty } from './userPropertyAccess';
 import { type CurrencyCode } from './currency';
 import { useCurrencyFormatters } from './useCurrencyFormatters';
 import type {
@@ -100,6 +101,9 @@ interface SettingsProps {
     theme: any;
     currentUser: any;
     activeProperty?: any;
+    /** From AS — needed so profile chips work before Settings' own fetch finishes. */
+    properties?: any[];
+    users?: any[];
     sharedRequests?: any[];
     accounts?: any[];
     crmLeads?: Record<string, any[]>;
@@ -112,14 +116,9 @@ interface SettingsProps {
     onRequireReLogin?: () => void;
 }
 
-// Mock Data
-const initialProperties: any[] = [];
-
 const initialRoomTypes: any[] = [];
 
 const initialVenues: any[] = [];
-
-const initialUsers: any[] = [];
 
 const defaultTaxesForProperty = (propertyId: string) => [
     { id: 'vat', label: 'VAT (Value Added Tax)', rate: 15, scope: { accommodation: true, transport: true, foodAndBeverage: true, events: true }, propertyId },
@@ -153,6 +152,8 @@ export default function Settings({
     theme,
     currentUser,
     activeProperty,
+    properties: sharedProperties = [],
+    users: sharedUsers = [],
     sharedRequests = [],
     accounts = [],
     crmLeads = {},
@@ -169,36 +170,49 @@ export default function Settings({
         formatCurrencyAmount(amountSar, maxFractionDigits);
     const appIsAdmin = isSystemAdmin(currentUser);
     const [activeTab, setActiveTab] = useState('profile');
-    const [properties, setProperties] = useState(initialProperties);
+    const [properties, setProperties] = useState<any[]>(() =>
+        Array.isArray(sharedProperties) ? sharedProperties : [],
+    );
     const [roomTypes, setRoomTypes] = useState(initialRoomTypes);
     const [venues, setVenues] = useState(initialVenues);
-    const [users, setUsers] = useState(initialUsers);
+    const [users, setUsers] = useState<any[]>(() => (Array.isArray(sharedUsers) ? sharedUsers : []));
     const [managingProperty, setManagingProperty] = useState<any>(null);
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
     const [alertSettingsSaveStatus, setAlertSettingsSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
     const directoryFetchedRef = useRef(false);
 
-    // Profile-only / non-admin: skip directory download. Admin tabs need users + properties once.
-    const needsDirectory = appIsAdmin && activeTab !== 'profile';
+    // AS already loads properties/users — seed Settings when still empty so profile chips
+    // work on first paint (without overwriting local assign/edit state later).
+    useEffect(() => {
+        if (!Array.isArray(sharedProperties) || sharedProperties.length === 0) return;
+        setProperties((prev) => (prev.length === 0 ? sharedProperties : prev));
+    }, [sharedProperties]);
 
     useEffect(() => {
-        if (!needsDirectory || directoryFetchedRef.current) return;
+        if (!Array.isArray(sharedUsers) || sharedUsers.length === 0) return;
+        setUsers((prev) => (prev.length === 0 ? sharedUsers : prev));
+    }, [sharedUsers]);
+
+    // Always fetch properties on mount (every role). Profile assignment chips need the catalog;
+    // previously this was skipped on the profile tab, so refresh showed Unassigned until another tab.
+    useEffect(() => {
+        if (directoryFetchedRef.current) return;
         directoryFetchedRef.current = true;
 
-        fetch(apiUrl('/api/users'))
-            .then((res) => res.json())
-            .then((data) => {
-                if (Array.isArray(data)) setUsers(data);
-            })
-            .catch((err) => console.error('Error fetching users:', err));
-
         fetch(apiUrl('/api/properties'))
-            .then((res) => res.json())
+            .then((res) => (res.ok ? res.json() : []))
             .then((data) => {
-                if (Array.isArray(data)) setProperties(data);
+                if (Array.isArray(data) && data.length) setProperties(data);
             })
             .catch((err) => console.error('Error fetching properties:', err));
-    }, [needsDirectory]);
+
+        fetch(apiUrl('/api/users'))
+            .then((res) => (res.ok ? res.json() : []))
+            .then((data) => {
+                if (Array.isArray(data) && data.length) setUsers(data);
+            })
+            .catch((err) => console.error('Error fetching users:', err));
+    }, []);
 
     useEffect(() => {
         if (!appIsAdmin && activeTab !== 'profile') {
@@ -389,9 +403,15 @@ export default function Settings({
                 stats: { yearlyTargets: {} as Record<string, number> },
             };
             if (item) {
+                const fromIds = item.property_ids || item.assignedPropertyIds || [];
+                const primary =
+                    String(item.propertyId ?? item.property_id ?? '').trim() ||
+                    (Array.isArray(fromIds) && fromIds[0] != null ? String(fromIds[0]) : '') ||
+                    '';
                 setModalFormData({
                     ...userDefaults,
                     ...item,
+                    propertyId: primary,
                     permissionGrants: Array.isArray(item.permissionGrants) ? [...item.permissionGrants] : [],
                     permissionRevokes: Array.isArray(item.permissionRevokes) ? [...item.permissionRevokes] : [],
                 });
@@ -472,6 +492,9 @@ export default function Settings({
         } else if (modalType === 'room') {
             const dataToSave = { ...modalFormData, propertyId: managingProperty?.id };
             if (!editingItem && !dataToSave.id) dataToSave.id = 'RT' + Math.random().toString(36).substr(2, 9);
+            if (!editingItem && (dataToSave.sortOrder === undefined || dataToSave.sortOrder === null || dataToSave.sortOrder === '')) {
+                dataToSave.sortOrder = nextSortOrder(safeRoomTypes);
+            }
             
             fetch(apiUrl('/api/rooms'), {
                 method: 'POST',
@@ -484,6 +507,9 @@ export default function Settings({
         } else if (modalType === 'venue') {
             const dataToSave = { ...modalFormData, propertyId: managingProperty?.id, shapes: modalFormData.shapes || [] };
             if (!editingItem && !dataToSave.id) dataToSave.id = 'V' + Math.random().toString(36).substr(2, 9);
+            if (!editingItem && (dataToSave.sortOrder === undefined || dataToSave.sortOrder === null || dataToSave.sortOrder === '')) {
+                dataToSave.sortOrder = nextSortOrder(safeVenues);
+            }
             
             fetch(apiUrl('/api/venues'), {
                 method: 'POST',
@@ -571,9 +597,23 @@ export default function Settings({
             if (userData.status != null) {
                 userData.status = String(userData.status).trim().toLowerCase() || 'active';
             }
-            // Prefer snake_case property_id for the API (accept camelCase from the form).
-            if (userData.propertyId != null && userData.property_id == null) {
-                userData.property_id = userData.propertyId;
+            // Keep primary + assigned_property_ids in sync. The form is a single primary
+            // select; preserve other cluster assignments unless the user clears to Unassigned.
+            const pid = String(userData.propertyId ?? userData.property_id ?? '').trim();
+            const prevIds = (
+                (isEditing && (editingItem?.property_ids || editingItem?.assignedPropertyIds)) ||
+                []
+            )
+                .map((x: unknown) => String(x))
+                .filter(Boolean);
+            if (pid) {
+                userData.propertyId = pid;
+                userData.property_id = pid;
+                userData.assignedPropertyIds = prevIds.includes(pid) ? prevIds : [...prevIds, pid];
+            } else {
+                userData.propertyId = null;
+                userData.property_id = null;
+                userData.assignedPropertyIds = [];
             }
 
             try {
@@ -703,15 +743,10 @@ export default function Settings({
         }
     };
 
-    // Single source of truth for "is this user assigned to this property": the USER
-    // record (propertyId / property_ids) — this is exactly what the backend uses for
-    // access control. property.assignedUserIds is a legacy display list that drifts.
+    // USER record (propertyId / property_ids) is source of truth; assignedUserIds is legacy fallback.
     const userAssignedToProperty = (u: any, propId: string | number): boolean => {
-        if (!u) return false;
-        const pid = String(propId);
-        if (String(u.propertyId ?? '') === pid) return true;
-        const arr = u.property_ids || u.assignedPropertyIds || [];
-        return Array.isArray(arr) && arr.map((x: any) => String(x)).includes(pid);
+        const prop = properties.find((p) => String(p?.id) === String(propId));
+        return userIsAssignedToProperty(u, propId, prop);
     };
 
     // Re-pull users + properties so every tab reflects assignment changes immediately.
@@ -944,6 +979,10 @@ export default function Settings({
     const [newOccupancyLabel, setNewOccupancyLabel] = useState('');
     const [editOccIdx, setEditOccIdx] = useState<number | null>(null);
     const [editOccVal, setEditOccVal] = useState('');
+
+    type TaxonomyDragKind = 'rooms' | 'venues' | 'segments' | 'accountTypes' | 'occupancy';
+    const [taxonomyDrag, setTaxonomyDrag] = useState<{ kind: TaxonomyDragKind; from: number } | null>(null);
+    const [taxonomyDragOver, setTaxonomyDragOver] = useState<{ kind: TaxonomyDragKind; index: number } | null>(null);
 
     const [paymentMethodsList, setPaymentMethodsList] = useState<string[]>([]);
     const [newPaymentMethodLabel, setNewPaymentMethodLabel] = useState('');
@@ -1431,6 +1470,86 @@ export default function Settings({
         );
     };
 
+    const taxonomyDragHandleProps = (kind: TaxonomyDragKind, index: number, disabled?: boolean) => ({
+        draggable: !disabled,
+        onDragStart: (e: React.DragEvent) => {
+            if (disabled) {
+                e.preventDefault();
+                return;
+            }
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', String(index));
+            setTaxonomyDrag({ kind, from: index });
+        },
+        onDragEnd: () => {
+            setTaxonomyDrag(null);
+            setTaxonomyDragOver(null);
+        },
+    });
+
+    const taxonomyRowDropProps = (
+        kind: TaxonomyDragKind,
+        index: number,
+        onReorder: (from: number, to: number) => void
+    ) => ({
+        onDragOver: (e: React.DragEvent) => {
+            if (!taxonomyDrag || taxonomyDrag.kind !== kind) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (!taxonomyDragOver || taxonomyDragOver.kind !== kind || taxonomyDragOver.index !== index) {
+                setTaxonomyDragOver({ kind, index });
+            }
+        },
+        onDrop: (e: React.DragEvent) => {
+            e.preventDefault();
+            if (!taxonomyDrag || taxonomyDrag.kind !== kind) return;
+            const from = taxonomyDrag.from;
+            setTaxonomyDrag(null);
+            setTaxonomyDragOver(null);
+            if (from !== index) onReorder(from, index);
+        },
+    });
+
+    const persistRoomTypesOrder = async (ordered: any[]) => {
+        const withOrder = withReassignedSortOrder(ordered);
+        setRoomTypes(withOrder);
+        const pid = managingProperty?.id;
+        try {
+            const results = await Promise.all(
+                withOrder.map((row) =>
+                    fetch(apiUrl('/api/rooms'), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ...row, propertyId: pid }),
+                    })
+                )
+            );
+            if (results.some((r) => !r.ok)) throw new Error('save failed');
+        } catch {
+            alert('Failed to save room type order.');
+        }
+    };
+
+    const persistVenuesOrder = async (ordered: any[]) => {
+        const withOrder = withReassignedSortOrder(ordered);
+        setVenues(withOrder);
+        const pid = managingProperty?.id;
+        try {
+            const results = await Promise.all(
+                withOrder.map((row) =>
+                    fetch(apiUrl('/api/venues'), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ...row, propertyId: pid }),
+                    })
+                )
+            );
+            if (results.some((r) => !r.ok)) throw new Error('save failed');
+        } catch {
+            alert('Failed to save venue order.');
+        }
+    };
+
     const renderSegmentsTypesTab = () => {
         const pid = managingProperty?.id;
         if (!pid) return null;
@@ -1471,6 +1590,7 @@ export default function Settings({
                     <div className="rounded-xl border overflow-hidden" style={{ borderColor: colors.border, backgroundColor: colors.card }}>
                         <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: colors.border, backgroundColor: colors.bg }}>
                             <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: colors.textMain }}>Segments</h3>
+                            <p className="text-[10px] opacity-60" style={{ color: colors.textMuted }}>Drag to set order used in request forms</p>
                         </div>
                         <div className="p-4 space-y-3">
                             <div className="flex gap-2">
@@ -1493,7 +1613,23 @@ export default function Settings({
                             </div>
                             <ul className="divide-y" style={{ borderColor: colors.border }}>
                                 {taxonomySegments.map((name, i) => (
-                                    <li key={`seg-${i}`} className="py-3 flex items-center gap-2 justify-between">
+                                    <li
+                                        key={`seg-${i}`}
+                                        className={`py-3 flex items-center gap-2 justify-between ${taxonomyDragOver?.kind === 'segments' && taxonomyDragOver.index === i ? 'bg-white/10' : ''}`}
+                                        {...taxonomyRowDropProps('segments', i, (from, to) => {
+                                            persistSegments(moveItem(taxonomySegments, from, to));
+                                        })}
+                                    >
+                                        <button
+                                            type="button"
+                                            title="Drag to reorder"
+                                            className="p-1.5 rounded cursor-grab active:cursor-grabbing shrink-0 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                                            style={{ color: colors.textMuted }}
+                                            disabled={editSegIdx === i}
+                                            {...taxonomyDragHandleProps('segments', i, editSegIdx === i)}
+                                        >
+                                            <GripVertical size={14} />
+                                        </button>
                                         {editSegIdx === i ? (
                                             <input
                                                 value={editSegVal}
@@ -1556,6 +1692,7 @@ export default function Settings({
                     <div className="rounded-xl border overflow-hidden" style={{ borderColor: colors.border, backgroundColor: colors.card }}>
                         <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: colors.border, backgroundColor: colors.bg }}>
                             <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: colors.textMain }}>Account types</h3>
+                            <p className="text-[10px] opacity-60" style={{ color: colors.textMuted }}>Drag to set order used in forms</p>
                         </div>
                         <div className="p-4 space-y-3">
                             <div className="flex gap-2">
@@ -1578,7 +1715,23 @@ export default function Settings({
                             </div>
                             <ul className="divide-y" style={{ borderColor: colors.border }}>
                                 {taxonomyAccountTypes.map((name, i) => (
-                                    <li key={`typ-${i}`} className="py-3 flex items-center gap-2 justify-between">
+                                    <li
+                                        key={`typ-${i}`}
+                                        className={`py-3 flex items-center gap-2 justify-between ${taxonomyDragOver?.kind === 'accountTypes' && taxonomyDragOver.index === i ? 'bg-white/10' : ''}`}
+                                        {...taxonomyRowDropProps('accountTypes', i, (from, to) => {
+                                            persistTypes(moveItem(taxonomyAccountTypes, from, to));
+                                        })}
+                                    >
+                                        <button
+                                            type="button"
+                                            title="Drag to reorder"
+                                            className="p-1.5 rounded cursor-grab active:cursor-grabbing shrink-0 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                                            style={{ color: colors.textMuted }}
+                                            disabled={editTypeIdx === i}
+                                            {...taxonomyDragHandleProps('accountTypes', i, editTypeIdx === i)}
+                                        >
+                                            <GripVertical size={14} />
+                                        </button>
                                         {editTypeIdx === i ? (
                                             <input
                                                 value={editTypeVal}
@@ -1956,7 +2109,10 @@ export default function Settings({
         return (
             <div className="space-y-6 animate-in fade-in duration-300">
                 <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-bold" style={{ color: colors.textMain }}>Room Types Configuration</h2>
+                    <div>
+                        <h2 className="text-xl font-bold" style={{ color: colors.textMain }}>Room Types Configuration</h2>
+                        <p className="text-xs mt-1 opacity-70" style={{ color: colors.textMuted }}>Drag rows to set order used in request room type selects</p>
+                    </div>
                     <button
                         onClick={() => openModal('room')}
                         className="px-4 py-2 rounded flex items-center gap-2 hover:brightness-110 transition-all text-sm font-bold"
@@ -1968,6 +2124,7 @@ export default function Settings({
                     <table className="w-full text-left">
                         <thead style={{ backgroundColor: colors.bg }}>
                             <tr>
+                                <th className="p-4 w-10 text-xs font-bold uppercase tracking-wider" style={{ color: colors.textMuted }} aria-label="Reorder" />
                                 <th className="p-4 text-xs font-bold uppercase tracking-wider" style={{ color: colors.textMuted }}>Room Type</th>
                                 <th className="p-4 text-xs font-bold uppercase tracking-wider" style={{ color: colors.textMuted }}>Size</th>
                                 <th className="p-4 text-xs font-bold uppercase tracking-wider" style={{ color: colors.textMuted }}>Capacity</th>
@@ -1977,8 +2134,25 @@ export default function Settings({
                             </tr>
                         </thead>
                         <tbody className="divide-y" style={{ borderColor: colors.border }}>
-                            {safeRoomTypes.map((room) => (
-                                <tr key={room.id} className="hover:bg-white/5 transition-colors">
+                            {safeRoomTypes.map((room, i) => (
+                                <tr
+                                    key={room.id}
+                                    className={`hover:bg-white/5 transition-colors ${taxonomyDragOver?.kind === 'rooms' && taxonomyDragOver.index === i ? 'bg-white/10' : ''}`}
+                                    {...taxonomyRowDropProps('rooms', i, (from, to) => {
+                                        void persistRoomTypesOrder(moveItem(safeRoomTypes, from, to));
+                                    })}
+                                >
+                                    <td className="p-4 w-10">
+                                        <button
+                                            type="button"
+                                            title="Drag to reorder"
+                                            className="p-1.5 rounded cursor-grab active:cursor-grabbing hover:bg-white/10"
+                                            style={{ color: colors.textMuted }}
+                                            {...taxonomyDragHandleProps('rooms', i)}
+                                        >
+                                            <GripVertical size={14} />
+                                        </button>
+                                    </td>
                                     <td className="p-4 font-medium" style={{ color: colors.textMain }}>{room.name}</td>
                                     <td className="p-4 text-sm font-mono" style={{ color: colors.primary }}>{room.size || '-'}</td>
                                     <td className="p-4 text-sm" style={{ color: colors.textMain }}>{room.capacity} Pax</td>
@@ -2006,7 +2180,7 @@ export default function Settings({
                     <div className="p-4 border-b" style={{ borderColor: colors.border, backgroundColor: colors.bg }}>
                         <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: colors.textMain }}>Occupancy types</h3>
                         <p className="text-xs mt-1 opacity-70" style={{ color: colors.textMuted }}>
-                            Labels for the occupancy dropdown on each room row (accommodation, series group, event + rooms). Defaults: Single, Double, Triple, Quad — add e.g. Twin for this property.
+                            Labels for the occupancy dropdown on each room row (accommodation, series group, event + rooms). Defaults: Single, Double, Triple, Quad — add e.g. Twin for this property. Drag to set order.
                         </p>
                     </div>
                     <div className="p-4 space-y-3">
@@ -2030,7 +2204,23 @@ export default function Settings({
                         </div>
                         <ul className="divide-y" style={{ borderColor: colors.border }}>
                             {occupancyTypesList.map((name, i) => (
-                                <li key={`occ-${i}-${name}`} className="py-3 flex items-center gap-2 justify-between">
+                                <li
+                                    key={`occ-${i}-${name}`}
+                                    className={`py-3 flex items-center gap-2 justify-between ${taxonomyDragOver?.kind === 'occupancy' && taxonomyDragOver.index === i ? 'bg-white/10' : ''}`}
+                                    {...taxonomyRowDropProps('occupancy', i, (from, to) => {
+                                        persistOccupancyTypes(moveItem(occupancyTypesList, from, to));
+                                    })}
+                                >
+                                    <button
+                                        type="button"
+                                        title="Drag to reorder"
+                                        className="p-1.5 rounded cursor-grab active:cursor-grabbing shrink-0 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                                        style={{ color: colors.textMuted }}
+                                        disabled={editOccIdx === i}
+                                        {...taxonomyDragHandleProps('occupancy', i, editOccIdx === i)}
+                                    >
+                                        <GripVertical size={14} />
+                                    </button>
                                     {editOccIdx === i ? (
                                         <input
                                             value={editOccVal}
@@ -2099,7 +2289,10 @@ export default function Settings({
     const renderVenuesTab = () => (
         <div className="space-y-6 animate-in fade-in duration-300">
             <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold" style={{ color: colors.textMain }}>Venue Management</h2>
+                <div>
+                    <h2 className="text-xl font-bold" style={{ color: colors.textMain }}>Venue Management</h2>
+                    <p className="text-xs mt-1 opacity-70" style={{ color: colors.textMuted }}>Drag rows to set order used in request venue selects</p>
+                </div>
                 <button
                     onClick={() => openModal('venue')}
                     className="px-4 py-2 rounded flex items-center gap-2 hover:brightness-110 transition-all text-sm font-bold"
@@ -2111,6 +2304,7 @@ export default function Settings({
                 <table className="w-full text-left">
                     <thead style={{ backgroundColor: colors.bg }}>
                         <tr>
+                            <th className="p-4 w-10 text-xs font-bold uppercase tracking-wider" style={{ color: colors.textMuted }} aria-label="Reorder" />
                             <th className="p-4 text-xs font-bold uppercase tracking-wider" style={{ color: colors.textMuted }}>Venue Name / Dimensions</th>
                             <th className="p-4 text-xs font-bold uppercase tracking-wider text-center" style={{ color: colors.textMuted }}>Capacity</th>
                             <th className="p-4 text-xs font-bold uppercase tracking-wider" style={{ color: colors.textMuted }}>Available Shapes & Setups</th>
@@ -2118,8 +2312,25 @@ export default function Settings({
                         </tr>
                     </thead>
                     <tbody className="divide-y" style={{ borderColor: colors.border }}>
-                        {safeVenues.map((venue) => (
-                            <tr key={venue.id} className="hover:bg-white/5 transition-colors">
+                        {safeVenues.map((venue, i) => (
+                            <tr
+                                key={venue.id}
+                                className={`hover:bg-white/5 transition-colors ${taxonomyDragOver?.kind === 'venues' && taxonomyDragOver.index === i ? 'bg-white/10' : ''}`}
+                                {...taxonomyRowDropProps('venues', i, (from, to) => {
+                                    void persistVenuesOrder(moveItem(safeVenues, from, to));
+                                })}
+                            >
+                                <td className="p-4 w-10">
+                                    <button
+                                        type="button"
+                                        title="Drag to reorder"
+                                        className="p-1.5 rounded cursor-grab active:cursor-grabbing hover:bg-white/10"
+                                        style={{ color: colors.textMuted }}
+                                        {...taxonomyDragHandleProps('venues', i)}
+                                    >
+                                        <GripVertical size={14} />
+                                    </button>
+                                </td>
                                 <td className="p-4">
                                     <div className="flex items-center gap-2">
                                         <p className="font-bold" style={{ color: colors.textMain }}>{venue.name}</p>
@@ -3297,11 +3508,13 @@ export default function Settings({
     };
 
     const renderProfileTab = () => {
+        const fromDir = users.find((u) => String(u?.id) === String(currentUser?.id));
         const mappedUser = {
             ...currentUser,
-            name: currentUser?.name || userProfile.name,
-            email: currentUser?.email || userProfile.email,
-            role: currentUser?.role || userProfile.title || 'Staff',
+            ...(fromDir || {}),
+            name: currentUser?.name || fromDir?.name || userProfile.name,
+            email: currentUser?.email || fromDir?.email || userProfile.email,
+            role: currentUser?.role || fromDir?.role || userProfile.title || 'Staff',
         };
         return (
             <Suspense fallback={<ProfileDashboardFallback />}>

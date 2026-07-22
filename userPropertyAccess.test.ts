@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { nextUserPropertyAccess, userCanAccessProperty } from './userPropertyAccess';
+import {
+    listAssignedProperties,
+    nextUserPropertyAccess,
+    userCanAccessProperty,
+    userIsAssignedToProperty,
+} from './userPropertyAccess';
 
 describe('nextUserPropertyAccess', () => {
     it('adds a second property without removing the first', () => {
@@ -40,6 +45,26 @@ describe('nextUserPropertyAccess', () => {
         );
         expect(next.assignedPropertyIds).toEqual(['P-B']);
         expect(next.propertyId).toBe('P-B');
+    });
+});
+
+describe('userIsAssignedToProperty / listAssignedProperties', () => {
+    it('reads property_ids when primary is empty (profile Unassigned bug)', () => {
+        const user = { id: 'U1', propertyId: null, property_ids: ['P-SHADEN'] };
+        expect(userIsAssignedToProperty(user, 'P-SHADEN')).toBe(true);
+        expect(
+            listAssignedProperties(user, [
+                { id: 'P-SHADEN', assignedUserIds: [] },
+                { id: 'P-OTHER', assignedUserIds: [] },
+            ]).map((p) => p.id),
+        ).toEqual(['P-SHADEN']);
+    });
+
+    it('falls back to legacy property.assignedUserIds', () => {
+        const user = { id: 'U1', propertyId: null, property_ids: [] };
+        expect(
+            userIsAssignedToProperty(user, 'P-A', { id: 'P-A', assignedUserIds: ['U1'] }),
+        ).toBe(true);
     });
 });
 

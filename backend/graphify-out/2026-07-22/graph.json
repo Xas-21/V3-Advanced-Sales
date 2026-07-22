@@ -60,7 +60,7 @@
       "source_location": "L91",
       "_origin": "ast",
       "id": "auth_db_has_permission",
-      "community": 27,
+      "community": 3,
       "norm_label": "has_permission()"
     },
     {
@@ -70,7 +70,7 @@
       "source_location": "L101",
       "_origin": "ast",
       "id": "auth_db_is_admin",
-      "community": 24,
+      "community": 0,
       "norm_label": "is_admin()"
     },
     {
@@ -110,7 +110,7 @@
       "source_location": "L152",
       "_origin": "ast",
       "id": "auth_db_resolve_session",
-      "community": 28,
+      "community": 3,
       "norm_label": "resolve_session()"
     },
     {
@@ -200,7 +200,7 @@
       "source_location": "L153",
       "_origin": "ast",
       "id": "auth_db_rationale_153",
-      "community": 28,
+      "community": 3,
       "norm_label": "validate the cookie token against the signed value and the server-side store."
     },
     {
@@ -590,7 +590,7 @@
       "source_location": "L74",
       "_origin": "ast",
       "id": "data_access_assert_upsert_write_access",
-      "community": 18,
+      "community": 19,
       "norm_label": "_assert_upsert_write_access()"
     },
     {
@@ -600,7 +600,7 @@
       "source_location": "L114",
       "_origin": "ast",
       "id": "data_access_broadcast_change",
-      "community": 19,
+      "community": 0,
       "norm_label": "_broadcast_change()"
     },
     {
@@ -610,7 +610,7 @@
       "source_location": "L145",
       "_origin": "ast",
       "id": "data_access_gen_id",
-      "community": 1,
+      "community": 4,
       "norm_label": "_gen_id()"
     },
     {
@@ -620,7 +620,7 @@
       "source_location": "L149",
       "_origin": "ast",
       "id": "data_access_upsert_doc",
-      "community": 1,
+      "community": 4,
       "norm_label": "_upsert_doc()"
     },
     {
@@ -630,7 +630,7 @@
       "source_location": "L201",
       "_origin": "ast",
       "id": "data_access_doc_with_row_id",
-      "community": 30,
+      "community": 18,
       "norm_label": "_doc_with_row_id()"
     },
     {
@@ -640,7 +640,7 @@
       "source_location": "L213",
       "_origin": "ast",
       "id": "data_access_list_doc",
-      "community": 30,
+      "community": 18,
       "norm_label": "_list_doc()"
     },
     {
@@ -650,7 +650,7 @@
       "source_location": "L270",
       "_origin": "ast",
       "id": "data_access_get_doc",
-      "community": 30,
+      "community": 1,
       "norm_label": "_get_doc()"
     },
     {
@@ -780,7 +780,7 @@
       "source_location": "L431",
       "_origin": "ast",
       "id": "data_access_get_flat",
-      "community": 4,
+      "community": 1,
       "norm_label": "get_flat()"
     },
     {
@@ -797,7 +797,7 @@
       "label": "delete_flat()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L463",
+      "source_location": "L458",
       "_origin": "ast",
       "id": "data_access_delete_flat",
       "community": 4,
@@ -807,7 +807,7 @@
       "label": "save_ledger_entry()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L476",
+      "source_location": "L471",
       "_origin": "ast",
       "id": "data_access_save_ledger_entry",
       "community": 4,
@@ -817,7 +817,7 @@
       "label": "transfer_allocation()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L482",
+      "source_location": "L477",
       "_origin": "ast",
       "id": "data_access_transfer_allocation",
       "community": 4,
@@ -827,17 +827,17 @@
       "label": "upsert_payload_only()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L491",
+      "source_location": "L486",
       "_origin": "ast",
       "id": "data_access_upsert_payload_only",
-      "community": 1,
+      "community": 4,
       "norm_label": "upsert_payload_only()"
     },
     {
       "label": "_crm_block_score()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L501",
+      "source_location": "L496",
       "_origin": "ast",
       "id": "data_access_crm_block_score",
       "community": 18,
@@ -847,7 +847,7 @@
       "label": "get_crm_state()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L518",
+      "source_location": "L513",
       "_origin": "ast",
       "id": "data_access_get_crm_state",
       "community": 18,
@@ -857,7 +857,7 @@
       "label": "upsert_crm_state()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L543",
+      "source_location": "L538",
       "_origin": "ast",
       "id": "data_access_upsert_crm_state",
       "community": 9,
@@ -867,17 +867,17 @@
       "label": "list_requests()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L580",
+      "source_location": "L575",
       "_origin": "ast",
       "id": "data_access_list_requests",
-      "community": 20,
+      "community": 21,
       "norm_label": "list_requests()"
     },
     {
       "label": "get_request()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L602",
+      "source_location": "L597",
       "_origin": "ast",
       "id": "data_access_get_request",
       "community": 20,
@@ -887,7 +887,7 @@
       "label": "get_public_feedback_by_token()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L614",
+      "source_location": "L609",
       "_origin": "ast",
       "id": "data_access_get_public_feedback_by_token",
       "community": 21,
@@ -897,7 +897,7 @@
       "label": "submit_public_feedback()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L672",
+      "source_location": "L667",
       "_origin": "ast",
       "id": "data_access_submit_public_feedback",
       "community": 21,
@@ -907,47 +907,47 @@
       "label": "_load_request_children_maps()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L723",
+      "source_location": "L718",
       "_origin": "ast",
       "id": "data_access_load_request_children_maps",
-      "community": 20,
+      "community": 23,
       "norm_label": "_load_request_children_maps()"
     },
     {
       "label": "_request_dict_from_row()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L783",
+      "source_location": "L778",
       "_origin": "ast",
       "id": "data_access_request_dict_from_row",
-      "community": 20,
+      "community": 23,
       "norm_label": "_request_dict_from_row()"
     },
     {
       "label": "_row_to_request_dict()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L829",
+      "source_location": "L824",
       "_origin": "ast",
       "id": "data_access_row_to_request_dict",
-      "community": 20,
+      "community": 23,
       "norm_label": "_row_to_request_dict()"
     },
     {
       "label": "upsert_request()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L834",
+      "source_location": "L829",
       "_origin": "ast",
       "id": "data_access_upsert_request",
-      "community": 22,
+      "community": 21,
       "norm_label": "upsert_request()"
     },
     {
       "label": "_insert_child()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L997",
+      "source_location": "L992",
       "_origin": "ast",
       "id": "data_access_insert_child",
       "community": 1,
@@ -957,7 +957,7 @@
       "label": "_child_typed()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L1036",
+      "source_location": "L1031",
       "_origin": "ast",
       "id": "data_access_child_typed",
       "community": 1,
@@ -967,7 +967,7 @@
       "label": "delete_request()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L1100",
+      "source_location": "L1095",
       "_origin": "ast",
       "id": "data_access_delete_request",
       "community": 21,
@@ -977,27 +977,27 @@
       "label": "_load_users_cache()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L1130",
+      "source_location": "L1125",
       "_origin": "ast",
       "id": "data_access_load_users_cache",
-      "community": 19,
+      "community": 18,
       "norm_label": "_load_users_cache()"
     },
     {
       "label": "_row_to_account_dict()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L1141",
+      "source_location": "L1136",
       "_origin": "ast",
       "id": "data_access_row_to_account_dict",
-      "community": 19,
+      "community": 18,
       "norm_label": "_row_to_account_dict()"
     },
     {
       "label": "list_accounts()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L1174",
+      "source_location": "L1169",
       "_origin": "ast",
       "id": "data_access_list_accounts",
       "community": 19,
@@ -1007,17 +1007,17 @@
       "label": "get_account()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L1194",
+      "source_location": "L1189",
       "_origin": "ast",
       "id": "data_access_get_account",
-      "community": 19,
+      "community": 18,
       "norm_label": "get_account()"
     },
     {
       "label": "_cascade_account_rename_to_requests()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L1212",
+      "source_location": "L1207",
       "_origin": "ast",
       "id": "data_access_cascade_account_rename_to_requests",
       "community": 19,
@@ -1027,7 +1027,7 @@
       "label": "upsert_account()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L1230",
+      "source_location": "L1225",
       "_origin": "ast",
       "id": "data_access_upsert_account",
       "community": 19,
@@ -1037,17 +1037,17 @@
       "label": "_insert_account_contact()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L1324",
+      "source_location": "L1319",
       "_origin": "ast",
       "id": "data_access_insert_account_contact",
-      "community": 19,
+      "community": 12,
       "norm_label": "_insert_account_contact()"
     },
     {
       "label": "_insert_account_activity()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L1360",
+      "source_location": "L1355",
       "_origin": "ast",
       "id": "data_access_insert_account_activity",
       "community": 1,
@@ -1057,7 +1057,7 @@
       "label": "delete_account()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L1392",
+      "source_location": "L1387",
       "_origin": "ast",
       "id": "data_access_delete_account",
       "community": 19,
@@ -1067,7 +1067,7 @@
       "label": "_as_int()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L1418",
+      "source_location": "L1413",
       "_origin": "ast",
       "id": "data_access_as_int",
       "community": 1,
@@ -1087,7 +1087,7 @@
       "label": "_as_decimal()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L1427",
+      "source_location": "L1422",
       "_origin": "ast",
       "id": "data_access_as_decimal",
       "community": 1,
@@ -1097,7 +1097,7 @@
       "label": "_as_date()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L1436",
+      "source_location": "L1431",
       "_origin": "ast",
       "id": "data_access_as_date",
       "community": 1,
@@ -1107,7 +1107,7 @@
       "label": "_as_datetime()",
       "file_type": "code",
       "source_file": "data_access.py",
-      "source_location": "L1444",
+      "source_location": "L1439",
       "_origin": "ast",
       "id": "data_access_as_datetime",
       "community": 1,
@@ -1140,7 +1140,7 @@
       "source_location": "L80",
       "_origin": "ast",
       "id": "data_access_rationale_80",
-      "community": 18,
+      "community": 19,
       "norm_label": "block idor overwrite: require access to the existing row and the incoming proper"
     },
     {
@@ -1150,7 +1150,7 @@
       "source_location": "L115",
       "_origin": "ast",
       "id": "data_access_rationale_115",
-      "community": 19,
+      "community": 0,
       "norm_label": "broadcast a data mutation event to websocket clients.          args:"
     },
     {
@@ -1160,7 +1160,7 @@
       "source_location": "L156",
       "_origin": "ast",
       "id": "data_access_rationale_156",
-      "community": 1,
+      "community": 4,
       "norm_label": "insert/update a row carrying a `payload jsonb` + typed scalar columns.      `t"
     },
     {
@@ -1170,16 +1170,16 @@
       "source_location": "L202",
       "_origin": "ast",
       "id": "data_access_rationale_202",
-      "community": 30,
+      "community": 18,
       "norm_label": "return a copy of payload whose `id` matches the db primary key.      migrated"
     },
     {
       "label": "Prefer the richer CRM blob (salesCalls + pipeline cards).",
       "file_type": "rationale",
       "source_file": "data_access.py",
-      "source_location": "L502",
+      "source_location": "L497",
       "_origin": "ast",
-      "id": "data_access_rationale_502",
+      "id": "data_access_rationale_497",
       "community": 18,
       "norm_label": "prefer the richer crm blob (salescalls + pipeline cards)."
     },
@@ -1187,9 +1187,9 @@
       "label": "Explicit public opt-in: load feedback form by publicToken without auth.      D",
       "file_type": "rationale",
       "source_file": "data_access.py",
-      "source_location": "L615",
+      "source_location": "L610",
       "_origin": "ast",
-      "id": "data_access_rationale_615",
+      "id": "data_access_rationale_610",
       "community": 21,
       "norm_label": "explicit public opt-in: load feedback form by publictoken without auth.      d"
     },
@@ -1197,9 +1197,9 @@
       "label": "Explicit public opt-in: submit feedback answers by publicToken without auth.",
       "file_type": "rationale",
       "source_file": "data_access.py",
-      "source_location": "L673",
+      "source_location": "L668",
       "_origin": "ast",
-      "id": "data_access_rationale_673",
+      "id": "data_access_rationale_668",
       "community": 21,
       "norm_label": "explicit public opt-in: submit feedback answers by publictoken without auth."
     },
@@ -1207,29 +1207,29 @@
       "label": "Prefetch all request children in O(tables) queries. Returns maps keyed by reques",
       "file_type": "rationale",
       "source_file": "data_access.py",
-      "source_location": "L724",
+      "source_location": "L719",
       "_origin": "ast",
-      "id": "data_access_rationale_724",
-      "community": 20,
+      "id": "data_access_rationale_719",
+      "community": 23,
       "norm_label": "prefetch all request children in o(tables) queries. returns maps keyed by reques"
     },
     {
       "label": "Single-row hydrate (kept for any callers); uses the same batched child loader.",
       "file_type": "rationale",
       "source_file": "data_access.py",
-      "source_location": "L830",
+      "source_location": "L825",
       "_origin": "ast",
-      "id": "data_access_rationale_830",
-      "community": 20,
+      "id": "data_access_rationale_825",
+      "community": 23,
       "norm_label": "single-row hydrate (kept for any callers); uses the same batched child loader."
     },
     {
       "label": "When an account is renamed, propagate the new name onto the denormalized     `a",
       "file_type": "rationale",
       "source_file": "data_access.py",
-      "source_location": "L1213",
+      "source_location": "L1208",
       "_origin": "ast",
-      "id": "data_access_rationale_1213",
+      "id": "data_access_rationale_1208",
       "community": 19,
       "norm_label": "when an account is renamed, propagate the new name onto the denormalized     `a"
     },
@@ -1240,7 +1240,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "dependencies",
-      "community": 27,
+      "community": 3,
       "norm_label": "dependencies.py"
     },
     {
@@ -1250,7 +1250,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "dependencies_set_current_user",
-      "community": 21,
+      "community": 20,
       "norm_label": "set_current_user()"
     },
     {
@@ -1270,7 +1270,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "dependencies_user_from_ctx_or_session",
-      "community": 27,
+      "community": 3,
       "norm_label": "_user_from_ctx_or_session()"
     },
     {
@@ -1280,7 +1280,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "dependencies_py_any",
-      "community": 27,
+      "community": 3,
       "norm_label": "any"
     },
     {
@@ -1290,7 +1290,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "dependencies_get_current_user",
-      "community": 27,
+      "community": 3,
       "norm_label": "get_current_user()"
     },
     {
@@ -1310,7 +1310,7 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "dependencies_require_admin",
-      "community": 24,
+      "community": 3,
       "norm_label": "require_admin()"
     },
     {
@@ -1320,7 +1320,7 @@
       "source_location": "L55",
       "_origin": "ast",
       "id": "dependencies_require_permission",
-      "community": 27,
+      "community": 3,
       "norm_label": "require_permission()"
     },
     {
@@ -1340,7 +1340,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "dependencies_rationale_1",
-      "community": 27,
+      "community": 3,
       "norm_label": "server-side auth dependencies: session resolution, permission + tenant enforceme"
     },
     {
@@ -1350,7 +1350,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "dependencies_rationale_30",
-      "community": 27,
+      "community": 3,
       "norm_label": "prefer middleware-set context; fall back to resolve_session for rare paths witho"
     },
     {
@@ -1450,7 +1450,7 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "main_database_host",
-      "community": 6,
+      "community": 17,
       "norm_label": "_database_host()"
     },
     {
@@ -2090,7 +2090,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "migrations_006_e2e_test",
-      "community": 25,
+      "community": 3,
       "norm_label": "006_e2e_test.py"
     },
     {
@@ -2100,7 +2100,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "migrations_006_e2e_test_h",
-      "community": 25,
+      "community": 3,
       "norm_label": "h()"
     },
     {
@@ -2110,7 +2110,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "migrations_006_e2e_test_ck",
-      "community": 25,
+      "community": 3,
       "norm_label": "_ck()"
     },
     {
@@ -2120,7 +2120,7 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "migrations_006_e2e_test_check",
-      "community": 25,
+      "community": 3,
       "norm_label": "check()"
     },
     {
@@ -2130,7 +2130,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "migrations_006_e2e_test_rationale_1",
-      "community": 25,
+      "community": 3,
       "norm_label": "end-to-end auth + tenant isolation test using fastapi testclient (no network)."
     },
     {
@@ -2140,7 +2140,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "migrations_007_debug",
-      "community": 26,
+      "community": 3,
       "norm_label": "007_debug.py"
     },
     {
@@ -2150,7 +2150,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "migrations_007_debug_cookie_val",
-      "community": 26,
+      "community": 3,
       "norm_label": "cookie_val()"
     },
     {
@@ -2160,7 +2160,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "migrations_007_debug_h",
-      "community": 26,
+      "community": 3,
       "norm_label": "h()"
     },
     {
@@ -2170,7 +2170,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "migrations_008_write_authz_test",
-      "community": 25,
+      "community": 3,
       "norm_label": "008_write_authz_test.py"
     },
     {
@@ -2180,7 +2180,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "migrations_008_write_authz_test_setup",
-      "community": 25,
+      "community": 3,
       "norm_label": "setup()"
     },
     {
@@ -2190,7 +2190,7 @@
       "source_location": "L55",
       "_origin": "ast",
       "id": "migrations_008_write_authz_test_teardown",
-      "community": 25,
+      "community": 3,
       "norm_label": "teardown()"
     },
     {
@@ -2200,7 +2200,7 @@
       "source_location": "L67",
       "_origin": "ast",
       "id": "migrations_008_write_authz_test_ck",
-      "community": 25,
+      "community": 3,
       "norm_label": "_ck()"
     },
     {
@@ -2210,7 +2210,7 @@
       "source_location": "L71",
       "_origin": "ast",
       "id": "migrations_008_write_authz_test_h",
-      "community": 25,
+      "community": 3,
       "norm_label": "h()"
     },
     {
@@ -2220,7 +2220,7 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "migrations_008_write_authz_test_check",
-      "community": 25,
+      "community": 3,
       "norm_label": "check()"
     },
     {
@@ -2230,7 +2230,7 @@
       "source_location": "L87",
       "_origin": "ast",
       "id": "migrations_008_write_authz_test_run",
-      "community": 25,
+      "community": 3,
       "norm_label": "run()"
     },
     {
@@ -2240,7 +2240,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "migrations_008_write_authz_test_rationale_1",
-      "community": 25,
+      "community": 3,
       "norm_label": "self-contained end-to-end test for write-path tenant isolation (idor), crm/acco"
     },
     {
@@ -2490,7 +2490,7 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "routers_accounts_get_account_endpoint",
-      "community": 19,
+      "community": 18,
       "norm_label": "get_account_endpoint()"
     },
     {
@@ -3580,7 +3580,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "routers_feed",
-      "community": 23,
+      "community": 0,
       "norm_label": "feed.py"
     },
     {
@@ -3590,7 +3590,7 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "routers_feed_broadcast_feed",
-      "community": 23,
+      "community": 0,
       "norm_label": "_broadcast_feed()"
     },
     {
@@ -3600,7 +3600,7 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "routers_feed_user_property_ids",
-      "community": 23,
+      "community": 0,
       "norm_label": "_user_property_ids()"
     },
     {
@@ -3610,7 +3610,7 @@
       "source_location": "L68",
       "_origin": "ast",
       "id": "routers_feed_default_property_id",
-      "community": 23,
+      "community": 0,
       "norm_label": "_default_property_id()"
     },
     {
@@ -3620,7 +3620,7 @@
       "source_location": "L80",
       "_origin": "ast",
       "id": "routers_feed_clean_attachments",
-      "community": 23,
+      "community": 0,
       "norm_label": "_clean_attachments()"
     },
     {
@@ -3630,7 +3630,7 @@
       "source_location": "L109",
       "_origin": "ast",
       "id": "routers_feed_clean_meta",
-      "community": 23,
+      "community": 0,
       "norm_label": "_clean_meta()"
     },
     {
@@ -3640,7 +3640,7 @@
       "source_location": "L165",
       "_origin": "ast",
       "id": "routers_feed_filter_valid_mentions",
-      "community": 23,
+      "community": 0,
       "norm_label": "_filter_valid_mentions()"
     },
     {
@@ -3650,7 +3650,7 @@
       "source_location": "L179",
       "_origin": "ast",
       "id": "routers_feed_postcreate",
-      "community": 23,
+      "community": 0,
       "norm_label": "postcreate"
     },
     {
@@ -3660,7 +3660,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "routers_feed_py_basemodel",
-      "community": 23,
+      "community": 0,
       "norm_label": "basemodel"
     },
     {
@@ -3670,7 +3670,7 @@
       "source_location": "L191",
       "_origin": "ast",
       "id": "routers_feed_commentcreate",
-      "community": 23,
+      "community": 0,
       "norm_label": "commentcreate"
     },
     {
@@ -3680,7 +3680,7 @@
       "source_location": "L197",
       "_origin": "ast",
       "id": "routers_feed_pollvote",
-      "community": 23,
+      "community": 0,
       "norm_label": "pollvote"
     },
     {
@@ -3690,7 +3690,7 @@
       "source_location": "L201",
       "_origin": "ast",
       "id": "routers_feed_eventrsvp",
-      "community": 23,
+      "community": 0,
       "norm_label": "eventrsvp"
     },
     {
@@ -3700,7 +3700,7 @@
       "source_location": "L205",
       "_origin": "ast",
       "id": "routers_feed_tasktoggle",
-      "community": 23,
+      "community": 0,
       "norm_label": "tasktoggle"
     },
     {
@@ -3710,7 +3710,7 @@
       "source_location": "L213",
       "_origin": "ast",
       "id": "routers_feed_row_to_post",
-      "community": 23,
+      "community": 0,
       "norm_label": "_row_to_post()"
     },
     {
@@ -3720,7 +3720,7 @@
       "source_location": "L313",
       "_origin": "ast",
       "id": "routers_feed_list_feed",
-      "community": 23,
+      "community": 0,
       "norm_label": "list_feed()"
     },
     {
@@ -3730,7 +3730,7 @@
       "source_location": "L430",
       "_origin": "ast",
       "id": "routers_feed_create_post",
-      "community": 23,
+      "community": 0,
       "norm_label": "create_post()"
     },
     {
@@ -3740,7 +3740,7 @@
       "source_location": "L501",
       "_origin": "ast",
       "id": "routers_feed_delete_post",
-      "community": 23,
+      "community": 0,
       "norm_label": "delete_post()"
     },
     {
@@ -3750,7 +3750,7 @@
       "source_location": "L522",
       "_origin": "ast",
       "id": "routers_feed_toggle_pin",
-      "community": 23,
+      "community": 0,
       "norm_label": "toggle_pin()"
     },
     {
@@ -3760,7 +3760,7 @@
       "source_location": "L555",
       "_origin": "ast",
       "id": "routers_feed_add_comment",
-      "community": 23,
+      "community": 0,
       "norm_label": "add_comment()"
     },
     {
@@ -3770,7 +3770,7 @@
       "source_location": "L600",
       "_origin": "ast",
       "id": "routers_feed_delete_comment",
-      "community": 23,
+      "community": 0,
       "norm_label": "delete_comment()"
     },
     {
@@ -3780,7 +3780,7 @@
       "source_location": "L630",
       "_origin": "ast",
       "id": "routers_feed_toggle_reaction",
-      "community": 23,
+      "community": 0,
       "norm_label": "toggle_reaction()"
     },
     {
@@ -3790,7 +3790,7 @@
       "source_location": "L672",
       "_origin": "ast",
       "id": "routers_feed_vote_poll",
-      "community": 23,
+      "community": 0,
       "norm_label": "vote_poll()"
     },
     {
@@ -3800,7 +3800,7 @@
       "source_location": "L722",
       "_origin": "ast",
       "id": "routers_feed_rsvp_event",
-      "community": 23,
+      "community": 0,
       "norm_label": "rsvp_event()"
     },
     {
@@ -3810,7 +3810,7 @@
       "source_location": "L768",
       "_origin": "ast",
       "id": "routers_feed_toggle_task",
-      "community": 23,
+      "community": 0,
       "norm_label": "toggle_task()"
     },
     {
@@ -3820,7 +3820,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "routers_feed_rationale_1",
-      "community": 23,
+      "community": 0,
       "norm_label": "social feed: staff posts, comments, reactions, polls, tasks and events.  relatio"
     },
     {
@@ -3830,7 +3830,7 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "routers_feed_rationale_47",
-      "community": 23,
+      "community": 0,
       "norm_label": "notify feed viewers of this property to refetch (posts/comments/etc.).      a li"
     },
     {
@@ -3840,7 +3840,7 @@
       "source_location": "L60",
       "_origin": "ast",
       "id": "routers_feed_rationale_60",
-      "community": 23,
+      "community": 0,
       "norm_label": "all property ids a user can access (camelcase-normalized session shape)."
     },
     {
@@ -3850,7 +3850,7 @@
       "source_location": "L81",
       "_origin": "ast",
       "id": "routers_feed_rationale_81",
-      "community": 23,
+      "community": 0,
       "norm_label": "keep only the whitelisted fields from each attachment descriptor."
     },
     {
@@ -3860,7 +3860,7 @@
       "source_location": "L110",
       "_origin": "ast",
       "id": "routers_feed_rationale_110",
-      "community": 23,
+      "community": 0,
       "norm_label": "validate/normalize the type-specific meta payload.      accepts both shapes the"
     },
     {
@@ -3870,7 +3870,7 @@
       "source_location": "L166",
       "_origin": "ast",
       "id": "routers_feed_rationale_166",
-      "community": 23,
+      "community": 0,
       "norm_label": "drop mention ids that don't correspond to a real user."
     },
     {
@@ -3880,7 +3880,7 @@
       "source_location": "L526",
       "_origin": "ast",
       "id": "routers_feed_rationale_526",
-      "community": 23,
+      "community": 0,
       "norm_label": "pin / unpin a post (author or admin). pinned posts stay at the top of the feed."
     },
     {
@@ -3930,7 +3930,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "routers_presence",
-      "community": 29,
+      "community": 10,
       "norm_label": "presence.py"
     },
     {
@@ -3940,7 +3940,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "routers_presence_user_property_ids",
-      "community": 29,
+      "community": 10,
       "norm_label": "_user_property_ids()"
     },
     {
@@ -3950,7 +3950,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "routers_presence_default_property_id",
-      "community": 29,
+      "community": 10,
       "norm_label": "_default_property_id()"
     },
     {
@@ -3960,7 +3960,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "routers_presence_get_presence",
-      "community": 29,
+      "community": 10,
       "norm_label": "get_presence()"
     },
     {
@@ -3970,7 +3970,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "routers_presence_rationale_1",
-      "community": 29,
+      "community": 10,
       "norm_label": "real-time presence: who has an active websocket connection right now."
     },
     {
@@ -3980,7 +3980,7 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "routers_presence_rationale_38",
-      "community": 29,
+      "community": 10,
       "norm_label": "return users currently connected via websocket for this property."
     },
     {
@@ -4147,7 +4147,7 @@
       "label": "get_rooms()",
       "file_type": "code",
       "source_file": "routers/rooms.py",
-      "source_location": "L12",
+      "source_location": "L11",
       "_origin": "ast",
       "id": "routers_rooms_get_rooms",
       "community": 4,
@@ -4157,7 +4157,7 @@
       "label": "save_room()",
       "file_type": "code",
       "source_file": "routers/rooms.py",
-      "source_location": "L17",
+      "source_location": "L16",
       "_origin": "ast",
       "id": "routers_rooms_save_room",
       "community": 4,
@@ -4167,7 +4167,7 @@
       "label": "delete_room()",
       "file_type": "code",
       "source_file": "routers/rooms.py",
-      "source_location": "L25",
+      "source_location": "L24",
       "_origin": "ast",
       "id": "routers_rooms_delete_room",
       "community": 4,
@@ -4420,7 +4420,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "routers_users",
-      "community": 24,
+      "community": 3,
       "norm_label": "users.py"
     },
     {
@@ -4430,7 +4430,7 @@
       "source_location": "L53",
       "_origin": "ast",
       "id": "routers_users_jsonish_list",
-      "community": 24,
+      "community": 3,
       "norm_label": "_jsonish_list()"
     },
     {
@@ -4440,7 +4440,7 @@
       "source_location": "L64",
       "_origin": "ast",
       "id": "routers_users_authz_changed",
-      "community": 24,
+      "community": 3,
       "norm_label": "_authz_changed()"
     },
     {
@@ -4450,7 +4450,7 @@
       "source_location": "L82",
       "_origin": "ast",
       "id": "routers_users_normalize_user_patch",
-      "community": 24,
+      "community": 3,
       "norm_label": "_normalize_user_patch()"
     },
     {
@@ -4460,7 +4460,7 @@
       "source_location": "L95",
       "_origin": "ast",
       "id": "routers_users_row_to_client",
-      "community": 24,
+      "community": 3,
       "norm_label": "_row_to_client()"
     },
     {
@@ -4470,7 +4470,7 @@
       "source_location": "L120",
       "_origin": "ast",
       "id": "routers_users_get_users",
-      "community": 24,
+      "community": 3,
       "norm_label": "get_users()"
     },
     {
@@ -4480,7 +4480,7 @@
       "source_location": "L143",
       "_origin": "ast",
       "id": "routers_users_get_user",
-      "community": 24,
+      "community": 3,
       "norm_label": "get_user()"
     },
     {
@@ -4490,7 +4490,7 @@
       "source_location": "L162",
       "_origin": "ast",
       "id": "routers_users_patch_user",
-      "community": 24,
+      "community": 3,
       "norm_label": "patch_user()"
     },
     {
@@ -4500,7 +4500,7 @@
       "source_location": "L197",
       "_origin": "ast",
       "id": "routers_users_create_or_update_user",
-      "community": 24,
+      "community": 3,
       "norm_label": "create_or_update_user()"
     },
     {
@@ -4510,7 +4510,7 @@
       "source_location": "L295",
       "_origin": "ast",
       "id": "routers_users_delete_user",
-      "community": 24,
+      "community": 3,
       "norm_label": "delete_user()"
     },
     {
@@ -4520,7 +4520,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "routers_users_rationale_1",
-      "community": 24,
+      "community": 3,
       "norm_label": "user management against the relational `users` table.  replaces the legacy fil"
     },
     {
@@ -4530,7 +4530,7 @@
       "source_location": "L65",
       "_origin": "ast",
       "id": "routers_users_rationale_65",
-      "community": 24,
+      "community": 3,
       "norm_label": "true when role/status/permission overrides actually differ from db row."
     },
     {
@@ -4547,7 +4547,7 @@
       "label": "get_venues()",
       "file_type": "code",
       "source_file": "routers/venues.py",
-      "source_location": "L12",
+      "source_location": "L11",
       "_origin": "ast",
       "id": "routers_venues_get_venues",
       "community": 4,
@@ -4557,7 +4557,7 @@
       "label": "save_venue()",
       "file_type": "code",
       "source_file": "routers/venues.py",
-      "source_location": "L17",
+      "source_location": "L16",
       "_origin": "ast",
       "id": "routers_venues_save_venue",
       "community": 4,
@@ -4567,7 +4567,7 @@
       "label": "delete_venue()",
       "file_type": "code",
       "source_file": "routers/venues.py",
-      "source_location": "L25",
+      "source_location": "L24",
       "_origin": "ast",
       "id": "routers_venues_delete_venue",
       "community": 4,
@@ -4580,7 +4580,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "routers_ws",
-      "community": 28,
+      "community": 3,
       "norm_label": "ws.py"
     },
     {
@@ -4590,7 +4590,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "routers_ws_websocket_endpoint",
-      "community": 28,
+      "community": 3,
       "norm_label": "websocket_endpoint()"
     },
     {
@@ -4600,7 +4600,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "routers_ws_py_websocket",
-      "community": 28,
+      "community": 3,
       "norm_label": "websocket"
     },
     {
@@ -4610,7 +4610,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "routers_ws_rationale_1",
-      "community": 28,
+      "community": 3,
       "norm_label": "websocket endpoint for real-time live updates."
     },
     {
@@ -4620,7 +4620,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "routers_ws_rationale_22",
-      "community": 28,
+      "community": 3,
       "norm_label": "websocket endpoint for real-time live updates.          clients connect after lo"
     },
     {
@@ -4630,7 +4630,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "security",
-      "community": 26,
+      "community": 3,
       "norm_label": "security.py"
     },
     {
@@ -4640,7 +4640,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "security_get_session_secret",
-      "community": 26,
+      "community": 3,
       "norm_label": "get_session_secret()"
     },
     {
@@ -4650,7 +4650,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "security_hash_password",
-      "community": 25,
+      "community": 3,
       "norm_label": "hash_password()"
     },
     {
@@ -4670,7 +4670,7 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "security_check_password_policy",
-      "community": 24,
+      "community": 3,
       "norm_label": "check_password_policy()"
     },
     {
@@ -4680,7 +4680,7 @@
       "source_location": "L64",
       "_origin": "ast",
       "id": "security_sign",
-      "community": 26,
+      "community": 3,
       "norm_label": "_sign()"
     },
     {
@@ -4690,7 +4690,7 @@
       "source_location": "L69",
       "_origin": "ast",
       "id": "security_verify_signature",
-      "community": 26,
+      "community": 3,
       "norm_label": "_verify_signature()"
     },
     {
@@ -4710,7 +4710,7 @@
       "source_location": "L87",
       "_origin": "ast",
       "id": "security_parse_session_token",
-      "community": 26,
+      "community": 3,
       "norm_label": "parse_session_token()"
     },
     {
@@ -4720,7 +4720,7 @@
       "source_location": "L99",
       "_origin": "ast",
       "id": "security_is_expired",
-      "community": 28,
+      "community": 3,
       "norm_label": "is_expired()"
     },
     {
@@ -4730,7 +4730,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "security_rationale_1",
-      "community": 26,
+      "community": 3,
       "norm_label": "as security core: password hashing, policy, signed server-side sessions.  no t"
     },
     {
@@ -4740,7 +4740,7 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "security_rationale_48",
-      "community": 24,
+      "community": 3,
       "norm_label": "minimum bar for a production multi-tenant system."
     },
     {
@@ -4750,7 +4750,7 @@
       "source_location": "L88",
       "_origin": "ast",
       "id": "security_rationale_88",
-      "community": 26,
+      "community": 3,
       "norm_label": "returns (user_id, session_version, issued_at) or none if invalid signature."
     },
     {
@@ -4840,7 +4840,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "services_rich_text",
-      "community": 23,
+      "community": 0,
       "norm_label": "rich_text.py"
     },
     {
@@ -4850,7 +4850,7 @@
       "source_location": "L53",
       "_origin": "ast",
       "id": "services_rich_text_sanitize_html",
-      "community": 23,
+      "community": 0,
       "norm_label": "sanitize_html()"
     },
     {
@@ -4860,7 +4860,7 @@
       "source_location": "L66",
       "_origin": "ast",
       "id": "services_rich_text_html_to_text",
-      "community": 23,
+      "community": 0,
       "norm_label": "html_to_text()"
     },
     {
@@ -4870,7 +4870,7 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "services_rich_text_extract_hashtags",
-      "community": 23,
+      "community": 0,
       "norm_label": "extract_hashtags()"
     },
     {
@@ -4880,7 +4880,7 @@
       "source_location": "L90",
       "_origin": "ast",
       "id": "services_rich_text_normalize_mentions",
-      "community": 23,
+      "community": 0,
       "norm_label": "normalize_mentions()"
     },
     {
@@ -4890,7 +4890,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "services_rich_text_rationale_1",
-      "community": 23,
+      "community": 0,
       "norm_label": "shared rich-text sanitization + mention/hashtag helpers.  feed posts, comments"
     },
     {
@@ -4900,7 +4900,7 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "services_rich_text_rationale_54",
-      "community": 23,
+      "community": 0,
       "norm_label": "return a safe html fragment limited to the formatting allowlist."
     },
     {
@@ -4910,7 +4910,7 @@
       "source_location": "L67",
       "_origin": "ast",
       "id": "services_rich_text_rationale_67",
-      "community": 23,
+      "community": 0,
       "norm_label": "plain-text projection of an html fragment (for search / previews)."
     },
     {
@@ -4920,7 +4920,7 @@
       "source_location": "L79",
       "_origin": "ast",
       "id": "services_rich_text_rationale_79",
-      "community": 23,
+      "community": 0,
       "norm_label": "lowercased, de-duplicated hashtags found in plain text (no leading #)."
     },
     {
@@ -4930,58 +4930,8 @@
       "source_location": "L91",
       "_origin": "ast",
       "id": "services_rich_text_rationale_91",
-      "community": 23,
+      "community": 0,
       "norm_label": "coerce a mentions payload into a clean, de-duplicated list of user ids."
-    },
-    {
-      "label": "sort_order.py",
-      "file_type": "code",
-      "source_file": "sort_order.py",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "sort_order",
-      "community": 4,
-      "norm_label": "sort_order.py"
-    },
-    {
-      "label": "_sort_order_value()",
-      "file_type": "code",
-      "source_file": "sort_order.py",
-      "source_location": "L8",
-      "_origin": "ast",
-      "id": "sort_order_sort_order_value",
-      "community": 4,
-      "norm_label": "_sort_order_value()"
-    },
-    {
-      "label": "sort_by_sort_order()",
-      "file_type": "code",
-      "source_file": "sort_order.py",
-      "source_location": "L19",
-      "_origin": "ast",
-      "id": "sort_order_sort_by_sort_order",
-      "community": 4,
-      "norm_label": "sort_by_sort_order()"
-    },
-    {
-      "label": "Stable display order for rooms/venues payloads (sortOrder field).",
-      "file_type": "rationale",
-      "source_file": "sort_order.py",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "sort_order_rationale_1",
-      "community": 4,
-      "norm_label": "stable display order for rooms/venues payloads (sortorder field)."
-    },
-    {
-      "label": "Ascending sortOrder; missing last; ties by id. Does not mutate input.",
-      "file_type": "rationale",
-      "source_file": "sort_order.py",
-      "source_location": "L20",
-      "_origin": "ast",
-      "id": "sort_order_rationale_20",
-      "community": 4,
-      "norm_label": "ascending sortorder; missing last; ties by id. does not mutate input."
     },
     {
       "label": "__init__.py",
@@ -5960,7 +5910,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "tests_test_list_requests_batch_batch_req_id",
-      "community": 21,
+      "community": 20,
       "norm_label": "batch_req_id()"
     },
     {
@@ -5990,7 +5940,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_test_login_rate_limit",
-      "community": 10,
+      "community": 6,
       "norm_label": "test_login_rate_limit.py"
     },
     {
@@ -6000,7 +5950,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "tests_test_login_rate_limit_setup_function",
-      "community": 10,
+      "community": 6,
       "norm_label": "setup_function()"
     },
     {
@@ -6010,7 +5960,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "tests_test_login_rate_limit_teardown_function",
-      "community": 10,
+      "community": 6,
       "norm_label": "teardown_function()"
     },
     {
@@ -6020,7 +5970,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "tests_test_login_rate_limit_test_ten_failed_logins_same_forwarded_ip_then_429",
-      "community": 10,
+      "community": 6,
       "norm_label": "test_ten_failed_logins_same_forwarded_ip_then_429()"
     },
     {
@@ -6030,7 +5980,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "tests_test_login_rate_limit_test_different_forwarded_ip_not_throttled",
-      "community": 10,
+      "community": 6,
       "norm_label": "test_different_forwarded_ip_not_throttled()"
     },
     {
@@ -6040,7 +5990,7 @@
       "source_location": "L51",
       "_origin": "ast",
       "id": "tests_test_login_rate_limit_test_login_success_body_has_no_token_cookie_set",
-      "community": 10,
+      "community": 6,
       "norm_label": "test_login_success_body_has_no_token_cookie_set()"
     },
     {
@@ -6050,7 +6000,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_test_login_rate_limit_rationale_1",
-      "community": 10,
+      "community": 6,
       "norm_label": "login rate limiter: per (forwarded ip, username), 10 failures / minute \u2192 429."
     },
     {
@@ -6060,7 +6010,7 @@
       "source_location": "L52",
       "_origin": "ast",
       "id": "tests_test_login_rate_limit_rationale_52",
-      "community": 10,
+      "community": 6,
       "norm_label": "sec-07: session stays httponly-cookie only; body must not echo the token."
     },
     {
@@ -6070,7 +6020,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_test_request_log_resave",
-      "community": 22,
+      "community": 20,
       "norm_label": "test_request_log_resave.py"
     },
     {
@@ -6080,7 +6030,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "tests_test_request_log_resave_any_property_id",
-      "community": 22,
+      "community": 20,
       "norm_label": "_any_property_id()"
     },
     {
@@ -6090,7 +6040,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "tests_test_request_log_resave_req_id",
-      "community": 21,
+      "community": 20,
       "norm_label": "req_id()"
     },
     {
@@ -6100,7 +6050,7 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "tests_test_request_log_resave_test_upsert_request_allows_prepended_logs_on_resave",
-      "community": 22,
+      "community": 20,
       "norm_label": "test_upsert_request_allows_prepended_logs_on_resave()"
     },
     {
@@ -6110,7 +6060,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_test_request_log_resave_rationale_1",
-      "community": 22,
+      "community": 20,
       "norm_label": "regression: re-saving a request after prepending logs must not uniqueviolation."
     },
     {
@@ -6200,7 +6150,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_test_session_resolve_once",
-      "community": 0,
+      "community": 20,
       "norm_label": "test_session_resolve_once.py"
     },
     {
@@ -6210,7 +6160,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "tests_test_session_resolve_once_test_require_user_prefers_middleware_context",
-      "community": 0,
+      "community": 20,
       "norm_label": "test_require_user_prefers_middleware_context()"
     },
     {
@@ -6220,7 +6170,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "tests_test_session_resolve_once_test_require_user_falls_back_to_resolve_when_no_context",
-      "community": 0,
+      "community": 20,
       "norm_label": "test_require_user_falls_back_to_resolve_when_no_context()"
     },
     {
@@ -6230,7 +6180,7 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "tests_test_session_resolve_once_test_require_user_401_when_unauthenticated",
-      "community": 0,
+      "community": 20,
       "norm_label": "test_require_user_401_when_unauthenticated()"
     },
     {
@@ -6240,38 +6190,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_test_session_resolve_once_rationale_1",
-      "community": 0,
+      "community": 20,
       "norm_label": "session resolve-once + last_seen throttle (plan 002)."
-    },
-    {
-      "label": "test_sort_order.py",
-      "file_type": "code",
-      "source_file": "tests/test_sort_order.py",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "tests_test_sort_order",
-      "community": 4,
-      "norm_label": "test_sort_order.py"
-    },
-    {
-      "label": "test_sort_by_sort_order_missing_last_and_id_tiebreak()",
-      "file_type": "code",
-      "source_file": "tests/test_sort_order.py",
-      "source_location": "L4",
-      "_origin": "ast",
-      "id": "tests_test_sort_order_test_sort_by_sort_order_missing_last_and_id_tiebreak",
-      "community": 4,
-      "norm_label": "test_sort_by_sort_order_missing_last_and_id_tiebreak()"
-    },
-    {
-      "label": "test_sort_by_sort_order_does_not_mutate()",
-      "file_type": "code",
-      "source_file": "tests/test_sort_order.py",
-      "source_location": "L14",
-      "_origin": "ast",
-      "id": "tests_test_sort_order_test_sort_by_sort_order_does_not_mutate",
-      "community": 4,
-      "norm_label": "test_sort_by_sort_order_does_not_mutate()"
     },
     {
       "label": "test_tenant_scope_fail_closed.py",
@@ -6300,7 +6220,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "tests_test_tenant_scope_fail_closed_clear_user_ctx",
-      "community": 21,
+      "community": 20,
       "norm_label": "clear_user_ctx()"
     },
     {
@@ -6310,7 +6230,7 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "tests_test_tenant_scope_fail_closed_test_no_auth_context_denies_tenant_scope",
-      "community": 21,
+      "community": 18,
       "norm_label": "test_no_auth_context_denies_tenant_scope()"
     },
     {
@@ -6320,7 +6240,7 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "tests_test_tenant_scope_fail_closed_test_admin_gets_admin_scope",
-      "community": 21,
+      "community": 18,
       "norm_label": "test_admin_gets_admin_scope()"
     },
     {
@@ -6330,7 +6250,7 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "tests_test_tenant_scope_fail_closed_test_non_admin_scoped_to_property_ids",
-      "community": 21,
+      "community": 18,
       "norm_label": "test_non_admin_scoped_to_property_ids()"
     },
     {
@@ -6514,46 +6434,6 @@
       "norm_label": "plan 042: svg upload rejection, scan-extract caps, body schema validation."
     },
     {
-      "label": "test_upsert_flat_merge.py",
-      "file_type": "code",
-      "source_file": "tests/test_upsert_flat_merge.py",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "tests_test_upsert_flat_merge",
-      "community": 4,
-      "norm_label": "test_upsert_flat_merge.py"
-    },
-    {
-      "label": "admin_ctx()",
-      "file_type": "code",
-      "source_file": "tests/test_upsert_flat_merge.py",
-      "source_location": "L14",
-      "_origin": "ast",
-      "id": "tests_test_upsert_flat_merge_admin_ctx",
-      "community": 4,
-      "norm_label": "admin_ctx()"
-    },
-    {
-      "label": "test_upsert_properties_partial_keeps_name()",
-      "file_type": "code",
-      "source_file": "tests/test_upsert_flat_merge.py",
-      "source_location": "L20",
-      "_origin": "ast",
-      "id": "tests_test_upsert_flat_merge_test_upsert_properties_partial_keeps_name",
-      "community": 4,
-      "norm_label": "test_upsert_properties_partial_keeps_name()"
-    },
-    {
-      "label": "Partial flat upserts must merge into the existing payload (not replace it).",
-      "file_type": "rationale",
-      "source_file": "tests/test_upsert_flat_merge.py",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "tests_test_upsert_flat_merge_rationale_1",
-      "community": 4,
-      "norm_label": "partial flat upserts must merge into the existing payload (not replace it)."
-    },
-    {
       "label": "utils.py",
       "file_type": "code",
       "source_file": "utils.py",
@@ -6570,7 +6450,7 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "utils_is_admin_scope",
-      "community": 21,
+      "community": 18,
       "norm_label": "_is_admin_scope()"
     },
     {
@@ -7210,7 +7090,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "websocket_manager",
-      "community": 29,
+      "community": 10,
       "norm_label": "websocket_manager.py"
     },
     {
@@ -7360,7 +7240,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "websocket_manager_rationale_1",
-      "community": 29,
+      "community": 10,
       "norm_label": "websocket connection manager for real-time live updates across users.  broadcast"
     },
     {
@@ -8653,7 +8533,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1364",
+      "source_location": "L1359",
       "weight": 1.0,
       "source": "data_access_insert_account_activity",
       "target": "child_ids_scoped_child_id",
@@ -8664,7 +8544,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1328",
+      "source_location": "L1323",
       "weight": 1.0,
       "source": "data_access_insert_account_contact",
       "target": "child_ids_scoped_child_id",
@@ -8783,7 +8663,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1008",
+      "source_location": "L1003",
       "weight": 1.0,
       "source": "data_access_insert_child",
       "target": "child_ids_resolve_child_pk",
@@ -9394,7 +9274,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1436",
+      "source_location": "L1431",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_as_date",
@@ -9404,7 +9284,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1444",
+      "source_location": "L1439",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_as_datetime",
@@ -9414,7 +9294,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1427",
+      "source_location": "L1422",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_as_decimal",
@@ -9424,7 +9304,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1418",
+      "source_location": "L1413",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_as_int",
@@ -9464,7 +9344,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1212",
+      "source_location": "L1207",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_cascade_account_rename_to_requests",
@@ -9474,7 +9354,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1036",
+      "source_location": "L1031",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_child_typed",
@@ -9484,7 +9364,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L501",
+      "source_location": "L496",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_crm_block_score",
@@ -9494,7 +9374,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1392",
+      "source_location": "L1387",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_delete_account",
@@ -9514,7 +9394,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L463",
+      "source_location": "L458",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_delete_flat",
@@ -9524,7 +9404,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1100",
+      "source_location": "L1095",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_delete_request",
@@ -9653,7 +9533,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1194",
+      "source_location": "L1189",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_get_account",
@@ -9663,7 +9543,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L518",
+      "source_location": "L513",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_get_crm_state",
@@ -9693,7 +9573,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L614",
+      "source_location": "L609",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_get_public_feedback_by_token",
@@ -9703,7 +9583,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L602",
+      "source_location": "L597",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_get_request",
@@ -9713,7 +9593,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1360",
+      "source_location": "L1355",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_insert_account_activity",
@@ -9723,7 +9603,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1324",
+      "source_location": "L1319",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_insert_account_contact",
@@ -9733,7 +9613,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L997",
+      "source_location": "L992",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_insert_child",
@@ -9743,7 +9623,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1174",
+      "source_location": "L1169",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_list_accounts",
@@ -9773,7 +9653,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L580",
+      "source_location": "L575",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_list_requests",
@@ -9783,7 +9663,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L723",
+      "source_location": "L718",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_load_request_children_maps",
@@ -9793,7 +9673,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1130",
+      "source_location": "L1125",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_load_users_cache",
@@ -9803,7 +9683,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L783",
+      "source_location": "L778",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_request_dict_from_row",
@@ -9813,7 +9693,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1141",
+      "source_location": "L1136",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_row_to_account_dict",
@@ -9823,7 +9703,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L829",
+      "source_location": "L824",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_row_to_request_dict",
@@ -9833,7 +9713,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L476",
+      "source_location": "L471",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_save_ledger_entry",
@@ -9853,7 +9733,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L672",
+      "source_location": "L667",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_submit_public_feedback",
@@ -9863,7 +9743,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L482",
+      "source_location": "L477",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_transfer_allocation",
@@ -9873,7 +9753,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1230",
+      "source_location": "L1225",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_upsert_account",
@@ -9883,7 +9763,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L543",
+      "source_location": "L538",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_upsert_crm_state",
@@ -9913,7 +9793,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L491",
+      "source_location": "L486",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_upsert_payload_only",
@@ -9923,7 +9803,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L834",
+      "source_location": "L829",
       "weight": 1.0,
       "source": "data_access",
       "target": "data_access_upsert_request",
@@ -10248,17 +10128,6 @@
       "confidence_score": 1.0
     },
     {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_upsert_flat_merge.py",
-      "source_location": "L8",
-      "weight": 1.0,
-      "source": "tests_test_upsert_flat_merge",
-      "target": "data_access",
-      "confidence_score": 1.0
-    },
-    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
@@ -10318,7 +10187,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1400",
+      "source_location": "L1395",
       "weight": 1.0,
       "source": "data_access_delete_account",
       "target": "data_access_assert_write_access",
@@ -10329,7 +10198,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L471",
+      "source_location": "L466",
       "weight": 1.0,
       "source": "data_access_delete_flat",
       "target": "data_access_assert_write_access",
@@ -10340,7 +10209,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1108",
+      "source_location": "L1103",
       "weight": 1.0,
       "source": "data_access_delete_request",
       "target": "data_access_assert_write_access",
@@ -10361,7 +10230,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1262",
+      "source_location": "L1257",
       "weight": 1.0,
       "source": "data_access_upsert_account",
       "target": "data_access_assert_write_access",
@@ -10372,7 +10241,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L545",
+      "source_location": "L540",
       "weight": 1.0,
       "source": "data_access_upsert_crm_state",
       "target": "data_access_assert_write_access",
@@ -10394,7 +10263,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L869",
+      "source_location": "L864",
       "weight": 1.0,
       "source": "data_access_upsert_request",
       "target": "data_access_assert_write_access",
@@ -10415,7 +10284,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1260",
+      "source_location": "L1255",
       "weight": 1.0,
       "source": "data_access_upsert_account",
       "target": "data_access_assert_upsert_write_access",
@@ -10437,7 +10306,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L856",
+      "source_location": "L851",
       "weight": 1.0,
       "source": "data_access_upsert_request",
       "target": "data_access_assert_upsert_write_access",
@@ -10448,7 +10317,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1412",
+      "source_location": "L1407",
       "weight": 1.0,
       "source": "data_access_delete_account",
       "target": "data_access_broadcast_change",
@@ -10459,7 +10328,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L473",
+      "source_location": "L468",
       "weight": 1.0,
       "source": "data_access_delete_flat",
       "target": "data_access_broadcast_change",
@@ -10470,7 +10339,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1121",
+      "source_location": "L1116",
       "weight": 1.0,
       "source": "data_access_delete_request",
       "target": "data_access_broadcast_change",
@@ -10491,7 +10360,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1314",
+      "source_location": "L1309",
       "weight": 1.0,
       "source": "data_access_upsert_account",
       "target": "data_access_broadcast_change",
@@ -10502,7 +10371,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L561",
+      "source_location": "L556",
       "weight": 1.0,
       "source": "data_access_upsert_crm_state",
       "target": "data_access_broadcast_change",
@@ -10513,7 +10382,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L459",
+      "source_location": "L454",
       "weight": 1.0,
       "source": "data_access_upsert_flat",
       "target": "data_access_broadcast_change",
@@ -10524,7 +10393,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L496",
+      "source_location": "L491",
       "weight": 1.0,
       "source": "data_access_upsert_payload_only",
       "target": "data_access_broadcast_change",
@@ -10535,7 +10404,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L992",
+      "source_location": "L987",
       "weight": 1.0,
       "source": "data_access_upsert_request",
       "target": "data_access_broadcast_change",
@@ -10568,7 +10437,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1232",
+      "source_location": "L1227",
       "weight": 1.0,
       "source": "data_access_upsert_account",
       "target": "data_access_gen_id",
@@ -10590,7 +10459,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L493",
+      "source_location": "L488",
       "weight": 1.0,
       "source": "data_access_upsert_payload_only",
       "target": "data_access_gen_id",
@@ -10601,7 +10470,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L837",
+      "source_location": "L832",
       "weight": 1.0,
       "source": "data_access_upsert_request",
       "target": "data_access_gen_id",
@@ -10633,7 +10502,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L458",
+      "source_location": "L453",
       "weight": 1.0,
       "source": "data_access_upsert_flat",
       "target": "data_access_upsert_doc",
@@ -10644,7 +10513,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L495",
+      "source_location": "L490",
       "weight": 1.0,
       "source": "data_access_upsert_payload_only",
       "target": "data_access_upsert_doc",
@@ -10677,7 +10546,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L753",
+      "source_location": "L748",
       "weight": 1.0,
       "source": "data_access_load_request_children_maps",
       "target": "data_access_doc_with_row_id",
@@ -10698,7 +10567,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1153",
+      "source_location": "L1148",
       "weight": 1.0,
       "source": "data_access_row_to_account_dict",
       "target": "data_access_doc_with_row_id",
@@ -10764,7 +10633,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L468",
+      "source_location": "L463",
       "weight": 1.0,
       "source": "data_access_delete_flat",
       "target": "data_access_get_doc",
@@ -10797,7 +10666,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L444",
+      "source_location": "L445",
       "weight": 1.0,
       "source": "data_access_upsert_flat",
       "target": "data_access_get_doc",
@@ -10819,7 +10688,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L472",
+      "source_location": "L467",
       "weight": 1.0,
       "source": "data_access_delete_flat",
       "target": "data_access_delete_doc",
@@ -10951,7 +10820,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L478",
+      "source_location": "L473",
       "weight": 1.0,
       "source": "data_access_save_ledger_entry",
       "target": "data_access_signed_ledger_amount",
@@ -11139,7 +11008,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "routers/rooms.py",
-      "source_location": "L13",
+      "source_location": "L12",
       "weight": 1.0,
       "source": "routers_rooms_get_rooms",
       "target": "data_access_list_flat"
@@ -11205,7 +11074,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "routers/venues.py",
-      "source_location": "L13",
+      "source_location": "L12",
       "weight": 1.0,
       "source": "routers_venues_get_venues",
       "target": "data_access_list_flat"
@@ -11215,31 +11084,9 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L483",
+      "source_location": "L478",
       "weight": 1.0,
       "source": "data_access_transfer_allocation",
-      "target": "data_access_get_flat",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_upsert_flat_merge.py",
-      "source_location": "L8",
-      "weight": 1.0,
-      "source": "tests_test_upsert_flat_merge",
-      "target": "data_access_get_flat",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_upsert_flat_merge.py",
-      "source_location": "L42",
-      "weight": 1.0,
-      "source": "tests_test_upsert_flat_merge_test_upsert_properties_partial_keeps_name",
       "target": "data_access_get_flat",
       "confidence_score": 1.0
     },
@@ -11248,7 +11095,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L479",
+      "source_location": "L474",
       "weight": 1.0,
       "source": "data_access_save_ledger_entry",
       "target": "data_access_upsert_flat",
@@ -11359,7 +11206,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "routers/rooms.py",
-      "source_location": "L21",
+      "source_location": "L20",
       "weight": 1.0,
       "source": "routers_rooms_save_room",
       "target": "data_access_upsert_flat"
@@ -11436,32 +11283,10 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "routers/venues.py",
-      "source_location": "L21",
+      "source_location": "L20",
       "weight": 1.0,
       "source": "routers_venues_save_venue",
       "target": "data_access_upsert_flat"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_upsert_flat_merge.py",
-      "source_location": "L8",
-      "weight": 1.0,
-      "source": "tests_test_upsert_flat_merge",
-      "target": "data_access_upsert_flat",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_upsert_flat_merge.py",
-      "source_location": "L23",
-      "weight": 1.0,
-      "source": "tests_test_upsert_flat_merge_test_upsert_properties_partial_keeps_name",
-      "target": "data_access_upsert_flat",
-      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -11634,7 +11459,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "routers/rooms.py",
-      "source_location": "L26",
+      "source_location": "L25",
       "weight": 1.0,
       "source": "routers_rooms_delete_room",
       "target": "data_access_delete_flat"
@@ -11700,39 +11525,17 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "routers/venues.py",
-      "source_location": "L26",
+      "source_location": "L25",
       "weight": 1.0,
       "source": "routers_venues_delete_venue",
       "target": "data_access_delete_flat"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_upsert_flat_merge.py",
-      "source_location": "L8",
-      "weight": 1.0,
-      "source": "tests_test_upsert_flat_merge",
-      "target": "data_access_delete_flat",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_upsert_flat_merge.py",
-      "source_location": "L50",
-      "weight": 1.0,
-      "source": "tests_test_upsert_flat_merge_test_upsert_properties_partial_keeps_name",
-      "target": "data_access_delete_flat",
-      "confidence_score": 1.0
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L487",
+      "source_location": "L482",
       "weight": 1.0,
       "source": "data_access_transfer_allocation",
       "target": "data_access_save_ledger_entry",
@@ -11831,7 +11634,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L538",
+      "source_location": "L533",
       "weight": 1.0,
       "source": "data_access_get_crm_state",
       "target": "data_access_crm_block_score",
@@ -11841,9 +11644,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L502",
+      "source_location": "L497",
       "weight": 1.0,
-      "source": "data_access_rationale_502",
+      "source": "data_access_rationale_497",
       "target": "data_access_crm_block_score",
       "confidence_score": 1.0
     },
@@ -11852,7 +11655,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L524",
+      "source_location": "L519",
       "weight": 1.0,
       "source": "data_access_get_crm_state",
       "target": "utils_get_pool",
@@ -11863,7 +11666,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L522",
+      "source_location": "L517",
       "weight": 1.0,
       "source": "data_access_get_crm_state",
       "target": "utils_is_admin_scope",
@@ -11874,7 +11677,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L521",
+      "source_location": "L516",
       "weight": 1.0,
       "source": "data_access_get_crm_state",
       "target": "utils_tenant_scope",
@@ -11896,7 +11699,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L546",
+      "source_location": "L541",
       "weight": 1.0,
       "source": "data_access_upsert_crm_state",
       "target": "utils_get_pool",
@@ -11940,7 +11743,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L597",
+      "source_location": "L592",
       "weight": 1.0,
       "source": "data_access_list_requests",
       "target": "data_access_load_request_children_maps",
@@ -11951,7 +11754,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L598",
+      "source_location": "L593",
       "weight": 1.0,
       "source": "data_access_list_requests",
       "target": "data_access_request_dict_from_row",
@@ -11962,7 +11765,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L599",
+      "source_location": "L594",
       "weight": 1.0,
       "source": "data_access_list_requests",
       "target": "utils_filter_by_tenant",
@@ -11973,7 +11776,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L581",
+      "source_location": "L576",
       "weight": 1.0,
       "source": "data_access_list_requests",
       "target": "utils_get_pool",
@@ -11984,7 +11787,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L599",
+      "source_location": "L594",
       "weight": 1.0,
       "source": "data_access_list_requests",
       "target": "utils_tenant_scope",
@@ -12105,7 +11908,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L610",
+      "source_location": "L605",
       "weight": 1.0,
       "source": "data_access_get_request",
       "target": "data_access_load_request_children_maps",
@@ -12116,7 +11919,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L611",
+      "source_location": "L606",
       "weight": 1.0,
       "source": "data_access_get_request",
       "target": "data_access_request_dict_from_row",
@@ -12127,7 +11930,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L603",
+      "source_location": "L598",
       "weight": 1.0,
       "source": "data_access_get_request",
       "target": "utils_get_pool",
@@ -12182,7 +11985,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L624",
+      "source_location": "L619",
       "weight": 1.0,
       "source": "data_access_get_public_feedback_by_token",
       "target": "utils_get_pool",
@@ -12192,9 +11995,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L615",
+      "source_location": "L610",
       "weight": 1.0,
-      "source": "data_access_rationale_615",
+      "source": "data_access_rationale_610",
       "target": "data_access_get_public_feedback_by_token",
       "confidence_score": 1.0
     },
@@ -12224,9 +12027,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L673",
+      "source_location": "L668",
       "weight": 1.0,
-      "source": "data_access_rationale_673",
+      "source": "data_access_rationale_668",
       "target": "data_access_submit_public_feedback",
       "confidence_score": 1.0
     },
@@ -12236,7 +12039,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "data_access.py",
-      "source_location": "L676",
+      "source_location": "L671",
       "weight": 1.0,
       "source": "data_access_submit_public_feedback",
       "target": "permissionerror"
@@ -12246,7 +12049,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L680",
+      "source_location": "L675",
       "weight": 1.0,
       "source": "data_access_submit_public_feedback",
       "target": "utils_get_pool",
@@ -12278,9 +12081,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L724",
+      "source_location": "L719",
       "weight": 1.0,
-      "source": "data_access_rationale_724",
+      "source": "data_access_rationale_719",
       "target": "data_access_load_request_children_maps",
       "confidence_score": 1.0
     },
@@ -12289,7 +12092,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L831",
+      "source_location": "L826",
       "weight": 1.0,
       "source": "data_access_row_to_request_dict",
       "target": "data_access_load_request_children_maps",
@@ -12300,7 +12103,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L832",
+      "source_location": "L827",
       "weight": 1.0,
       "source": "data_access_row_to_request_dict",
       "target": "data_access_request_dict_from_row",
@@ -12310,9 +12113,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L830",
+      "source_location": "L825",
       "weight": 1.0,
-      "source": "data_access_rationale_830",
+      "source": "data_access_rationale_825",
       "target": "data_access_row_to_request_dict",
       "confidence_score": 1.0
     },
@@ -12321,7 +12124,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L879",
+      "source_location": "L874",
       "weight": 1.0,
       "source": "data_access_upsert_request",
       "target": "data_access_as_date",
@@ -12332,7 +12135,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L881",
+      "source_location": "L876",
       "weight": 1.0,
       "source": "data_access_upsert_request",
       "target": "data_access_as_datetime",
@@ -12343,7 +12146,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L885",
+      "source_location": "L880",
       "weight": 1.0,
       "source": "data_access_upsert_request",
       "target": "data_access_as_decimal",
@@ -12354,7 +12157,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L883",
+      "source_location": "L878",
       "weight": 1.0,
       "source": "data_access_upsert_request",
       "target": "data_access_as_int",
@@ -12365,7 +12168,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L980",
+      "source_location": "L975",
       "weight": 1.0,
       "source": "data_access_upsert_request",
       "target": "data_access_insert_child",
@@ -12376,7 +12179,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L846",
+      "source_location": "L841",
       "weight": 1.0,
       "source": "data_access_upsert_request",
       "target": "utils_get_pool",
@@ -12387,7 +12190,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L862",
+      "source_location": "L857",
       "weight": 1.0,
       "source": "data_access_upsert_request",
       "target": "utils_is_explicit_request_update",
@@ -12398,7 +12201,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L863",
+      "source_location": "L858",
       "weight": 1.0,
       "source": "data_access_upsert_request",
       "target": "utils_requestidcollisionerror",
@@ -12530,7 +12333,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1023",
+      "source_location": "L1018",
       "weight": 1.0,
       "source": "data_access_insert_child",
       "target": "data_access_child_typed",
@@ -12541,7 +12344,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1045",
+      "source_location": "L1040",
       "weight": 1.0,
       "source": "data_access_child_typed",
       "target": "data_access_as_date",
@@ -12552,7 +12355,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1076",
+      "source_location": "L1071",
       "weight": 1.0,
       "source": "data_access_child_typed",
       "target": "data_access_as_datetime",
@@ -12563,7 +12366,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1043",
+      "source_location": "L1038",
       "weight": 1.0,
       "source": "data_access_child_typed",
       "target": "data_access_as_decimal",
@@ -12574,7 +12377,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1040",
+      "source_location": "L1035",
       "weight": 1.0,
       "source": "data_access_child_typed",
       "target": "data_access_as_int",
@@ -12585,7 +12388,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1101",
+      "source_location": "L1096",
       "weight": 1.0,
       "source": "data_access_delete_request",
       "target": "utils_get_pool",
@@ -12706,7 +12509,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1134",
+      "source_location": "L1129",
       "weight": 1.0,
       "source": "data_access_load_users_cache",
       "target": "utils_get_pool",
@@ -12717,7 +12520,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1142",
+      "source_location": "L1137",
       "weight": 1.0,
       "source": "data_access_row_to_account_dict",
       "target": "data_access_load_users_cache",
@@ -12728,7 +12531,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1202",
+      "source_location": "L1197",
       "weight": 1.0,
       "source": "data_access_get_account",
       "target": "data_access_row_to_account_dict",
@@ -12739,7 +12542,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1190",
+      "source_location": "L1185",
       "weight": 1.0,
       "source": "data_access_list_accounts",
       "target": "data_access_row_to_account_dict",
@@ -12750,7 +12553,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1191",
+      "source_location": "L1186",
       "weight": 1.0,
       "source": "data_access_list_accounts",
       "target": "utils_filter_by_tenant",
@@ -12761,7 +12564,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1175",
+      "source_location": "L1170",
       "weight": 1.0,
       "source": "data_access_list_accounts",
       "target": "utils_get_pool",
@@ -12772,7 +12575,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1191",
+      "source_location": "L1186",
       "weight": 1.0,
       "source": "data_access_list_accounts",
       "target": "utils_tenant_scope",
@@ -12838,7 +12641,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1195",
+      "source_location": "L1190",
       "weight": 1.0,
       "source": "data_access_get_account",
       "target": "utils_get_pool",
@@ -12849,7 +12652,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1205",
+      "source_location": "L1200",
       "weight": 1.0,
       "source": "data_access_get_account",
       "target": "utils_is_admin_scope",
@@ -12860,7 +12663,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1204",
+      "source_location": "L1199",
       "weight": 1.0,
       "source": "data_access_get_account",
       "target": "utils_tenant_scope",
@@ -12892,9 +12695,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1213",
+      "source_location": "L1208",
       "weight": 1.0,
-      "source": "data_access_rationale_1213",
+      "source": "data_access_rationale_1208",
       "target": "data_access_cascade_account_rename_to_requests",
       "confidence_score": 1.0
     },
@@ -12903,7 +12706,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1309",
+      "source_location": "L1304",
       "weight": 1.0,
       "source": "data_access_upsert_account",
       "target": "data_access_cascade_account_rename_to_requests",
@@ -12914,7 +12717,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1250",
+      "source_location": "L1245",
       "weight": 1.0,
       "source": "data_access_upsert_account",
       "target": "data_access_as_decimal",
@@ -12925,7 +12728,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1249",
+      "source_location": "L1244",
       "weight": 1.0,
       "source": "data_access_upsert_account",
       "target": "data_access_as_int",
@@ -12936,7 +12739,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1306",
+      "source_location": "L1301",
       "weight": 1.0,
       "source": "data_access_upsert_account",
       "target": "data_access_insert_account_activity",
@@ -12947,7 +12750,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1302",
+      "source_location": "L1297",
       "weight": 1.0,
       "source": "data_access_upsert_account",
       "target": "data_access_insert_account_contact",
@@ -12958,7 +12761,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1253",
+      "source_location": "L1248",
       "weight": 1.0,
       "source": "data_access_upsert_account",
       "target": "utils_get_pool",
@@ -13002,7 +12805,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1384",
+      "source_location": "L1379",
       "weight": 1.0,
       "source": "data_access_insert_account_activity",
       "target": "data_access_as_datetime",
@@ -13013,7 +12816,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1393",
+      "source_location": "L1388",
       "weight": 1.0,
       "source": "data_access_delete_account",
       "target": "utils_get_pool",
@@ -13057,7 +12860,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1418",
+      "source_location": "L1413",
       "weight": 1.0,
       "source": "data_access_as_int",
       "target": "data_access_py_any",
@@ -13068,7 +12871,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1436",
+      "source_location": "L1431",
       "weight": 1.0,
       "source": "data_access_as_date",
       "target": "data_access_py_any",
@@ -13079,7 +12882,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1444",
+      "source_location": "L1439",
       "weight": 1.0,
       "source": "data_access_as_datetime",
       "target": "data_access_py_any",
@@ -13090,7 +12893,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "data_access.py",
-      "source_location": "L1427",
+      "source_location": "L1422",
       "weight": 1.0,
       "source": "data_access_as_decimal",
       "target": "data_access_py_any",
@@ -13330,17 +13133,6 @@
       "confidence_score": 1.0
     },
     {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_upsert_flat_merge.py",
-      "source_location": "L9",
-      "weight": 1.0,
-      "source": "tests_test_upsert_flat_merge",
-      "target": "dependencies",
-      "confidence_score": 1.0
-    },
-    {
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
@@ -13526,28 +13318,6 @@
       "source": "tests_test_tenant_scope_fail_closed_test_public_feedback_explicit_opt_in_works_without_auth",
       "target": "dependencies_set_current_user",
       "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_upsert_flat_merge.py",
-      "source_location": "L9",
-      "weight": 1.0,
-      "source": "tests_test_upsert_flat_merge",
-      "target": "dependencies_set_current_user",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "tests/test_upsert_flat_merge.py",
-      "source_location": "L15",
-      "weight": 1.0,
-      "source": "tests_test_upsert_flat_merge_admin_ctx",
-      "target": "dependencies_set_current_user"
     },
     {
       "relation": "calls",
@@ -20666,7 +20436,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "routers/rooms.py",
-      "source_location": "L25",
+      "source_location": "L24",
       "weight": 1.0,
       "source": "routers_rooms",
       "target": "routers_rooms_delete_room",
@@ -20676,7 +20446,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "routers/rooms.py",
-      "source_location": "L12",
+      "source_location": "L11",
       "weight": 1.0,
       "source": "routers_rooms",
       "target": "routers_rooms_get_rooms",
@@ -20686,44 +20456,11 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "routers/rooms.py",
-      "source_location": "L17",
+      "source_location": "L16",
       "weight": 1.0,
       "source": "routers_rooms",
       "target": "routers_rooms_save_room",
       "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "routers/rooms.py",
-      "source_location": "L5",
-      "weight": 1.0,
-      "source": "routers_rooms",
-      "target": "sort_order",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "routers/rooms.py",
-      "source_location": "L5",
-      "weight": 1.0,
-      "source": "routers_rooms",
-      "target": "sort_order_sort_by_sort_order",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "routers/rooms.py",
-      "source_location": "L13",
-      "weight": 1.0,
-      "source": "routers_rooms_get_rooms",
-      "target": "sort_order_sort_by_sort_order"
     },
     {
       "relation": "contains",
@@ -21480,7 +21217,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "routers/venues.py",
-      "source_location": "L25",
+      "source_location": "L24",
       "weight": 1.0,
       "source": "routers_venues",
       "target": "routers_venues_delete_venue",
@@ -21490,7 +21227,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "routers/venues.py",
-      "source_location": "L12",
+      "source_location": "L11",
       "weight": 1.0,
       "source": "routers_venues",
       "target": "routers_venues_get_venues",
@@ -21500,44 +21237,11 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "routers/venues.py",
-      "source_location": "L17",
+      "source_location": "L16",
       "weight": 1.0,
       "source": "routers_venues",
       "target": "routers_venues_save_venue",
       "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "routers/venues.py",
-      "source_location": "L5",
-      "weight": 1.0,
-      "source": "routers_venues",
-      "target": "sort_order",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "routers/venues.py",
-      "source_location": "L5",
-      "weight": 1.0,
-      "source": "routers_venues",
-      "target": "sort_order_sort_by_sort_order",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "routers/venues.py",
-      "source_location": "L13",
-      "weight": 1.0,
-      "source": "routers_venues_get_venues",
-      "target": "sort_order_sort_by_sort_order"
     },
     {
       "relation": "contains",
@@ -22288,101 +21992,6 @@
       "weight": 1.0,
       "source": "services_rich_text_rationale_91",
       "target": "services_rich_text_normalize_mentions",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "sort_order.py",
-      "source_location": "L19",
-      "weight": 1.0,
-      "source": "sort_order",
-      "target": "sort_order_sort_by_sort_order",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "sort_order.py",
-      "source_location": "L8",
-      "weight": 1.0,
-      "source": "sort_order",
-      "target": "sort_order_sort_order_value",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "rationale_for",
-      "confidence": "EXTRACTED",
-      "source_file": "sort_order.py",
-      "source_location": "L1",
-      "weight": 1.0,
-      "source": "sort_order_rationale_1",
-      "target": "sort_order",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_sort_order.py",
-      "source_location": "L1",
-      "weight": 1.0,
-      "source": "tests_test_sort_order",
-      "target": "sort_order",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "sort_order.py",
-      "source_location": "L24",
-      "weight": 1.0,
-      "source": "sort_order_sort_by_sort_order",
-      "target": "sort_order_sort_order_value",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "rationale_for",
-      "confidence": "EXTRACTED",
-      "source_file": "sort_order.py",
-      "source_location": "L20",
-      "weight": 1.0,
-      "source": "sort_order_rationale_20",
-      "target": "sort_order_sort_by_sort_order",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_sort_order.py",
-      "source_location": "L1",
-      "weight": 1.0,
-      "source": "tests_test_sort_order",
-      "target": "sort_order_sort_by_sort_order",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_sort_order.py",
-      "source_location": "L16",
-      "weight": 1.0,
-      "source": "tests_test_sort_order_test_sort_by_sort_order_does_not_mutate",
-      "target": "sort_order_sort_by_sort_order",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_sort_order.py",
-      "source_location": "L11",
-      "weight": 1.0,
-      "source": "tests_test_sort_order_test_sort_by_sort_order_missing_last_and_id_tiebreak",
-      "target": "sort_order_sort_by_sort_order",
       "confidence_score": 1.0
     },
     {
@@ -24355,26 +23964,6 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "tests/test_sort_order.py",
-      "source_location": "L14",
-      "weight": 1.0,
-      "source": "tests_test_sort_order",
-      "target": "tests_test_sort_order_test_sort_by_sort_order_does_not_mutate",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_sort_order.py",
-      "source_location": "L4",
-      "weight": 1.0,
-      "source": "tests_test_sort_order",
-      "target": "tests_test_sort_order_test_sort_by_sort_order_missing_last_and_id_tiebreak",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
       "source_file": "tests/test_tenant_scope_fail_closed.py",
       "source_location": "L18",
       "weight": 1.0,
@@ -24777,69 +24366,6 @@
       "weight": 1.0,
       "source": "tests_test_upload_svg_rationale_1",
       "target": "tests_test_upload_svg",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_upsert_flat_merge.py",
-      "source_location": "L14",
-      "weight": 1.0,
-      "source": "tests_test_upsert_flat_merge",
-      "target": "tests_test_upsert_flat_merge_admin_ctx",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_upsert_flat_merge.py",
-      "source_location": "L20",
-      "weight": 1.0,
-      "source": "tests_test_upsert_flat_merge",
-      "target": "tests_test_upsert_flat_merge_test_upsert_properties_partial_keeps_name",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_upsert_flat_merge.py",
-      "source_location": "L10",
-      "weight": 1.0,
-      "source": "tests_test_upsert_flat_merge",
-      "target": "utils",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_upsert_flat_merge.py",
-      "source_location": "L10",
-      "weight": 1.0,
-      "source": "tests_test_upsert_flat_merge",
-      "target": "utils_get_database_url",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "rationale_for",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_upsert_flat_merge.py",
-      "source_location": "L1",
-      "weight": 1.0,
-      "source": "tests_test_upsert_flat_merge_rationale_1",
-      "target": "tests_test_upsert_flat_merge",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_upsert_flat_merge.py",
-      "source_location": "L52",
-      "weight": 1.0,
-      "source": "tests_test_upsert_flat_merge_test_upsert_properties_partial_keeps_name",
-      "target": "utils_get_database_url",
       "confidence_score": 1.0
     },
     {
@@ -27145,5 +26671,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "91588eddbb4e97c55e8155c3c0fe28089e6a53b4"
+  "built_at_commit": "3829cf7fa39cc384adacb7c1107b968375ce2769"
 }

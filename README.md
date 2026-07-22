@@ -100,8 +100,14 @@ docker exec -e PGPASSWORD="$DB_PASSWORD" as-postgres \
 - **`AS.tsx`** — Main dashboard shell, KPI cards, navigation
 - **`CRM.tsx`** — Pipeline management
 - **`RequestsManager.tsx`** — Booking request wizard (Discard on new/edit/duplicate)
-- **`Contracts.tsx` / `Reports.tsx` / `Settings.tsx`**
+- **`Contracts.tsx` / `Reports.tsx` / `Settings.tsx`** — Settings: staff property assignment, taxonomy drag-reorder (rooms/venues/occupancy/segments), profile chips from user `propertyId` / `property_ids`
+- **`sortOrder.ts` / `userPropertyAccess.ts`** — display order + multi-property assignment helpers
 - **`dashboardHub/`** — Analytics tabs + Social Feed
+
+### Notes
+
+- Partial property POSTs (payment methods, occupancy, taxonomy) **merge** into the existing property document server-side (`upsert_flat`) so other fields are not wiped.
+- Profile assignment chips need the properties catalog on first load (Settings fetches `/api/properties` for every role, including profile-only users).
 
 ## Tech stack
 

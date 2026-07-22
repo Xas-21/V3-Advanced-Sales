@@ -22,12 +22,5 @@
   "20": "set_current_user",
   "21": "upsert_request",
   "22": "reqs.py",
-  "23": "_load_request_children_maps",
-  "24": "is_admin",
-  "25": "hash_password",
-  "26": "security.py",
-  "27": "dependencies.py",
-  "28": "resolve_session",
-  "29": "presence.py",
-  "30": "_list_doc"
+  "23": "_load_request_children_maps"
 }

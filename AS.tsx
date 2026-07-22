@@ -1227,9 +1227,7 @@ export default function AdvancedSalesDashboard() {
         if (!ap?.id) {
             return currentUser?.name ? [row({ id: currentUser.id, name: currentUser.name })] : [];
         }
-        // Match Settings "Staff Management": users on this property are those in assignedUserIds
-        // OR whose primary propertyId matches. Previously we only used propertyId when assignedUserIds
-        // was empty, so a partial assignedUserIds list (e.g. one admin) hid everyone else.
+        // Match Settings staff list: assignedUserIds (legacy), primary propertyId, or property_ids[].
         const assignedIds = new Set((ap.assignedUserIds || []).map((x: any) => String(x)));
         const propId = String(ap.id);
         const byUserId = new Map<string, { id: string; name: string }>();
@@ -1237,8 +1235,11 @@ export default function AdvancedSalesDashboard() {
         for (const u of systemUsers || []) {
             if (u?.id == null && u?.username == null) continue;
             const uid = String(u.id ?? '');
+            const multi = u.property_ids || u.assignedPropertyIds || [];
             const onProperty =
-                (uid && assignedIds.has(uid)) || String(u.propertyId ?? '') === propId;
+                (uid && assignedIds.has(uid)) ||
+                String(u.propertyId ?? '') === propId ||
+                (Array.isArray(multi) && multi.map((x: any) => String(x)).includes(propId));
             if (!onProperty) continue;
             const r = row(u);
             if (!r.name) continue;
@@ -4034,8 +4035,8 @@ export default function AdvancedSalesDashboard() {
                                                             <MapPin size={14} />
                                                         </div>
                                                         <div className="text-left flex-1 min-w-0">
-                                                            <p className={`text-xs font-bold truncate ${activeProperty?.id === prop.id ? '' : 'opacity-80'}`} style={{ color: colors.textMain }}>{prop.name}</p>
-                                                            <p className="text-[9px] opacity-40 uppercase font-medium" style={{ color: colors.textMuted }}>{prop.location || 'HQ'}</p>
+                                                            <p className={`text-xs font-bold truncate ${activeProperty?.id === prop.id ? '' : 'opacity-80'}`} style={{ color: colors.textMain }}>{prop.name || prop.id}</p>
+                                                            <p className="text-[9px] opacity-40 uppercase font-medium" style={{ color: colors.textMuted }}>{prop.location || [prop.city, prop.country].filter(Boolean).join(', ') || 'HQ'}</p>
                                                         </div>
                                                         {activeProperty?.id === prop.id && (
                                                             <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors.primary }}></div>
@@ -4291,6 +4292,8 @@ export default function AdvancedSalesDashboard() {
                             theme={theme}
                             currentUser={currentUser}
                             activeProperty={activeProperty}
+                            properties={properties}
+                            users={systemUsers}
                             sharedRequests={sharedRequests}
                             accounts={accounts}
                             crmLeads={crmLeads}

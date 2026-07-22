@@ -71,6 +71,34 @@ export function nextUserPropertyAccess(
     return { propertyId: newPrimary, assignedPropertyIds: next };
 }
 
+/** True when the user record (or legacy property.assignedUserIds) links this property. */
+export function userIsAssignedToProperty(
+    user: UserLike,
+    propertyId: string | number | null | undefined,
+    prop?: PropLike,
+): boolean {
+    if (!user) return false;
+    const pid = String(propertyId ?? '').trim();
+    if (!pid) return false;
+    if (String(user.propertyId ?? '') === pid) return true;
+    const ids = user.property_ids || user.assignedPropertyIds || [];
+    if (Array.isArray(ids) && ids.map((x) => String(x)).includes(pid)) return true;
+    if (
+        prop &&
+        Array.isArray(prop.assignedUserIds) &&
+        prop.assignedUserIds.some((id) => String(id) === String(user.id ?? ''))
+    ) {
+        return true;
+    }
+    return false;
+}
+
+/** Properties shown on a user profile / staff assignment chips. */
+export function listAssignedProperties<T extends PropLike>(user: UserLike, properties: T[]): T[] {
+    if (!Array.isArray(properties)) return [];
+    return properties.filter((p) => userIsAssignedToProperty(user, p?.id, p));
+}
+
 /** Client-side property switcher gate — mirrors backend can_access_property. */
 export function userCanAccessProperty(user: UserLike, prop: PropLike): boolean {
     if (!prop || user == null) return false;
