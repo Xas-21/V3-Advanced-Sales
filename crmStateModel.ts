@@ -30,8 +30,6 @@ export type CrmStatePayload = {
     pipeline: CrmPipelineBuckets;
 };
 
-const LEGACY_KEYS = ['new', ...PIPELINE_STAGE_KEYS] as const;
-
 export function defaultPipelineBuckets(): CrmPipelineBuckets {
     return {
         waiting: [],
@@ -334,14 +332,29 @@ export function movePipelineCard(
     return out;
 }
 
-/** Linked request status → account pipeline stage. */
+/**
+ * Linked request status → account pipeline stage.
+ * Keep in parity with backend/crm_recovery.py STAGE_FROM_REQUEST.
+ */
+export const STAGE_FROM_REQUEST: Record<string, PipelineStageKey> = {
+    inquiry: 'waiting',
+    draft: 'waiting',
+    accepted: 'proposal',
+    tentative: 'negotiation',
+    definite: 'won',
+    actual: 'won',
+    cancelled: 'notInterested',
+    lost: 'notInterested',
+};
+
+/**
+ * Linked request status → account pipeline stage.
+ * Unknown/unmapped status → null, meaning "leave the card in place" (the caller
+ * `updatePipelineForLinkedRequest` only patches value, does not move the card).
+ */
 export function requestStatusToAccountPipelineStage(status: string): PipelineStageKey | null {
     const s = String(status || '').toLowerCase().trim();
-    if (s === 'inquiry' || s === 'accepted') return 'proposal';
-    if (s === 'tentative') return 'negotiation';
-    if (s === 'definite' || s === 'actual') return 'won';
-    if (s === 'cancelled' || s === 'lost') return 'notInterested';
-    return null;
+    return STAGE_FROM_REQUEST[s] ?? null;
 }
 
 /** Legacy combined buckets for components still expecting crmLeads shape. */

@@ -52,4 +52,16 @@ describe('accountBalance', () => {
     expect(clampSplitAmount(-30000, 0)).toBe(0);
     expect(clampSplitAmount(-30000, 40000)).toBe(0);
   });
+
+  it('deposit − allocation + collection − refund pins current balance total', () => {
+    // Frontend ledger rows already carry signed amounts (backend normalizes on write).
+    const entries: LedgerEntry[] = [
+      e({ type: 'deposit', amount: 10000 }),
+      e({ type: 'allocation', amount: -4000, requestId: 'R1' }),
+      e({ type: 'collection', amount: 2500 }),
+      e({ type: 'refund', amount: -1500 }),
+    ];
+    // 10000 - 4000 + 2500 - 1500 = 7000
+    expect(computeBalance(entries)).toBe(7000);
+  });
 });

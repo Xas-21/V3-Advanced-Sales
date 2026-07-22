@@ -49,7 +49,12 @@ export interface ContractRecord {
 
 const TEMPLATE_KEY = 'visatour_contract_templates_v1';
 const RECORD_KEY = 'visatour_contract_records_v1';
+/** Per-property flag: localStorage→server migration already attempted (idempotent). */
+const RECORDS_MIGRATED_KEY = 'visatour_contract_records_migrated_v1';
 export const CONTRACTS_CHANGED_EVENT = 'visatour-contracts-changed';
+
+/** In-memory mirror of last successful server (or local fallback) fetch. */
+let recordsCache: ContractRecord[] = [];
 
 function readJson<T>(key: string, fallback: T): T {
     try {
@@ -169,7 +174,6 @@ function toNestedValues(values: Record<string, string>): Record<string, any> {
                 } else {
                     // Conflict between flat and dotted variables (e.g., name + name.position).
                     // Skip nested assignment and let normalized flat lookup resolve this tag.
-                    cur = null;
                     break;
                 }
             }
@@ -197,16 +201,79 @@ async function pushTemplateToBackend(template: ContractTemplate): Promise<void> 
     const res = await fetch(apiUrl('/api/contracts/templates'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(template),
     });
     if (!res.ok) throw new Error(`Template sync failed (${res.status})`);
+}
+
+function migratedFlags(): Record<string, boolean> {
+    return readJson<Record<string, boolean>>(RECORDS_MIGRATED_KEY, {});
+}
+
+function markMigrated(propertyId?: string): void {
+    const flags = migratedFlags();
+    flags[propertyId ? String(propertyId) : '__global__'] = true;
+    writeJson(RECORDS_MIGRATED_KEY, flags);
+}
+
+function isMigrated(propertyId?: string): boolean {
+    return Boolean(migratedFlags()[propertyId ? String(propertyId) : '__global__']);
+}
+
+async function pushRecordToBackend(record: ContractRecord): Promise<ContractRecord> {
+    const res = await fetch(apiUrl('/api/contracts'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(record),
+    });
+    if (!res.ok) throw new Error(`Contract sync failed (${res.status})`);
+    return (await res.json()) as ContractRecord;
+}
+
+/**
+ * One-time localStorage → server migration (plan 062).
+ * Idempotent: (1) per-property migrated flag, (2) skip when server already has rows,
+ * (3) upsert by stable record id so a re-run cannot create duplicates.
+ */
+async function migrateLocalRecordsOnce(propertyId?: string): Promise<void> {
+    if (isMigrated(propertyId)) return;
+    const localAll = readJson<ContractRecord[]>(RECORD_KEY, []);
+    const local = localAll.filter((r) => {
+        if (!propertyId) return true;
+        if (!r.propertyId) return true;
+        return String(r.propertyId) === String(propertyId);
+    });
+    try {
+        const query = propertyId ? `?propertyId=${encodeURIComponent(propertyId)}` : '';
+        const res = await fetch(apiUrl(`/api/contracts${query}`), { credentials: 'include' });
+        if (!res.ok) throw new Error(`contracts list ${res.status}`);
+        const remote = (await res.json()) as ContractRecord[];
+        if (Array.isArray(remote) && remote.length > 0) {
+            markMigrated(propertyId);
+            return;
+        }
+        for (const rec of local) {
+            // Upsert by id — safe if this loop is interrupted and re-run.
+            await pushRecordToBackend(rec);
+        }
+        markMigrated(propertyId);
+    } catch {
+        // Keep local fallback; do not set migrated flag so a later load can retry.
+    }
+}
+
+function mirrorRecordsLocally(records: ContractRecord[]): void {
+    recordsCache = records.map(autoExpire);
+    writeJson(RECORD_KEY, recordsCache);
 }
 
 export async function getContractTemplates(propertyId?: string): Promise<ContractTemplate[]> {
     const local = readJson<ContractTemplate[]>(TEMPLATE_KEY, []);
     try {
         const query = propertyId ? `?propertyId=${encodeURIComponent(propertyId)}` : '';
-        const res = await fetch(apiUrl(`/api/contracts/templates${query}`));
+        const res = await fetch(apiUrl(`/api/contracts/templates${query}`), { credentials: 'include' });
         if (!res.ok) throw new Error(`Failed templates fetch (${res.status})`);
         const remote = (await res.json()) as ContractTemplate[];
         writeJson(TEMPLATE_KEY, remote);
@@ -229,6 +296,7 @@ export async function deleteContractTemplate(templateId: string): Promise<void> 
     try {
         await fetch(apiUrl(`/api/contracts/templates/${encodeURIComponent(templateId)}`), {
             method: 'DELETE',
+            credentials: 'include',
         });
     } catch {
         /* keep local delete even if remote fails */
@@ -274,14 +342,40 @@ export async function uploadContractTemplate(params: {
     return t;
 }
 
-export function getContractRecords(filters: { propertyId?: string; accountId?: string } = {}): ContractRecord[] {
-    const all = readJson<ContractRecord[]>(RECORD_KEY, []).map(autoExpire);
-    writeJson(RECORD_KEY, all);
+function filterRecords(all: ContractRecord[], filters: { propertyId?: string; accountId?: string } = {}): ContractRecord[] {
     return all.filter((r) => {
         if (filters.propertyId && r.propertyId && String(filters.propertyId) !== String(r.propertyId)) return false;
         if (filters.accountId && String(filters.accountId) !== String(r.accountId || '')) return false;
         return true;
     });
+}
+
+/** Sync read of cache / localStorage (AccountsPage and similar). Prefer loadContractRecords for fresh API data. */
+export function getContractRecords(filters: { propertyId?: string; accountId?: string } = {}): ContractRecord[] {
+    const all = (recordsCache.length ? recordsCache : readJson<ContractRecord[]>(RECORD_KEY, [])).map(autoExpire);
+    return filterRecords(all, filters);
+}
+
+/** Fetch from /api/contracts (runs one-time localStorage migration first). */
+export async function loadContractRecords(
+    filters: { propertyId?: string; accountId?: string } = {}
+): Promise<ContractRecord[]> {
+    await migrateLocalRecordsOnce(filters.propertyId);
+    try {
+        const qs = new URLSearchParams();
+        if (filters.propertyId) qs.set('propertyId', String(filters.propertyId));
+        const q = qs.toString() ? `?${qs.toString()}` : '';
+        const res = await fetch(apiUrl(`/api/contracts${q}`), { credentials: 'include' });
+        if (!res.ok) throw new Error(`Failed contracts fetch (${res.status})`);
+        const remote = ((await res.json()) as ContractRecord[]).map(autoExpire);
+        mirrorRecordsLocally(remote);
+        return filterRecords(remote, filters);
+    } catch {
+        // Keep localStorage as fallback for one release (plan 062).
+        const local = readJson<ContractRecord[]>(RECORD_KEY, []).map(autoExpire);
+        recordsCache = local;
+        return filterRecords(local, filters);
+    }
 }
 
 export async function generateContractFromTemplate(params: {
@@ -374,41 +468,14 @@ export async function generateContractFromTemplate(params: {
         type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     });
 
-    let pdfBase64 = '';
-    if (params.outputType === 'pdf') {
-        let rawText = '';
-        try {
-            // Lazy-load to avoid startup/runtime crashes from Node-oriented sub-dependencies.
-            const mammothMod: any = await import('mammoth');
-            const mammothApi = mammothMod?.default || mammothMod;
-            const result = await mammothApi.extractRawText({ arrayBuffer: outBuffer });
-            rawText = String(result?.value || '');
-        } catch {
-            // Fallback text payload when parser is unavailable in this environment.
-            rawText = Object.entries(params.fieldValues || {})
-                .map(([k, v]) => `${k}: ${v}`)
-                .join('\n');
-        }
-        // Lazy-load so jspdf is not in the Contracts chunk until PDF export runs.
-        const jspdfMod: any = await import('jspdf');
-        const jsPDF = jspdfMod?.jsPDF || jspdfMod?.default;
-        const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
-        const lines = pdf.splitTextToSize(rawText, 520);
-        let y = 60;
-        lines.forEach((line: string) => {
-            if (y > 780) {
-                pdf.addPage();
-                y = 60;
-            }
-            pdf.text(line, 40, y);
-            y += 16;
-        });
-        pdfBase64 = pdf.output('datauristring').split(',')[1] || '';
-    }
+    // Plan 062 option 5b: mammoth+jspdf only dumps raw text into a fake "PDF".
+    // Honest export is always the DOCX from docxtemplater (layout preserved).
+    // Callers may still pass outputType 'pdf' for legacy UI; we emit Word.
+    const effectiveOutput: ContractOutputType = 'word';
 
     const termNumber = (() => {
         if (!params.parentContractId) return 1;
-        const all = readJson<ContractRecord[]>(RECORD_KEY, []);
+        const all = getContractRecords({ propertyId: params.propertyId });
         const parent = all.find((x) => x.id === params.parentContractId);
         return Math.max(2, Number(parent?.termNumber || 1) + 1);
     })();
@@ -422,7 +489,7 @@ export async function generateContractFromTemplate(params: {
         accountName: params.accountName,
         contractType: tpl.name || 'Contract',
         agreementFileName: params.agreementFileName.trim(),
-        outputType: params.outputType,
+        outputType: effectiveOutput,
         status: 'Generated',
         startDate: params.startDate,
         endDate: params.endDate,
@@ -430,24 +497,21 @@ export async function generateContractFromTemplate(params: {
         parentContractId: params.parentContractId,
         fieldValues: { ...params.fieldValues },
         generatedWordBase64: toBase64(outBuffer),
-        generatedPdfBase64: pdfBase64 || undefined,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         createdBy: params.createdBy || 'User',
     };
-    const allRecords = readJson<ContractRecord[]>(RECORD_KEY, []);
-    allRecords.unshift(record);
-    writeJson(RECORD_KEY, allRecords);
+    const allRecords = [record, ...getContractRecords()];
+    mirrorRecordsLocally(allRecords);
+    try {
+        const saved = await pushRecordToBackend(record);
+        const merged = { ...record, ...saved, generatedWordBase64: record.generatedWordBase64 };
+        mirrorRecordsLocally([merged, ...getContractRecords().filter((r) => r.id !== record.id)]);
+    } catch {
+        /* local fallback kept for one release */
+    }
     dispatchContractsChanged();
 
-    if (params.outputType === 'pdf') {
-        const pdfBytes = fromBase64(record.generatedPdfBase64 || '');
-        return {
-            record,
-            downloadBlob: new Blob([pdfBytes], { type: 'application/pdf' }),
-            downloadName: `${record.agreementFileName || 'agreement'}.pdf`,
-        };
-    }
     return {
         record,
         downloadBlob: wordBlob,
@@ -455,80 +519,101 @@ export async function generateContractFromTemplate(params: {
     };
 }
 
-export function updateContractRecordStatus(recordId: string, status: ContractStatus): void {
-    const all = readJson<ContractRecord[]>(RECORD_KEY, []);
-    const next = all.map((r) => (r.id === recordId ? { ...r, status, updatedAt: new Date().toISOString() } : r));
-    writeJson(RECORD_KEY, next);
+async function persistRecordPatch(recordId: string, patch: Partial<ContractRecord>): Promise<void> {
+    const all = getContractRecords();
+    const next = all.map((r) =>
+        r.id === recordId ? { ...r, ...patch, updatedAt: new Date().toISOString() } : r
+    );
+    mirrorRecordsLocally(next);
+    const updated = next.find((r) => r.id === recordId);
+    if (updated) {
+        try {
+            await pushRecordToBackend(updated);
+        } catch {
+            /* local fallback */
+        }
+    }
     dispatchContractsChanged();
 }
 
-export function updateContractRecordMeta(recordId: string, patch: Partial<Pick<ContractRecord, 'startDate' | 'endDate' | 'agreementFileName'>>): void {
-    const all = readJson<ContractRecord[]>(RECORD_KEY, []);
-    const next = all.map((r) => (r.id === recordId ? { ...r, ...patch, updatedAt: new Date().toISOString() } : r));
-    writeJson(RECORD_KEY, next);
-    dispatchContractsChanged();
+export async function updateContractRecordStatus(recordId: string, status: ContractStatus): Promise<void> {
+    await persistRecordPatch(recordId, { status });
+}
+
+export async function updateContractRecordMeta(
+    recordId: string,
+    patch: Partial<Pick<ContractRecord, 'startDate' | 'endDate' | 'agreementFileName'>>
+): Promise<void> {
+    await persistRecordPatch(recordId, patch);
 }
 
 /** After merging duplicate accounts: move contract records from source account to destination. */
-export function repointContractRecordsForAccountMerge(
+export async function repointContractRecordsForAccountMerge(
     sourceAccountId: string,
     destAccountId: string,
     destAccountName: string
-): void {
+): Promise<void> {
     const sid = String(sourceAccountId || '').trim();
     const did = String(destAccountId || '').trim();
     if (!sid || !did || sid === did) return;
-    const all = readJson<ContractRecord[]>(RECORD_KEY, []);
-    const next = all.map((r) =>
-        String(r.accountId || '') === sid
-            ? { ...r, accountId: did, accountName: destAccountName, updatedAt: new Date().toISOString() }
-            : r
-    );
-    writeJson(RECORD_KEY, next);
+    const all = getContractRecords();
+    const toPush: ContractRecord[] = [];
+    const next = all.map((r) => {
+        if (String(r.accountId || '') !== sid) return r;
+        const updated = {
+            ...r,
+            accountId: did,
+            accountName: destAccountName,
+            updatedAt: new Date().toISOString(),
+        };
+        toPush.push(updated);
+        return updated;
+    });
+    mirrorRecordsLocally(next);
+    for (const r of toPush) {
+        try {
+            await pushRecordToBackend(r);
+        } catch {
+            /* local fallback */
+        }
+    }
     dispatchContractsChanged();
 }
 
-export function deleteContractRecord(recordId: string): void {
-    const all = readJson<ContractRecord[]>(RECORD_KEY, []);
-    const next = all.filter((r) => String(r.id) !== String(recordId));
-    writeJson(RECORD_KEY, next);
+export async function deleteContractRecord(recordId: string): Promise<void> {
+    const next = getContractRecords().filter((r) => String(r.id) !== String(recordId));
+    mirrorRecordsLocally(next);
+    try {
+        await fetch(apiUrl(`/api/contracts/${encodeURIComponent(recordId)}`), {
+            method: 'DELETE',
+            credentials: 'include',
+        });
+    } catch {
+        /* keep local delete */
+    }
     dispatchContractsChanged();
 }
 
 export async function attachSignedContractFile(recordId: string, file: File): Promise<void> {
     const buf = await file.arrayBuffer();
     const uploaded = await uploadFileLocal(file, { folder: 'contracts' });
-    const all = readJson<ContractRecord[]>(RECORD_KEY, []);
-    const next = all.map((r) =>
-        r.id === recordId
-            ? {
-                  ...r,
-                  signedFileName: file.name,
-                  signedFileBase64: toBase64(buf),
-                  signedFileUrl: uploaded.secure_url,
-                  signedFilePublicId: uploaded.public_id,
-                  status: 'Signed' as ContractStatus,
-                  updatedAt: new Date().toISOString(),
-              }
-            : r
-    );
-    writeJson(RECORD_KEY, next);
-    dispatchContractsChanged();
+    await persistRecordPatch(recordId, {
+        signedFileName: file.name,
+        signedFileBase64: toBase64(buf),
+        signedFileUrl: uploaded.secure_url,
+        signedFilePublicId: uploaded.public_id,
+        status: 'Signed',
+    });
 }
 
 export function downloadContractArtifact(record: ContractRecord, kind: 'word' | 'pdf' | 'signed'): { blob: Blob; fileName: string } | null {
-    if (kind === 'word' && record.generatedWordBase64) {
+    // Plan 062 5b: 'pdf' kind is treated as Word — no raw-text PDF masquerade.
+    if ((kind === 'word' || kind === 'pdf') && record.generatedWordBase64) {
         return {
             blob: new Blob([fromBase64(record.generatedWordBase64)], {
                 type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             }),
             fileName: `${record.agreementFileName || 'agreement'}.docx`,
-        };
-    }
-    if (kind === 'pdf' && record.generatedPdfBase64) {
-        return {
-            blob: new Blob([fromBase64(record.generatedPdfBase64)], { type: 'application/pdf' }),
-            fileName: `${record.agreementFileName || 'agreement'}.pdf`,
         };
     }
     if (kind === 'signed' && record.signedFileBase64) {

@@ -850,10 +850,57 @@ def write_json_file(file_path, data):
     _write_to_file(file_path, data)
 
 
+def apply_sql_migrations():
+    """Apply pending backend/migrations/*.sql in filename order, once each.
+
+    Tracks applied files in schema_migrations(filename PK). Each file runs in its
+    own transaction and is recorded on success. Our .sql are written with
+    IF NOT EXISTS / guarded ADD CONSTRAINT, so re-applying on an already-migrated
+    DB is a safe no-op. DDL only — the .py data migrations (002_migrate.py,
+    015_crm_blob_to_rows.py) stay manual by design.
+    """
+    migrations_dir = Path(__file__).with_name("migrations")
+    sql_files = sorted(migrations_dir.glob("*.sql"), key=lambda p: p.name)
+    pool = _get_pool()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS schema_migrations (
+                    filename    TEXT PRIMARY KEY,
+                    applied_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+                );
+                """
+            )
+            conn.commit()
+            cur.execute("SELECT filename FROM schema_migrations")
+            done = {r["filename"] for r in cur.fetchall()}
+
+    applied = 0
+    skipped = 0
+    for path in sql_files:
+        if path.name in done:
+            skipped += 1
+            continue
+        sql_text = path.read_text(encoding="utf-8")
+        with pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(sql_text)
+                cur.execute(
+                    "INSERT INTO schema_migrations (filename) VALUES (%s) "
+                    "ON CONFLICT (filename) DO NOTHING",
+                    (path.name,),
+                )
+            conn.commit()
+        applied += 1
+    print(f"schema_migrations: {applied} applied, {skipped} skipped", flush=True)
+
+
 def init_database():
     if storage_mode() != "postgres":
         return
     try:
+        apply_sql_migrations()
         _ensure_db_schema()
         _ensure_general_tables()
         _ensure_general_migration()

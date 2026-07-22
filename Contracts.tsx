@@ -3,7 +3,6 @@ import {
     FileText,
     Upload,
     Download,
-    Eye,
     ChevronLeft,
     Plus,
     CheckCircle2,
@@ -20,13 +19,12 @@ import {
     deleteContractTemplate,
     deleteContractRecord,
     generateContractFromTemplate,
-    getContractRecords,
+    loadContractRecords,
     getContractTemplates,
     triggerBlobDownload,
     updateContractRecordMeta,
     updateContractRecordStatus,
     uploadContractTemplate,
-    type ContractOutputType,
     type ContractRecord,
     type ContractStatus,
     type ContractTemplate,
@@ -98,7 +96,6 @@ export default function Contracts({
     const [selectedTemplate, setSelectedTemplate] = useState<ContractTemplate | null>(null);
     const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
     const [agreementFileName, setAgreementFileName] = useState('');
-    const [outputType, setOutputType] = useState<ContractOutputType>('word');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [selectedAccountId, setSelectedAccountId] = useState('');
@@ -119,7 +116,9 @@ export default function Contracts({
         const tpl = await getContractTemplates(propertyId);
         if (!isContractsLoadCurrent(propertyId)) return;
         setTemplates(tpl);
-        setRecords(getContractRecords({ propertyId }));
+        const recs = await loadContractRecords({ propertyId });
+        if (!isContractsLoadCurrent(propertyId)) return;
+        setRecords(recs);
     };
 
     useEffect(() => {
@@ -233,7 +232,8 @@ export default function Contracts({
                 templateId: selectedTemplate.id,
                 fieldValues: resolvedFieldValues,
                 agreementFileName,
-                outputType,
+                // Plan 062 5b: always Word — in-browser PDF was raw-text only.
+                outputType: 'word',
                 accountId: selectedAccountId || undefined,
                 accountName: accountName || undefined,
                 startDate,
@@ -455,15 +455,12 @@ export default function Contracts({
                             </div>
                             <div>
                                 <label className="text-xs uppercase font-bold opacity-60 mb-1 block" style={{ color: colors.textMuted }}>Output</label>
-                                <select
-                                    value={outputType}
-                                    onChange={(e) => setOutputType(e.target.value as ContractOutputType)}
-                                    className="w-full px-3 py-2 rounded border bg-black/20 outline-none"
+                                <div
+                                    className="w-full px-3 py-2 rounded border bg-black/20 text-sm"
                                     style={{ borderColor: colors.border, color: colors.textMain }}
                                 >
-                                    <option value="word">Word</option>
-                                    <option value="pdf">PDF</option>
-                                </select>
+                                    Download Word
+                                </div>
                             </div>
                             <div>
                                 <label className="text-xs uppercase font-bold opacity-60 mb-1 block" style={{ color: colors.textMuted }}>Renewal based on</label>
@@ -580,7 +577,7 @@ export default function Contracts({
                                     className="w-full py-2 rounded font-bold disabled:opacity-50"
                                     style={{ backgroundColor: colors.green, color: '#000' }}
                                 >
-                                    {generating ? 'Generating...' : `Generate ${outputType === 'pdf' ? 'PDF' : 'Word'}`}
+                                    {generating ? 'Generating...' : 'Generate Word'}
                                 </button>
                             </>
                         )}
@@ -641,14 +638,14 @@ export default function Contracts({
                                         <input
                                             type="date"
                                             value={r.startDate || ''}
-                                            onChange={(e) => updateContractRecordMeta(r.id, { startDate: e.target.value })}
+                                            onChange={(e) => { void updateContractRecordMeta(r.id, { startDate: e.target.value }); }}
                                             className="w-full px-2 py-1 rounded border bg-black/20 text-xs"
                                             style={{ borderColor: colors.border, color: colors.textMain }}
                                         />
                                         <input
                                             type="date"
                                             value={r.endDate || ''}
-                                            onChange={(e) => updateContractRecordMeta(r.id, { endDate: e.target.value })}
+                                            onChange={(e) => { void updateContractRecordMeta(r.id, { endDate: e.target.value }); }}
                                             className="w-full px-2 py-1 rounded border bg-black/20 text-xs"
                                             style={{ borderColor: colors.border, color: colors.textMain }}
                                         />
@@ -658,7 +655,7 @@ export default function Contracts({
                                     <p className="text-[10px] uppercase opacity-50" style={{ color: colors.textMuted }}>Status</p>
                                     <select
                                         value={r.status}
-                                        onChange={(e) => updateContractRecordStatus(r.id, e.target.value as ContractStatus)}
+                                        onChange={(e) => { void updateContractRecordStatus(r.id, e.target.value as ContractStatus); }}
                                         className="w-full px-3 py-2 rounded border bg-black/20 text-sm"
                                         style={{ borderColor: colors.border, color: colors.textMain }}
                                     >
@@ -676,17 +673,7 @@ export default function Contracts({
                                             className="px-2 py-1 rounded border text-xs"
                                             style={{ borderColor: colors.border, color: colors.textMain }}
                                         >
-                                            <Download size={12} className="inline mr-1" /> Word
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                const a = downloadContractArtifact(r, 'pdf');
-                                                if (a) triggerBlobDownload(a.blob, a.fileName);
-                                            }}
-                                            className="px-2 py-1 rounded border text-xs"
-                                            style={{ borderColor: colors.border, color: colors.textMain }}
-                                        >
-                                            <Eye size={12} className="inline mr-1" /> PDF
+                                            <Download size={12} className="inline mr-1" /> Download Word
                                         </button>
                                         <label className="px-2 py-1 rounded border text-xs cursor-pointer" style={{ borderColor: colors.border, color: colors.textMain }}>
                                             <CheckCircle2 size={12} className="inline mr-1" /> Upload Signed
@@ -722,8 +709,7 @@ export default function Contracts({
                                             <button
                                                 onClick={() => {
                                                     if (!window.confirm('Delete this contract record permanently?')) return;
-                                                    deleteContractRecord(r.id);
-                                                    void refreshContractsData();
+                                                    void deleteContractRecord(r.id).then(() => refreshContractsData());
                                                 }}
                                                 className="px-2 py-1 rounded border text-xs"
                                                 style={{ borderColor: 'rgba(239,68,68,0.35)', color: '#ef4444' }}

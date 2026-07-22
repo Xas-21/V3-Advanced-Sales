@@ -1,8 +1,10 @@
 from typing import Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Cookie
 
-from data_access import delete_flat, list_flat, upsert_payload_only
+from data_access import _broadcast_change, delete_flat, list_flat, upsert_payload_only
+from dependencies import require_admin
+from security import SESSION_COOKIE_NAME
 
 router = APIRouter(prefix="/api/contracts", tags=["Contracts"])
 
@@ -21,13 +23,30 @@ def list_contract_templates(propertyId: Optional[str] = None):
 
 
 @router.post("/templates")
-def upsert_contract_template(data: dict):
+def upsert_contract_template(
+    data: dict,
+    session_id: Optional[str] = Cookie(default=None, alias=SESSION_COOKIE_NAME),
+):
+    require_admin(session_id)
     if not str(data.get("id") or "").strip():
         return data  # preserve legacy behaviour: ignore items without id
-    return upsert_payload_only("contract_templates", data, id_prefix="CT")
+    item = upsert_payload_only("contract_templates", data, id_prefix="CT")
+    pid = str(item.get("propertyId") or "").strip() or None
+    _broadcast_change(
+        "updated",
+        "contracts",
+        {"id": item.get("id"), "propertyId": pid},
+        pid,
+    )
+    return item
 
 
 @router.delete("/templates/{template_id}")
-def delete_contract_template(template_id: str):
+def delete_contract_template(
+    template_id: str,
+    session_id: Optional[str] = Cookie(default=None, alias=SESSION_COOKIE_NAME),
+):
+    require_admin(session_id)
     delete_flat("contract_templates", template_id)
+    _broadcast_change("deleted", "contracts", {"id": template_id}, None)
     return {"message": "Deleted successfully"}

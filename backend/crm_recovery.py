@@ -7,6 +7,8 @@ from typing import Any
 
 PIPELINE_KEYS = ["waiting", "qualified", "proposal", "negotiation", "won", "notInterested"]
 
+# Canonical request-status → account pipeline stage map.
+# Keep in parity with crmStateModel.ts STAGE_FROM_REQUEST (plan 060).
 STAGE_FROM_REQUEST = {
     "inquiry": "waiting",
     "draft": "waiting",

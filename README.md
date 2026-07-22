@@ -41,24 +41,50 @@ docker exec as-backend python3 -m pytest
 
 ## Production deploy (when features are finalized)
 
-**Do not use `npm run dev` online.** Build a static frontend and serve it with nginx; API stays on FastAPI.
+**Do not use `npm run dev` online.** Build a static frontend and serve it with nginx; API stays on FastAPI. The prod stack **reuses the existing V3 database** (`neondb_owner`/`neondb`, external volume `as-postgres-v3-data`) and sits **behind the owner's existing Traefik** (TLS, no raw port 80 published).
+
+Required prod `.env` vars:
 
 ```bash
-# On the server (with production .env):
-# DATABASE_URL=postgresql://as_owner:STRONG@as-postgres:5432/as-postgres
-# CORS_ORIGINS=https://app.as-saas.com
-# SESSION_SECRET=<long random>
-# DB_PASSWORD=<same as URL>
-# VITE_API_BASE_URL=   # leave empty — nginx proxies /api and /ws
+# Reuse the real V3 DB (host `as-postgres` = network alias):
+DATABASE_URL=postgresql://neondb_owner:${V3_DB_PASSWORD}@as-postgres:5432/neondb
+V3_DB_PASSWORD=<password baked into the as-postgres-v3-data volume>
+SESSION_SECRET=<long random, 32+ chars>
+CORS_ORIGINS=https://<your-domain>
+APP_DOMAIN=<your-domain>            # Traefik Host() rule for as-frontend
+TRAEFIK_CERTRESOLVER=letsencrypt    # name of your Traefik ACME resolver
+VITE_API_BASE_URL=                  # leave EMPTY — same-origin; nginx proxies /api and /ws
+```
 
+The owner's Traefik network must already exist (declared `external: true` as `traefik`):
+
+```bash
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
 | Service | Role |
 |---------|------|
-| `as-postgres` | PostgreSQL 18 |
-| `as-backend` | FastAPI + WebSocket (internal) |
-| `as-frontend` | nginx → built `dist/` on port **80**, proxies `/api` and `/ws` |
+| `as-postgres` (container `as-postgres-v3`) | PostgreSQL 18 — reuses external volume `as-postgres-v3-data` |
+| `as-backend` | FastAPI + WebSocket (internal); uploads persist on `as-uploads-data` at `/data/uploads` |
+| `as-frontend` | nginx → built `dist/`, behind Traefik (`websecure`/TLS); proxies `/api` and `/ws` |
+
+### Schema migrations (automatic, on boot)
+
+On backend startup `apply_sql_migrations()` applies every `backend/migrations/*.sql` (sorted by filename) not yet recorded in the `schema_migrations` table, each in its own transaction. All `.sql` are idempotent (`IF NOT EXISTS` / guarded `ADD CONSTRAINT`), so re-applying on the already-migrated V3 DB is a safe no-op.
+
+**Confirm migrations applied** after `up`:
+
+```bash
+docker logs as-backend | Select-String "schema_migrations:"          # e.g. "schema_migrations: 0 applied, 5 skipped"
+docker exec -i as-postgres-v3 psql -U neondb_owner -d neondb -c "SELECT filename, applied_at FROM schema_migrations ORDER BY filename;"
+docker exec as-backend python3 -c "import urllib.request,json; print(json.load(urllib.request.urlopen('http://localhost:8000/api/health')))"
+```
+
+**One-time data migrations are MANUAL** — the `.py` files under `backend/migrations/` (e.g. `002_migrate.py`, `015_crm_blob_to_rows.py`) read legacy blobs and are **not** run by the boot runner. Run them by hand once, only when migrating legacy data:
+
+```bash
+docker exec as-backend python3 migrations/015_crm_blob_to_rows.py
+```
 
 After auth that expects bcrypt hashes:
 
@@ -121,12 +147,15 @@ docker exec -e PGPASSWORD="$DB_PASSWORD" as-postgres \
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `DATABASE_URL` | Yes | `postgresql://as_owner:…@as-postgres:5432/as-postgres` |
-| `DB_PASSWORD` | Yes | Matches Postgres password |
+| `DATABASE_URL` | Yes | `postgresql://neondb_owner:…@as-postgres:5432/neondb` (prod reuses V3 DB) |
+| `V3_DB_PASSWORD` | Yes (prod) | Password for the V3 Postgres (matches the `as-postgres-v3-data` volume) |
+| `DB_PASSWORD` | Dev | Legacy dev / V2-reference container password (`docker-compose.yml`) |
 | `SESSION_SECRET` | Yes | 32+ char random string |
-| `CORS_ORIGINS` | Yes | Comma-separated origins |
+| `CORS_ORIGINS` | Yes | Comma-separated origins (`https://<domain>` in prod) |
+| `APP_DOMAIN` | Yes (prod) | Public domain Traefik routes to `as-frontend` |
+| `TRAEFIK_CERTRESOLVER` | No | Traefik ACME resolver name (default `letsencrypt`) |
 | `USE_FILE_STORAGE` | No | Keep `false` |
-| `VITE_API_BASE_URL` | No | Leave empty in Docker (nginx proxies) |
+| `VITE_API_BASE_URL` | No | Leave empty in Docker (same-origin; nginx proxies) |
 
 ## WebSocket
 

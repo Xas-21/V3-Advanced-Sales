@@ -5,23 +5,30 @@
 # App: http://HOST/   API: http://HOST/api/   WS: ws://HOST/ws
 
 services:
+  # App DB (V3): reuse the EXISTING container identity + volume from the dev
+  # docker-compose.yml. Same creds/volume so prod mounts the real data, not a
+  # fresh empty DB. Network alias `as-postgres` matches DATABASE_URL host.
   as-postgres:
     image: postgres:18-alpine
-    container_name: as-postgres
+    container_name: as-postgres-v3
     environment:
-      - POSTGRES_USER=as_owner
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=as-postgres
+      - POSTGRES_USER=neondb_owner
+      - POSTGRES_PASSWORD=${V3_DB_PASSWORD}
+      - POSTGRES_DB=neondb
     healthcheck:
       test:
         - CMD-SHELL
-        - pg_isready -U as_owner -d as-postgres
+        - pg_isready -U neondb_owner -d neondb
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
     volumes:
-      - as-postgres-data:/var/lib/postgresql
+      - as-postgres-v3-data:/var/lib/postgresql
+    networks:
+      default:
+        aliases:
+          - as-postgres
     # Do not publish Postgres to the host in production unless you need admin access.
 
   as-backend:
@@ -55,6 +62,9 @@ services:
     # ports:
     #   - 127.0.0.1:8000:8000
 
+  # TLS is terminated by the owner's existing Traefik (external network).
+  # No raw host port publish; Traefik routes ${APP_DOMAIN} -> this nginx.
+  # nginx proxies /api and upgrades /ws to as-backend (HTTP/1.1 keeps headers).
   as-frontend:
     build:
       context: .
@@ -63,8 +73,6 @@ services:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
     container_name: as-frontend
     restart: unless-stopped
-    ports:
-      - 80:80
     depends_on:
       as-backend:
         condition: service_healthy
@@ -78,7 +86,26 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    networks:
+      - default
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      # Owner fills: APP_DOMAIN and the certresolver name below.
+      - traefik.http.routers.as-frontend.rule=Host(`${APP_DOMAIN}`)
+      - traefik.http.routers.as-frontend.entrypoints=websecure
+      - traefik.http.routers.as-frontend.tls=true
+      - traefik.http.routers.as-frontend.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      - traefik.http.services.as-frontend.loadbalancer.server.port=80
+
+networks:
+  # Owner's existing Traefik network (created outside this stack).
+  traefik:
+    external: true
 
 volumes:
-  as-postgres-data:
+  as-postgres-v3-data:
+    name: as-postgres-v3-data
+    external: true
   as-uploads-data:

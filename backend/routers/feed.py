@@ -16,6 +16,7 @@ Rich text (body_html) is sanitized server-side (bleach) and again client-side
 from __future__ import annotations
 
 import json
+import logging
 import uuid
 from typing import Optional
 
@@ -52,8 +53,8 @@ def _broadcast_feed(property_id, post_id: str, reason: str) -> None:
     """
     try:
         _broadcast_change("refresh", "feed", {"postId": post_id, "reason": reason}, property_id or None)
-    except Exception:
-        pass
+    except Exception as e:
+        logging.getLogger(__name__).warning("feed broadcast failed: %s", e)
 
 
 def _user_property_ids(user: dict) -> list[str]:

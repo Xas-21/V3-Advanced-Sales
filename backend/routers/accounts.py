@@ -101,6 +101,8 @@ def account_delete_impact(account_id: str):
     from utils import _get_pool
 
     aid = str(account_id)
+    if get_account(aid) is None:
+        raise HTTPException(status_code=404, detail="Account not found")
     pool = _get_pool()
     with pool.connection() as conn:
         with conn.cursor() as cur:

@@ -1,18 +1,22 @@
 """Upload endpoints: local disk storage on the Docker volume (as-uploads-data)."""
 from __future__ import annotations
 
+import logging
 import os
 import re
 import uuid
 from pathlib import Path
+from typing import Any, Optional
 
 from fastapi import APIRouter, Cookie, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
+from auth_db import can_access_property, is_admin
 from dependencies import require_user
 from security import SESSION_COOKIE_NAME
 
 router = APIRouter(prefix="/api/uploads", tags=["Uploads"])
+logger = logging.getLogger(__name__)
 
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024  # 20 MB
 ALLOWED_FOLDERS = {"feed", "chat", "general", "contracts", "requests"}
@@ -23,6 +27,9 @@ ALLOWED_EXTENSIONS = {
 }
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
 VIDEO_EXT = {".mp4", ".webm", ".mov"}
+
+# Log once when any legacy (pre-ownership-row) upload is served — do not spam per request.
+_legacy_upload_logged = False
 
 
 def _uploads_root() -> Path:
@@ -75,14 +82,105 @@ def _guess_media_type(ext: str) -> str:
     return mapping.get(ext, "application/octet-stream")
 
 
+def _record_upload_ownership(
+    public_id: str,
+    *,
+    user_id: Optional[str],
+    property_id: Optional[str],
+    folder: str,
+) -> None:
+    """Best-effort insert; soft-fail if migration 017 is not applied yet."""
+    try:
+        from utils import _get_pool
+
+        pool = _get_pool()
+        with pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO upload_files (public_id, uploaded_by_user_id, property_id, folder)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (public_id) DO UPDATE SET
+                        uploaded_by_user_id = EXCLUDED.uploaded_by_user_id,
+                        property_id = EXCLUDED.property_id,
+                        folder = EXCLUDED.folder
+                    """,
+                    (public_id, user_id, property_id, folder),
+                )
+            conn.commit()
+    except Exception as exc:
+        logger.warning("upload ownership record skipped for %s: %s", public_id, exc)
+
+
+def _lookup_upload_ownership(public_id: str) -> Optional[dict[str, Any]]:
+    """Return ownership row or None (missing table / missing row = legacy)."""
+    try:
+        from utils import _get_pool
+
+        pool = _get_pool()
+        with pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT public_id, uploaded_by_user_id, property_id, folder
+                      FROM upload_files
+                     WHERE public_id = %s
+                    """,
+                    (public_id,),
+                )
+                row = cur.fetchone()
+        if not row:
+            return None
+        return dict(row) if not isinstance(row, dict) else row
+    except Exception:
+        return None
+
+
+def _delete_upload_ownership(public_id: str) -> None:
+    try:
+        from utils import _get_pool
+
+        pool = _get_pool()
+        with pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM upload_files WHERE public_id = %s;", (public_id,))
+            conn.commit()
+    except Exception as exc:
+        logger.warning("upload ownership delete skipped for %s: %s", public_id, exc)
+
+
+def _assert_upload_access(user: dict[str, Any], public_id: str) -> None:
+    """Admin, uploader, or same property scope. Legacy (no row) → authenticated OK."""
+    global _legacy_upload_logged
+    meta = _lookup_upload_ownership(public_id)
+    if meta is None:
+        if not _legacy_upload_logged:
+            _legacy_upload_logged = True
+            logger.warning(
+                "upload %s has no ownership row; allowing authenticated access (legacy grandfather)",
+                public_id,
+            )
+        return
+    if is_admin(user):
+        return
+    uploader = str(meta.get("uploaded_by_user_id") or "").strip()
+    if uploader and uploader == str(user.get("id") or "").strip():
+        return
+    file_pid = str(meta.get("property_id") or "").strip()
+    if file_pid and can_access_property(user, file_pid):
+        return
+    raise HTTPException(status_code=404, detail="File not found.")
+
+
 @router.post("/local")
 async def upload_local_file(
     file: UploadFile = File(...),
     folder: str = Form("general"),
+    propertyId: str | None = Form(default=None),
     session_id: str | None = Cookie(default=None, alias=SESSION_COOKIE_NAME),
 ):
     """Save a file to the Docker volume and return a same-origin URL + metadata."""
-    require_user(session_id)
+    user = require_user(session_id)
 
     original = (file.filename or "file").strip() or "file"
     ext = _ext_of(original)
@@ -123,6 +221,16 @@ async def upload_local_file(
     public_id = f"{safe_folder}/{stored_name}"
     secure_url = f"/api/uploads/files/{public_id}"
 
+    prop_id = str(propertyId or user.get("propertyId") or "").strip() or None
+    if prop_id and not can_access_property(user, prop_id):
+        prop_id = str(user.get("propertyId") or "").strip() or None
+    _record_upload_ownership(
+        public_id,
+        user_id=str(user.get("id") or "").strip() or None,
+        property_id=prop_id,
+        folder=safe_folder,
+    )
+
     return {
         "secure_url": secure_url,
         "public_id": public_id,
@@ -140,7 +248,7 @@ def get_local_file(
     session_id: str | None = Cookie(default=None, alias=SESSION_COOKIE_NAME),
 ):
     """Serve a previously uploaded file (auth required; cookie sent by <img>/<a>)."""
-    require_user(session_id)
+    user = require_user(session_id)
 
     safe_folder = _safe_folder(folder)
     name = Path(filename).name
@@ -149,6 +257,9 @@ def get_local_file(
     ext = _ext_of(name)
     if not ext:
         raise HTTPException(status_code=404, detail="File not found.")
+
+    public_id = f"{safe_folder}/{name}"
+    _assert_upload_access(user, public_id)
 
     path = (_uploads_root() / safe_folder / name).resolve()
     root = _uploads_root()
@@ -173,7 +284,7 @@ def delete_local_file(
     session_id: str | None = Cookie(default=None, alias=SESSION_COOKIE_NAME),
 ):
     """Delete a local upload by public_id (folder/filename)."""
-    require_user(session_id)
+    user = require_user(session_id)
     pid = str(publicId or "").strip().replace("\\", "/")
     parts = pid.split("/")
     if len(parts) != 2:
@@ -183,6 +294,8 @@ def delete_local_file(
     name = Path(filename).name
     if not re.fullmatch(r"[a-f0-9]{32}\.[a-z0-9]{1,8}", name, flags=re.I):
         raise HTTPException(status_code=400, detail="Invalid publicId.")
+    public_id = f"{safe_folder}/{name}"
+    _assert_upload_access(user, public_id)
     path = (_uploads_root() / safe_folder / name).resolve()
     try:
         path.relative_to(_uploads_root())
@@ -190,4 +303,5 @@ def delete_local_file(
         raise HTTPException(status_code=400, detail="Invalid path.") from None
     if path.is_file():
         path.unlink()
-    return {"ok": True, "publicId": f"{safe_folder}/{name}"}
+    _delete_upload_ownership(public_id)
+    return {"ok": True, "publicId": public_id}

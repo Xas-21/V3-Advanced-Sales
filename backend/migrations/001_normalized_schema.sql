@@ -381,13 +381,17 @@ CREATE INDEX IF NOT EXISTS ix_users_username         ON users(username);
 -- DELETE user -> keep their accounts/requests, clear owner link (SET NULL).
 -- This is the safety net; app may reassign to fallback admin before delete.
 -- ---------------------------------------------------------------------------
-ALTER TABLE accounts
-  ADD CONSTRAINT accounts_created_by_user_id_fkey
-  FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE SET NULL;
+DO $$ BEGIN
+  ALTER TABLE accounts
+    ADD CONSTRAINT accounts_created_by_user_id_fkey
+    FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-ALTER TABLE accounts
-  ADD CONSTRAINT accounts_owner_user_id_fkey
-  FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE SET NULL;
+DO $$ BEGIN
+  ALTER TABLE accounts
+    ADD CONSTRAINT accounts_owner_user_id_fkey
+    FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- requests.created_by_user_id already has an inline FK at the table definition,
 -- which Postgres auto-names requests_created_by_user_id_fkey. Re-adding it here
@@ -398,25 +402,26 @@ ALTER TABLE accounts
 -- DELETE rules: CASCADE for child/sub-items, SET NULL for owner links.
 -- ---------------------------------------------------------------------------
 -- Request sub-items -> requests (delete a request, wipe its children)
-ALTER TABLE request_rooms         ADD CONSTRAINT fk_request_rooms_req         FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE CASCADE;
-ALTER TABLE request_payments      ADD CONSTRAINT fk_request_payments_req      FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE CASCADE;
-ALTER TABLE request_agenda        ADD CONSTRAINT fk_request_agenda_req        FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE CASCADE;
-ALTER TABLE request_alerts        ADD CONSTRAINT fk_request_alerts_req        FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE CASCADE;
-ALTER TABLE request_logs          ADD CONSTRAINT fk_request_logs_req          FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE CASCADE;
-ALTER TABLE request_feedback      ADD CONSTRAINT fk_request_feedback_req      FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE CASCADE;
-ALTER TABLE request_invoices      ADD CONSTRAINT fk_request_invoices_req      FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE CASCADE;
-ALTER TABLE request_transportation ADD CONSTRAINT fk_request_transportation_req FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE CASCADE;
+-- Each wrapped so re-apply on an already-migrated DB is a clean no-op.
+DO $$ BEGIN ALTER TABLE request_rooms          ADD CONSTRAINT fk_request_rooms_req          FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE request_payments       ADD CONSTRAINT fk_request_payments_req       FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE request_agenda         ADD CONSTRAINT fk_request_agenda_req         FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE request_alerts         ADD CONSTRAINT fk_request_alerts_req         FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE request_logs           ADD CONSTRAINT fk_request_logs_req           FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE request_feedback       ADD CONSTRAINT fk_request_feedback_req       FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE request_invoices       ADD CONSTRAINT fk_request_invoices_req       FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE request_transportation ADD CONSTRAINT fk_request_transportation_req FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 -- Account sub-items -> accounts
-ALTER TABLE account_contacts      ADD CONSTRAINT fk_account_contacts_acc      FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE;
-ALTER TABLE account_activities    ADD CONSTRAINT fk_account_activities_acc     FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE;
+DO $$ BEGIN ALTER TABLE account_contacts       ADD CONSTRAINT fk_account_contacts_acc       FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE account_activities     ADD CONSTRAINT fk_account_activities_acc     FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 -- Property-scoped collections -> properties (delete property wipes its config)
-ALTER TABLE rooms                 ADD CONSTRAINT fk_rooms_prop                FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE;
-ALTER TABLE venues                ADD CONSTRAINT fk_venues_prop               FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE;
-ALTER TABLE taxes                 ADD CONSTRAINT fk_taxes_prop                FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE;
-ALTER TABLE promotions            ADD CONSTRAINT fk_promotions_prop            FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE;
-ALTER TABLE financials            ADD CONSTRAINT fk_financials_prop           FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE;
-ALTER TABLE account_rates         ADD CONSTRAINT fk_account_rates_prop         FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE;
-ALTER TABLE account_rates         ADD CONSTRAINT fk_account_rates_acc          FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE;
+DO $$ BEGIN ALTER TABLE rooms                  ADD CONSTRAINT fk_rooms_prop                 FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE venues                 ADD CONSTRAINT fk_venues_prop                FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE taxes                  ADD CONSTRAINT fk_taxes_prop                 FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE promotions             ADD CONSTRAINT fk_promotions_prop            FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE financials             ADD CONSTRAINT fk_financials_prop            FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE account_rates          ADD CONSTRAINT fk_account_rates_prop         FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE account_rates          ADD CONSTRAINT fk_account_rates_acc          FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ---------------------------------------------------------------------------
 -- Performance indexes (added 2026-07-12)

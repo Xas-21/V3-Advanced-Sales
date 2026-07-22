@@ -70,7 +70,7 @@ _configure_logging()
 logger = logging.getLogger(__name__)
 logger.info("Advanced Sales Backend: LOADING MAIN APP...")
 
-from routers import auth, users, properties, rooms, venues, taxes, financials, reqs, crm_state, contact, accounts, tasks, uploads, contracts, cxl_reasons, promotions, account_rates, account_ledger, feed, chat, presence, crm_card_comments
+from routers import auth, users, properties, rooms, venues, taxes, financials, reqs, crm_state, contact, accounts, tasks, uploads, contracts, contract_records, cxl_reasons, promotions, account_rates, account_ledger, feed, chat, presence, crm_card_comments, public_feedback
 from routers import ws
 from utils import close_database, get_database_url, init_database, storage_mode, check_database_health
 
@@ -205,15 +205,18 @@ app.include_router(crm_state.router, dependencies=_auth_required)
 app.include_router(accounts.router, dependencies=_auth_required)
 app.include_router(tasks.router, dependencies=_auth_required)
 app.include_router(contracts.router, dependencies=_auth_required)
+app.include_router(contract_records.router, dependencies=_auth_required)
 app.include_router(cxl_reasons.router, dependencies=_auth_required)
 app.include_router(promotions.router, dependencies=_auth_required)
 app.include_router(account_rates.router, dependencies=_auth_required)
 app.include_router(account_ledger.router, dependencies=_auth_required)
 app.include_router(crm_card_comments.router, dependencies=_auth_required)
 
-# Contact form stays public (marketing/subscribe). Uploads require auth so
-# anonymous callers cannot write to the shared uploads volume.
+# Contact form stays public (marketing/subscribe). Guest feedback is tokenized
+# and intentionally unauthenticated. Uploads require auth so anonymous callers
+# cannot write to the shared uploads volume.
 app.include_router(contact.router)
+app.include_router(public_feedback.router)
 app.include_router(uploads.router, dependencies=_auth_required)
 
 # WebSocket endpoint for real-time live updates.

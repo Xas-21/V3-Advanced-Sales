@@ -34,6 +34,7 @@ def flat_authz_fixtures():
     username = f"flat_authz_{secrets.token_hex(4)}"
     password = f"Flat@{secrets.token_hex(6)}"
     task_id = f"TK-authz-{uuid.uuid4().hex[:8]}"
+    scoped_task_id = f"{other_pid}::{task_id}"
 
     conn = psycopg.connect(get_database_url())
     try:
@@ -68,11 +69,11 @@ def flat_authz_fixtures():
                 ON CONFLICT (id) DO UPDATE SET property_id = EXCLUDED.property_id, payload = EXCLUDED.payload;
                 """,
                 (
-                    task_id,
+                    scoped_task_id,
                     other_pid,
                     json.dumps(
                         {
-                            "id": task_id,
+                            "id": scoped_task_id,
                             "propertyId": other_pid,
                             "title": "FOREIGN TASK AUTHZ",
                             "status": "open",
@@ -91,12 +92,13 @@ def flat_authz_fixtures():
             "username": username,
             "password": password,
             "task_id": task_id,
+            "scoped_task_id": scoped_task_id,
         }
     finally:
         conn = psycopg.connect(get_database_url())
         try:
             with conn.cursor() as cur:
-                cur.execute("DELETE FROM tasks WHERE id = %s;", (task_id,))
+                cur.execute("DELETE FROM tasks WHERE id = %s;", (scoped_task_id,))
                 cur.execute("DELETE FROM users WHERE id = %s;", (uid,))
                 cur.execute("DELETE FROM properties WHERE id = %s;", (other_pid,))
             conn.commit()
@@ -147,7 +149,7 @@ def test_scoped_user_cannot_upsert_foreign_task_with_home_property(flat_authz_fi
         "/api/tasks",
         headers=headers,
         json={
-            "id": fx["task_id"],
+            "id": fx["scoped_task_id"],
             "propertyId": fx["home_pid"],
             "title": "HIJACK ATTEMPT",
             "status": "open",
@@ -158,7 +160,10 @@ def test_scoped_user_cannot_upsert_foreign_task_with_home_property(flat_authz_fi
     # Row must still belong to the foreign property.
     with psycopg.connect(get_database_url(), row_factory=dict_row) as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT property_id, payload FROM tasks WHERE id = %s;", (fx["task_id"],))
+            cur.execute(
+                "SELECT property_id, payload FROM tasks WHERE id = %s;",
+                (fx["scoped_task_id"],),
+            )
             row = cur.fetchone()
     assert row is not None
     assert str(row["property_id"]) == fx["other_pid"]
@@ -185,12 +190,15 @@ def test_scoped_user_can_create_task_on_home_property(flat_authz_fixtures):
         )
         assert r.status_code == 200, r.text
         body = r.json()
-        assert str(body.get("id")) == new_id
+        assert str(body.get("id")) == f"{fx['home_pid']}::{new_id}"
         assert str(body.get("propertyId")) == fx["home_pid"]
     finally:
         with psycopg.connect(get_database_url()) as conn:
             with conn.cursor() as cur:
-                cur.execute("DELETE FROM tasks WHERE id = %s;", (new_id,))
+                cur.execute(
+                    "DELETE FROM tasks WHERE id = %s;",
+                    (f"{fx['home_pid']}::{new_id}",),
+                )
             conn.commit()
 
 

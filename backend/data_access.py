@@ -15,7 +15,8 @@ Design rules (per owner directive):
 - Real-time broadcasts: mutations trigger WebSocket events to connected clients.
 """
 from child_ids import resolve_child_pk, scoped_child_id
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
+from decimal import Decimal, InvalidOperation
 from typing import Any, Optional
 
 import logging
@@ -490,6 +491,7 @@ def transfer_allocation(entry_id: str, to_request_id: str) -> dict:
 # contract_templates / cxl_reasons: id-keyed, payload-only -------------------- #
 def upsert_payload_only(table: str, data: dict, id_prefix: str = "T") -> dict:
     item = {**(data if isinstance(data, dict) else {})}
+    _assert_write_access(str(item.get("propertyId") or "").strip() or None)
     row_id = str(item.get("id") or _gen_id(id_prefix))
     item["id"] = row_id
     _upsert_doc(table, row_id, None, item, {})
@@ -497,7 +499,10 @@ def upsert_payload_only(table: str, data: dict, id_prefix: str = "T") -> dict:
     return item
 
 
-# crm_state: keyed by property_id -------------------------------------------- #
+# crm_state: relational sales calls + pipeline cards; blob kept as rollback ---- #
+_CRM_PIPELINE_KEYS = ("waiting", "qualified", "proposal", "negotiation", "won", "notInterested")
+
+
 def _crm_block_score(block: Optional[dict]) -> int:
     """Prefer the richer CRM blob (salesCalls + pipeline cards)."""
     if not isinstance(block, dict):
@@ -515,6 +520,88 @@ def _crm_block_score(block: Optional[dict]) -> int:
     return n
 
 
+def _crm_empty_to_none(v: Any) -> Any:
+    if v is None or v == "" or v == "null":
+        return None
+    return v
+
+
+def _crm_as_date(v: Any):
+    v = _crm_empty_to_none(v)
+    if v is None:
+        return None
+    if isinstance(v, datetime):
+        return v.date()
+    if isinstance(v, date):
+        return v
+    s = str(v).strip()
+    if len(s) >= 10 and s[4] == "-" and s[7] == "-":
+        try:
+            return date.fromisoformat(s[:10])
+        except ValueError:
+            return None
+    return None
+
+
+def _crm_as_numeric(v: Any):
+    v = _crm_empty_to_none(v)
+    if v is None:
+        return None
+    try:
+        return Decimal(str(v).replace(",", ""))
+    except (InvalidOperation, ValueError, TypeError):
+        return None
+
+
+def _crm_as_bool(v: Any, default: bool = False) -> bool:
+    if v is None:
+        return default
+    if isinstance(v, bool):
+        return v
+    s = str(v).strip().lower()
+    if s in ("1", "true", "yes", "y"):
+        return True
+    if s in ("0", "false", "no", "n", ""):
+        return False
+    return default
+
+
+def _crm_normalize_block(block: Optional[dict]) -> dict:
+    """Match routers.crm_state._migrate_block shape (API-facing keys)."""
+    if not isinstance(block, dict):
+        block = {}
+    sales_calls = block.get("salesCalls") if isinstance(block.get("salesCalls"), list) else []
+    pipeline = {k: [] for k in _CRM_PIPELINE_KEYS}
+    raw_pipe = block.get("pipeline") if isinstance(block.get("pipeline"), dict) else {}
+    for k in _CRM_PIPELINE_KEYS:
+        v = raw_pipe.get(k)
+        if isinstance(v, list):
+            pipeline[k] = v
+    legacy = block.get("leads")
+    if isinstance(legacy, dict):
+        if not sales_calls and isinstance(legacy.get("new"), list):
+            sales_calls = legacy["new"]
+        for k in _CRM_PIPELINE_KEYS:
+            if not pipeline.get(k) and isinstance(legacy.get(k), list):
+                pipeline[k] = legacy[k]
+    activities = (
+        block.get("accountActivities")
+        if isinstance(block.get("accountActivities"), dict)
+        else {}
+    )
+    return {"salesCalls": sales_calls, "pipeline": pipeline, "accountActivities": activities}
+
+
+def _crm_pick_blob(row: Optional[dict]) -> Optional[dict]:
+    if not row:
+        return None
+    leads = row.get("leads") if isinstance(row.get("leads"), dict) else None
+    payload = row.get("payload") if isinstance(row.get("payload"), dict) else None
+    if _crm_block_score(payload) >= _crm_block_score(leads):
+        return payload or leads
+    return leads or payload
+
+
 def get_crm_state(property_id: str) -> Optional[dict]:
     pid = str(property_id or "global").strip() or "global"
     # Tenant isolation: a scoped user may only read their properties' pipeline.
@@ -525,27 +612,163 @@ def get_crm_state(property_id: str) -> Optional[dict]:
     with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
+                """
+                SELECT payload FROM crm_sales_calls
+                WHERE property_id = %s
+                ORDER BY idx ASC, id ASC;
+                """,
+                (pid,),
+            )
+            call_rows = cur.fetchall()
+            cur.execute(
+                """
+                SELECT stage, payload FROM crm_pipeline_cards
+                WHERE property_id = %s
+                ORDER BY idx ASC, id ASC;
+                """,
+                (pid,),
+            )
+            card_rows = cur.fetchall()
+            cur.execute(
                 "SELECT leads, payload FROM crm_state WHERE property_id = %s;",
                 (pid,),
             )
-            row = cur.fetchone()
-    if not row:
-        return None
-    leads = row.get("leads") if isinstance(row.get("leads"), dict) else None
-    payload = row.get("payload") if isinstance(row.get("payload"), dict) else None
-    # Migrator stores the full CRM map in payload; older writes only touched leads.
-    # Prefer whichever block actually has salesCalls/pipeline data.
-    if _crm_block_score(payload) >= _crm_block_score(leads):
-        return payload or leads
-    return leads or payload
+            blob_row = cur.fetchone()
+
+    blob = _crm_pick_blob(blob_row)
+    activities = (
+        blob.get("accountActivities")
+        if isinstance(blob, dict) and isinstance(blob.get("accountActivities"), dict)
+        else {}
+    )
+
+    if call_rows or card_rows:
+        sales_calls = []
+        for r in call_rows:
+            p = r.get("payload")
+            if isinstance(p, dict):
+                sales_calls.append(p)
+        pipeline = {k: [] for k in _CRM_PIPELINE_KEYS}
+        for r in card_rows:
+            p = r.get("payload")
+            if not isinstance(p, dict):
+                continue
+            stage = str(r.get("stage") or p.get("stage") or "qualified")
+            if stage not in pipeline:
+                stage = "qualified"
+            pipeline[stage].append(p)
+        return {
+            "salesCalls": sales_calls,
+            "pipeline": pipeline,
+            "accountActivities": activities,
+        }
+
+    # Pre-migration / empty tables: serve legacy blob so reads stay zero-loss.
+    if blob is not None:
+        return blob
+    return None
 
 
 def upsert_crm_state(property_id: str, leads: dict) -> dict:
     pid = str(property_id or "global").strip() or "global"
     _assert_write_access(pid if pid != "global" else None)
+    block = _crm_normalize_block(leads if isinstance(leads, dict) else {})
     pool = _get_pool()
     with pool.connection() as conn:
         with conn.cursor() as cur:
+            # Resolve FK targets once per write (nullify dangling refs).
+            cur.execute("SELECT id FROM accounts")
+            valid_accounts = {r["id"] for r in cur.fetchall()}
+            cur.execute("SELECT id FROM requests")
+            valid_requests = {r["id"] for r in cur.fetchall()}
+            cur.execute("SELECT id FROM users")
+            valid_users = {r["id"] for r in cur.fetchall()}
+            cur.execute("SELECT id FROM properties WHERE id = %s", (pid,))
+            prop_ok = cur.fetchone() is not None
+            write_pid = pid if prop_ok else None
+
+            cur.execute("DELETE FROM crm_pipeline_cards WHERE property_id = %s;", (pid,))
+            cur.execute("DELETE FROM crm_sales_calls WHERE property_id = %s;", (pid,))
+
+            for idx, c in enumerate(block["salesCalls"]):
+                if not isinstance(c, dict):
+                    continue
+                cid = str(c.get("id") or "").strip() or _gen_id("SC")
+                payload = {**c, "id": cid}
+                account_id = _crm_empty_to_none(str(c.get("accountId") or "").strip() or None)
+                if account_id and account_id not in valid_accounts:
+                    account_id = None
+                owner_user_id = _crm_empty_to_none(str(c.get("ownerUserId") or "").strip() or None)
+                if owner_user_id and owner_user_id not in valid_users:
+                    owner_user_id = None
+                cur.execute(
+                    """
+                    INSERT INTO crm_sales_calls (
+                        id, property_id, account_id, subject, description, due_date,
+                        last_contact, owner_user_id, activity_completed, follow_up_required,
+                        follow_up_date, idx, payload, updated_at
+                    ) VALUES (
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW()
+                    )
+                    """,
+                    (
+                        cid,
+                        write_pid,
+                        account_id,
+                        _crm_empty_to_none(c.get("subject")),
+                        _crm_empty_to_none(c.get("description")),
+                        _crm_as_date(c.get("dueDate") or c.get("due_date")),
+                        _crm_as_date(c.get("lastContact") or c.get("last_contact")),
+                        owner_user_id,
+                        _crm_as_bool(c.get("activityCompleted"), False),
+                        _crm_as_bool(c.get("followUpRequired"), False),
+                        _crm_as_date(c.get("followUpDate") or c.get("follow_up_date")),
+                        idx,
+                        Json(payload),
+                    ),
+                )
+
+            for stage in _CRM_PIPELINE_KEYS:
+                for idx, c in enumerate(block["pipeline"].get(stage) or []):
+                    if not isinstance(c, dict):
+                        continue
+                    cid = str(c.get("id") or "").strip() or _gen_id("PC")
+                    card_stage = str(c.get("stage") or stage or "qualified").strip()
+                    if card_stage not in _CRM_PIPELINE_KEYS:
+                        card_stage = stage
+                    payload = {**c, "id": cid, "stage": card_stage}
+                    account_id = _crm_empty_to_none(str(c.get("accountId") or "").strip() or None)
+                    if account_id and account_id not in valid_accounts:
+                        account_id = None
+                    linked = _crm_empty_to_none(str(c.get("linkedRequestId") or "").strip() or None)
+                    if linked and linked not in valid_requests:
+                        linked = None
+                    cur.execute(
+                        """
+                        INSERT INTO crm_pipeline_cards (
+                            id, property_id, account_id, stage, period_month, linked_request_id,
+                            value, probability, last_contact, entered_funnel_at, idx, payload, updated_at
+                        ) VALUES (
+                            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW()
+                        )
+                        """,
+                        (
+                            cid,
+                            write_pid,
+                            account_id,
+                            card_stage,
+                            _crm_empty_to_none(c.get("periodMonth") or c.get("period_month")),
+                            linked,
+                            _crm_as_numeric(c.get("value")),
+                            _crm_as_numeric(c.get("probability")),
+                            _crm_as_date(c.get("lastContact") or c.get("last_contact")),
+                            _crm_as_date(c.get("enteredFunnelAt") or c.get("entered_funnel_at")),
+                            idx,
+                            Json(payload),
+                        ),
+                    )
+
+            # Mirror full block into legacy crm_state for rollback this plan.
             cur.execute(
                 """
                 INSERT INTO crm_state (property_id, leads, payload, updated_at)
@@ -555,11 +778,11 @@ def upsert_crm_state(property_id: str, leads: dict) -> dict:
                     payload = EXCLUDED.payload,
                     updated_at = NOW();
                 """,
-                (pid, Json(leads), Json(leads)),
+                (pid, Json(block), Json(block)),
             )
             conn.commit()
     _broadcast_change("updated", "crm_state", {"propertyId": pid}, pid if pid != "global" else None)
-    return leads
+    return block
 
 
 # --------------------------------------------------------------------------- #
@@ -1410,6 +1633,197 @@ def delete_account(account_id: str):
     
     # Broadcast deletion event
     _broadcast_change("deleted", "account", {"id": account_id}, property_id)
+
+
+# --------------------------------------------------------------------------- #
+# Contracts (server-side records — plan 062)
+# --------------------------------------------------------------------------- #
+_CONTRACT_UI_TO_DB = {
+    "draft": "draft",
+    "generated": "generated",
+    "sent": "sent",
+    "signed": "signed",
+    "cancelled": "cancelled",
+    "canceled": "cancelled",
+    "expired": "expired",
+}
+
+
+def _contract_status_to_db(raw: Any) -> str:
+    s = str(raw or "").strip()
+    if not s:
+        return "draft"
+    return _CONTRACT_UI_TO_DB.get(s.lower(), s.lower())
+
+
+def _contract_status_to_ui(raw: Any) -> str:
+    """Map DB status → frontend ContractStatus labels when applicable."""
+    s = str(raw or "").strip().lower()
+    if s == "generated":
+        return "Generated"
+    if s == "signed":
+        return "Signed"
+    if s == "expired":
+        return "Expired"
+    if not s:
+        return "Generated"
+    return s[:1].upper() + s[1:] if s else "Generated"
+
+
+def _row_to_contract_dict(r) -> dict:
+    fv = r.get("field_values")
+    if not isinstance(fv, dict):
+        fv = {}
+    doc = fv.get("_doc") if isinstance(fv.get("_doc"), dict) else None
+    if doc:
+        out = {**doc}
+        fields = fv.get("fields")
+        if isinstance(fields, dict):
+            out["fieldValues"] = fields
+    else:
+        out = {
+            "fieldValues": {k: v for k, v in fv.items() if k not in ("_doc", "fields")},
+            "templateId": r.get("template_id") or "",
+            "templateName": r.get("template_name") or "",
+            "contractType": r.get("template_name") or "Contract",
+            "agreementFileName": "",
+            "outputType": "word",
+            "startDate": "",
+            "endDate": "",
+            "termNumber": 1,
+            "createdBy": "",
+            "createdAt": "",
+            "updatedAt": "",
+        }
+    out["id"] = r["id"]
+    out["propertyId"] = r.get("property_id")
+    out["requestId"] = r.get("request_id")
+    out["accountId"] = r.get("account_id") or out.get("accountId")
+    out["templateId"] = r.get("template_id") or out.get("templateId") or ""
+    out["templateName"] = r.get("template_name") or out.get("templateName") or ""
+    out["status"] = _contract_status_to_ui(r.get("status"))
+    out["createdByUserId"] = r.get("created_by_user_id")
+    if r.get("created_at") is not None:
+        ca = r["created_at"]
+        out["createdAt"] = ca.isoformat() if hasattr(ca, "isoformat") else str(ca)
+    if r.get("updated_at") is not None:
+        ua = r["updated_at"]
+        out["updatedAt"] = ua.isoformat() if hasattr(ua, "isoformat") else str(ua)
+    return out
+
+
+def list_contracts(
+    property_id: Optional[str] = None,
+    status: Optional[str] = None,
+) -> list:
+    pool = _get_pool()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT to_regclass('public.contracts') AS t;")
+            if not (cur.fetchone() or {}).get("t"):
+                return []
+            clauses = []
+            params: list[Any] = []
+            if property_id:
+                clauses.append("(property_id = %s OR property_id IS NULL)")
+                params.append(str(property_id))
+            if status:
+                clauses.append("LOWER(status) = %s")
+                params.append(_contract_status_to_db(status))
+            where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
+            cur.execute(
+                f"SELECT * FROM contracts{where} ORDER BY updated_at DESC, id ASC;",
+                tuple(params),
+            )
+            out = [_row_to_contract_dict(r) for r in cur.fetchall()]
+    return _filter_by_tenant(out, _tenant_scope())
+
+
+def upsert_contract(data: dict) -> dict:
+    item = {**(data if isinstance(data, dict) else {})}
+    cid = str(item.get("id") or _gen_id("CTR"))
+    item["id"] = cid
+    property_id = str(item.get("propertyId") or "").strip() or None
+    request_id = str(item.get("requestId") or "").strip() or None
+    account_id = str(item.get("accountId") or "").strip() or None
+    template_id = str(item.get("templateId") or "").strip() or None
+    template_name = item.get("templateName")
+    status = _contract_status_to_db(item.get("status") or "generated")
+    created_by_user_id = str(item.get("createdByUserId") or "").strip() or None
+    fields = item.get("fieldValues") if isinstance(item.get("fieldValues"), dict) else {}
+    # Keep full UI document for round-trip; template vars live under "fields".
+    field_values = {"fields": fields, "_doc": item}
+
+    pool = _get_pool()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT to_regclass('public.contracts') AS t;")
+            if not (cur.fetchone() or {}).get("t"):
+                raise RuntimeError("contracts table missing — run migrations/018_contracts.sql")
+            cur.execute("SELECT property_id FROM contracts WHERE id = %s;", (cid,))
+            existing = cur.fetchone()
+            if existing:
+                existing_pid = str(existing.get("property_id") or "").strip() or None
+                _assert_upsert_write_access(existing_pid, property_id, row_exists=True)
+            else:
+                _assert_write_access(property_id)
+            cur.execute(
+                """
+                INSERT INTO contracts (
+                    id, property_id, request_id, account_id, template_id, template_name,
+                    status, field_values, created_by_user_id, created_at, updated_at
+                ) VALUES (
+                    %(id)s, %(property_id)s, %(request_id)s, %(account_id)s, %(template_id)s,
+                    %(template_name)s, %(status)s, %(field_values)s, %(created_by_user_id)s,
+                    NOW(), NOW()
+                )
+                ON CONFLICT (id) DO UPDATE SET
+                    property_id = EXCLUDED.property_id,
+                    request_id = EXCLUDED.request_id,
+                    account_id = EXCLUDED.account_id,
+                    template_id = EXCLUDED.template_id,
+                    template_name = EXCLUDED.template_name,
+                    status = EXCLUDED.status,
+                    field_values = EXCLUDED.field_values,
+                    created_by_user_id = COALESCE(EXCLUDED.created_by_user_id, contracts.created_by_user_id),
+                    updated_at = NOW();
+                """,
+                {
+                    "id": cid,
+                    "property_id": property_id,
+                    "request_id": request_id,
+                    "account_id": account_id,
+                    "template_id": template_id,
+                    "template_name": template_name,
+                    "status": status,
+                    "field_values": Json(field_values),
+                    "created_by_user_id": created_by_user_id,
+                },
+            )
+            cur.execute("SELECT * FROM contracts WHERE id = %s;", (cid,))
+            row = cur.fetchone()
+            conn.commit()
+    out = _row_to_contract_dict(row) if row else item
+    _broadcast_change("updated", "contract", out, property_id)
+    return out
+
+
+def delete_contract(contract_id: str):
+    pool = _get_pool()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT to_regclass('public.contracts') AS t;")
+            if not (cur.fetchone() or {}).get("t"):
+                return
+            cur.execute("SELECT property_id FROM contracts WHERE id = %s;", (str(contract_id),))
+            row = cur.fetchone()
+            if not row:
+                return
+            property_id = row.get("property_id")
+            _assert_write_access(property_id)
+            cur.execute("DELETE FROM contracts WHERE id = %s;", (str(contract_id),))
+            conn.commit()
+    _broadcast_change("deleted", "contract", {"id": contract_id}, property_id)
 
 
 # --------------------------------------------------------------------------- #

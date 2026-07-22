@@ -55,8 +55,22 @@ async def websocket_endpoint(
         while True:
             data = await websocket.receive_text()
             # Client can send ping/pong or other control messages
-            # For now, we just echo back to confirm connection is alive
             if data == "ping":
+                # Re-validate session on each ping so revoked/expired/version-bumped
+                # cookies close within one ping interval. Only close on a definitive
+                # None — transient DB errors must keep the socket open.
+                try:
+                    session_user = resolve_session(session_id)
+                except Exception as e:
+                    logger.warning(
+                        "WebSocket session re-validation failed (keeping socket): %s", e
+                    )
+                    await websocket.send_text("pong")
+                    continue
+                if session_user is None:
+                    await manager.disconnect(websocket)
+                    await websocket.close(code=4401, reason="Authentication required")
+                    return
                 await websocket.send_text("pong")
     except WebSocketDisconnect:
         await manager.disconnect(websocket)

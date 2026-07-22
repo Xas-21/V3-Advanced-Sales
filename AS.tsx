@@ -156,6 +156,7 @@ import {
     formatAgendaRowVenueDisplay,
 } from './beoShared';
 import { resolveUserAttributionId, taskAssignedToUser, getPrimaryOperationalDate } from './userProfileMetrics';
+import { CONTRACTS_CHANGED_EVENT, loadContractRecords } from './contractsStore';
 import {
     beginPropertyLoad,
     isPropertyLoadCurrent,
@@ -918,6 +919,9 @@ export default function AdvancedSalesDashboard() {
     const [taxesLiveVersion, setTaxesLiveVersion] = useState(0);
     const [crmLiveVersion, setCrmLiveVersion] = useState(0);
     const [feedLiveVersion, setFeedLiveVersion] = useState(0);
+    // Plan 066: contracts + settings catalog (rooms/venues/properties) live signals.
+    const [contractsLiveVersion, setContractsLiveVersion] = useState(0);
+    const [catalogLiveVersion, setCatalogLiveVersion] = useState(0);
     const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
     const activePropertyIdRef = useRef<string | undefined>(undefined);
 
@@ -1109,11 +1113,47 @@ export default function AdvancedSalesDashboard() {
     const [activeProperty, setActiveProperty] = useState<any>(null);
     /** Per-property tax config from `/api/taxes` (Reports, dashboard-caliber with-tax figures). */
     const [propertyTaxes, setPropertyTaxes] = useState<any[]>([]);
+    /** Signed contracts count for dashboard KPI (plan 062 — from /api/contracts). */
+    const [signedContractsCount, setSignedContractsCount] = useState(0);
 
     useEffect(() => {
         activePropertyIdRef.current = activeProperty?.id ? String(activeProperty.id) : undefined;
         if (isAuthenticated) void refreshPresence();
     }, [activeProperty?.id, isAuthenticated, refreshPresence]);
+
+    useEffect(() => {
+        if (!isAuthenticated) {
+            setSignedContractsCount(0);
+            return;
+        }
+        const pid = activeProperty?.id ? String(activeProperty.id) : undefined;
+        let cancelled = false;
+        const refreshSigned = async () => {
+            const rows = await loadContractRecords({ propertyId: pid });
+            if (cancelled) return;
+            setSignedContractsCount(rows.filter((r) => String(r.status || '').toLowerCase() === 'signed').length);
+        };
+        void refreshSigned();
+        const onChanged = () => {
+            void refreshSigned();
+        };
+        window.addEventListener(CONTRACTS_CHANGED_EVENT, onChanged);
+        return () => {
+            cancelled = true;
+            window.removeEventListener(CONTRACTS_CHANGED_EVENT, onChanged);
+        };
+    }, [activeProperty?.id, isAuthenticated]);
+
+    // Live WS → contracts: reuse CONTRACTS_CHANGED_EVENT so Contracts.tsx / KPI
+    // listeners refetch via GET (no write-back echo).
+    useEffect(() => {
+        if (contractsLiveVersion === 0) return;
+        try {
+            window.dispatchEvent(new CustomEvent(CONTRACTS_CHANGED_EVENT));
+        } catch {
+            /* noop */
+        }
+    }, [contractsLiveVersion]);
 
     const [systemUsers, setSystemUsers] = useState<any[]>([]);
     // Points at terminateSessionAndShowLogin (declared below) so callbacks defined
@@ -1492,6 +1532,27 @@ export default function AdvancedSalesDashboard() {
             case 'feed':
                 debouncedBump('feed', setFeedLiveVersion);
                 break;
+            case 'contracts':
+            case 'contract':
+            case 'contract_templates': {
+                // Gate on active property when payload carries one; channel scope
+                // already filters most events. Debounced bump → CONTRACTS_CHANGED_EVENT
+                // (GET refetch only — no re-POST echo loop).
+                const msgPid = msg.data?.propertyId ?? msg.data?.property_id;
+                const active = activePropertyIdRef.current;
+                if (msgPid && active && String(msgPid) !== String(active)) break;
+                debouncedBump('contracts', setContractsLiveVersion);
+                break;
+            }
+            case 'rooms':
+            case 'venues':
+            case 'properties': {
+                const msgPid = msg.data?.propertyId ?? msg.data?.property_id;
+                const active = activePropertyIdRef.current;
+                if (msgPid && active && String(msgPid) !== String(active)) break;
+                debouncedBump('catalog', setCatalogLiveVersion);
+                break;
+            }
             case 'chat':
                 dispatchChatWs(msg);
                 break;
@@ -1887,6 +1948,28 @@ export default function AdvancedSalesDashboard() {
             .catch(err => console.error("Error fetching properties globally:", err));
     }, [currentUser, canAccessProperty]);
 
+    // Live WS → rooms/venues/properties: GET-only catalog merge (no re-POST).
+    // Keeps activeProperty selection stable; only refreshes the matching row.
+    useEffect(() => {
+        if (catalogLiveVersion === 0 || !currentUser) return;
+        let cancelled = false;
+        fetch(apiUrl('/api/properties'))
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+                if (cancelled || !Array.isArray(data)) return;
+                setProperties(data);
+                setActiveProperty((prev: any) => {
+                    if (!prev) return prev;
+                    const next = data.find((p: any) => String(p.id) === String(prev.id));
+                    return next || prev;
+                });
+            })
+            .catch(() => {});
+        return () => {
+            cancelled = true;
+        };
+    }, [catalogLiveVersion, currentUser]);
+
     useEffect(() => {
         if (!currentUser) return;
         const pid = activeProperty?.id;
@@ -2280,12 +2363,11 @@ export default function AdvancedSalesDashboard() {
                 lostAmt: formatMoneyCompact(currentRangeSummary.cancelledRevenue),
                 paid: formatMoneyCompact(currentRangeSummary.paidRevenue),
                 cancelledAmt: formatMoneyCompact(currentRangeSummary.cancelledRevenue),
-                /** Placeholder until contracts backend supplies signed count. */
-                signed: '0',
+                signed: String(signedContractsCount),
                 calls: String(currentRangeSummary.callsCount),
             },
         };
-    }, [currentRangeSummary, lyRangeSummary, accounts, formatMoneyCompact]);
+    }, [currentRangeSummary, lyRangeSummary, accounts, formatMoneyCompact, signedContractsCount]);
 
     const dashboardComparisonLabel = useMemo(() => {
         return `${formatPeriodLabel(dashboardCurrentRange)} vs ${formatPeriodLabel(dashboardLyRange)}`;

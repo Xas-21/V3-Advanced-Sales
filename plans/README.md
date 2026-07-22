@@ -446,6 +446,81 @@ Planned at commit `dab0c5d`, 2026-07-21. Focused debug+improve: main dashboard C
 | Debounce POST longer | Only slows the ~3s cycle; does not break the loop |
 | Fix Calls KPI math separately | Count is correct; 0 comes from clearing CRM on live reload |
 
+## Batch O — Production go-live re-audit (2026-07-22, REPORT ONLY)
+
+Planned at commit `7d43062`, 2026-07-22 via `/improve` (5 parallel read-only subagents) +
+Ponytail + first-hand verification of every headline finding. Whole-codebase go/no-go for a
+Docker VPS deploy reusing the existing `as-postgres-v3` DB. **Verdict: Conditional GO after P0.**
+
+**Canonical report:** `plans/059-production-go-live-audit-2026-07-22.md` (findings table + verdict).
+No executor plans written yet — owner to pick which findings become plans.
+
+| Area | Verdict |
+|------|---------|
+| Auth / sessions / password-reset force-logout | Solid (admin reset forces re-login) |
+| Tenant scope on data reads/writes | Solid, fail-closed |
+| Property-root + global-template write authz | **P0 gap (SEC-01/02)** — any user can mutate |
+| DB relational + FKs + normalized | Mostly; CRM still JSON blob, a few FKs missing |
+| WebSocket all pages | One socket, connected; Contracts/Settings not live; no post-revoke re-check |
+| Deploy config | **P0: reuse existing volume + TLS + confirm migrations 010–013** |
+| Public guest-feedback route | **Missing (404)** |
+| Perf on refresh | OK now; N+1 accounts + no pagination scale poorly |
+
+## Batch P — Go-live remediation (2026-07-22, IN PROGRESS)
+
+Planned at commit `7d43062`, 2026-07-22, from the Batch O audit (`059-*`). Owner directives:
+normalize the CRM JSON blob (Tier 1 — kill the mega-blob, keep legitimate flexible JSON),
+add missing FKs, do all P0 must-fixes, fix guest feedback + contracts, reduce lint under the
+ratchet, and don't skip the risks. **Executor: `cursor-grok-4.5-high-fast` on a feature branch;
+reviewer (Opus) reviews each diff in place before merge.** Owner will merge & push to GitHub,
+then deploy on the VPS with the existing `as-postgres-v3` DB behind Traefik.
+
+### Recommended execution order (Batch P)
+
+1. `063-write-authorization-hardening.md` — P0 security, small, no deps **do first**
+2. `065-public-guest-feedback-routes.md` — P1 bug, independent, small
+3. `060-crm-normalize-pipeline-tables.md` — P1, the big one (CRM blob → rows, zero-loss)
+4. `061-add-missing-foreign-keys.md` — P1, after 060 (so CRM tables get FKs)
+5. `062-contracts-server-side-records.md` — P1, after 063 (template writes admin-only)
+6. `067-money-characterization-tests.md` — P1 safety net (independent)
+7. `066-websocket-and-live-refresh-hardening.md` — P2, after 062 (contracts broadcast)
+8. `068-reduce-frontend-lint-warnings.md` — P2 DX (independent; run last to catch churn)
+9. `064-vps-prod-deploy-traefik-migrations.md` — P0 deploy config, LAST (migration runner must see all new .sql)
+
+```
+063 ─┐
+065 ─┤ (independent, parallelizable in isolation but branch is shared → sequential)
+060 ──► 061
+063 ──► 062 ──► 066
+067 (independent)
+068 (last, catches lint churn from all above)
+064 (last: migration runner applies every new .sql migration)
+```
+
+| Plan | Title | Priority | Effort | Depends on | Status |
+|------|-------|----------|--------|------------|--------|
+| 063 | Write authorization hardening (properties/config/uploads/delete-impact) | P0 | S–M | — | TODO |
+| 065 | Public guest-feedback routes | P1 | S | — | TODO |
+| 060 | CRM blob → normalized pipeline tables (zero-loss) | P1 | L | — | TODO |
+| 061 | Add missing foreign keys | P1 | S–M | 060 | TODO |
+| 062 | Contracts server-side records + templates FK + PDF + KPI | P1 | L | 063 | TODO |
+| 067 | Money characterization tests | P1 | M | — | TODO |
+| 066 | WebSocket re-validation + live refresh + feed logging | P2 | M | 062 | TODO |
+| 068 | Reduce frontend lint warnings under ratchet | P2 | S–M | — | TODO |
+| 064 | VPS prod deploy (Traefik + reuse V3 + uploads + migration runner) | P0 | M | 060–065 | TODO |
+| 069 | Fix pre-existing task-id tenant tests (test-only) | P2 | S | — | TODO |
+| 070 | Backfill booker_contact_id + add FK (name-preserving) | P2 | S–M | — | TODO |
+
+Status values: TODO | IN PROGRESS | DONE | BLOCKED (reason) | REJECTED (reason).
+069/070 added 2026-07-23 as follow-ups (owner asked to fix the 2 pre-existing test failures
+and the deferred booker FK without data loss). All Batch P work is implemented on
+`feat/go-live-remediation` and left UNSTAGED for the owner's final review + commit.
+
+### Batch P — scope decisions (owner-confirmed)
+- **Tier 1** JSON policy: normalize the `crm_state` mega-blob into `crm_sales_calls`/`crm_pipeline_cards` (typed columns + FKs + small per-row payload for open-ended fields, matching the existing request/account child pattern). KEEP the load-bearing `payload`/`idx` mirrors and legitimate flexible-config JSONB (property settings, chat attachments, invoice slots, tax scope). Not Tier 2/3.
+- HTTPS handled by the owner's **Traefik** + domain on the VPS.
+- Reuse existing `as-postgres-v3` DB + volume; uploads on a persistent volume.
+
 ## Audit coverage note
 
 Batch A: performance, security (authz), Docker DX.  
