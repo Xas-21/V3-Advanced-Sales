@@ -62,6 +62,19 @@ The owner's Traefik network must already exist (declared `external: true` as `tr
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
+### Load the current V3 database
+
+`deploy/as-postgres-v3.dump` is a full custom-format dump of the normalized local V3 database (accounts, requests, users, properties, foreign keys). Copy `.env.example` to `.env` and set `V3_DB_PASSWORD` before the first Postgres start. Then restore:
+
+```bash
+docker compose -f docker-compose.prod.yml up -d as-postgres
+docker cp deploy/as-postgres-v3.dump as-postgres-v3:/tmp/as-postgres-v3.dump
+docker exec as-postgres-v3 pg_restore -U neondb_owner -d neondb --no-owner --no-acl --clean --if-exists /tmp/as-postgres-v3.dump
+docker exec as-postgres-v3 rm /tmp/as-postgres-v3.dump
+```
+
+On a brand-new empty database, drop `--clean --if-exists` if restore reports missing objects. Users sign in with their existing passwords. Sessions in the dump are not required.
+
 | Service | Role |
 |---------|------|
 | `as-postgres` (container `as-postgres-v3`) | PostgreSQL 18 — reuses external volume `as-postgres-v3-data` |
