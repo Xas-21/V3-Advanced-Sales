@@ -448,6 +448,101 @@ export function getRequestChartBucketAnchorDate(r: any): string {
     return '';
 }
 
+function endOnEarliestAgendaStart(r: any): string {
+    const agenda = Array.isArray(r?.agenda) ? r.agenda : [];
+    const rows = agenda
+        .map((row: any) => ({
+            start: parseYmdAgenda(row?.startDate),
+            end: parseYmdAgenda(row?.endDate || row?.startDate),
+        }))
+        .filter((row) => row.start);
+    if (!rows.length) return '';
+    const earliest = [...rows.map((row) => row.start)].sort()[0];
+    const ends = rows
+        .filter((row) => row.start === earliest)
+        .map((row) => row.end)
+        .filter(Boolean)
+        .sort();
+    return ends[0] || earliest;
+}
+
+/** Departure/end on the same row as the earliest arrival or agenda start. */
+function departureOnEarliestRoomArrival(r: any): string {
+    const rooms = Array.isArray(r?.rooms) ? r.rooms : [];
+    const rows = rooms
+        .map((row: any) => ({
+            arrival: parseYmdAgenda(row?.arrival || row?.checkIn || r?.checkIn),
+            departure: parseYmdAgenda(row?.departure || row?.checkOut || r?.checkOut),
+        }))
+        .filter((row) => row.arrival);
+    if (!rows.length) return '';
+    const earliest = [...rows.map((row) => row.arrival)].sort()[0];
+    const deps = rows
+        .filter((row) => row.arrival === earliest)
+        .map((row) => row.departure)
+        .filter(Boolean)
+        .sort();
+    return deps[0] || '';
+}
+
+/**
+ * One departure/end per request: the end date on the earliest arrival or start row.
+ * Later rooms and later agenda days are ignored.
+ */
+export function getRequestSearchDepartureDate(r: any): string {
+    const checkOut = parseYmdAgenda(r?.checkOut);
+    const eventEnd = parseYmdAgenda(r?.eventEnd);
+    const roomDep = departureOnEarliestRoomArrival(r);
+    const agendaEnd = endOnEarliestAgendaStart(r);
+
+    if (isEventOnlyOperational(r)) {
+        if (agendaEnd) return agendaEnd;
+        if (eventEnd) return eventEnd;
+        if (checkOut) return checkOut;
+        return '';
+    }
+
+    if (roomDep) return roomDep;
+    if (checkOut) return checkOut;
+    if (isEventRoomsOperational(r) && agendaEnd) return agendaEnd;
+    if (eventEnd) return eventEnd;
+    if (agendaEnd) return agendaEnd;
+    return '';
+}
+
+function ymdWithinOptionalBounds(date: string, from: string, to: string): boolean {
+    const d = String(date || '').slice(0, 10);
+    if (!d) return false;
+    if (from && d < from) return false;
+    if (to && d > to) return false;
+    return true;
+}
+
+/**
+ * Requests search: earliest arrival/start must fall in the arrival from–to range,
+ * and the departure/end on that same stay must fall in the departure from–to range.
+ * An empty bound is open. Both ranges are optional and combined.
+ */
+export function requestMatchesSearchDateRanges(
+    r: any,
+    arrivalFrom: string,
+    arrivalTo: string,
+    departureFrom: string,
+    departureTo: string
+): boolean {
+    const fromA = String(arrivalFrom || '').trim();
+    const toA = String(arrivalTo || '').trim();
+    const fromD = String(departureFrom || '').trim();
+    const toD = String(departureTo || '').trim();
+    const hasArrival = !!(fromA || toA);
+    const hasDeparture = !!(fromD || toD);
+    if (!hasArrival && !hasDeparture) return true;
+
+    if (hasArrival && !ymdWithinOptionalBounds(getRequestChartBucketAnchorDate(r), fromA, toA)) return false;
+    if (hasDeparture && !ymdWithinOptionalBounds(getRequestSearchDepartureDate(r), fromD, toD)) return false;
+    return true;
+}
+
 /** Chart/KPI anchor placement: anchor date must fall inside [filterStart, filterEnd]. Dashboard Total Requests uses overlap (see requestOperationalDatesOverlapRange). */
 export function requestCountsInChartsPeriod(r: any, filterStart: string, filterEnd: string): boolean {
     if (!filterStart || !filterEnd) return false;

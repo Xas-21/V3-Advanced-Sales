@@ -4,7 +4,7 @@ import {
     LayoutList, Search, Plus, Calendar, User, FileText, Check, DollarSign,
     Box, Users, Clock, Coffee, Utensils, Music, Bus, Car, BedDouble,
     Trash2, Save, ChevronDown, ChevronRight, Calculator, Filter,
-    MoreHorizontal, Moon, Bed, Tag, X, Settings, CreditCard, RefreshCw, Printer,
+    MoreHorizontal, Moon, Bed, Tag, X, Settings, CreditCard, RefreshCw, Printer, Download,
     Bell, AlertTriangle, Star, Copy, RotateCcw, MessageSquare
 } from 'lucide-react';
 import AddAccountModal from './AddAccountModal';
@@ -66,10 +66,10 @@ import {
 } from './beoShared';
 import { resolveUserAttributionId, createdByMatchesUser, requestInProperty, recordVisibleOnProperty } from './userProfileMetrics';
 import { usePropertyLoadGate } from './propertyScopedLoad';
-import { requestOperationalDatesOverlapRange } from './operationalSegmentRevenue';
+import { requestMatchesSearchDateRanges } from './operationalSegmentRevenue';
 import { refreshRequestsWithDefiniteToActual } from './requestStatusAutomation';
 import { requestMatchesAccount } from './accountProfileData';
-import { type CurrencyCode } from './currency';
+import { convertSarToCurrency, type CurrencyCode } from './currency';
 import { useCurrencyFormatters } from './useCurrencyFormatters';
 import { contrastOn } from './dashboardHub/analyticsKit';
 import { deleteFileLocal, mediaUrl, uploadFileLocal } from './localUpload';
@@ -160,16 +160,13 @@ function filterRequestsByAdvancedSearch(
         const confFilter = String(params?.confNumber || '').toLowerCase().trim();
         const confMatch = !confFilter || String(req.confirmationNo || '').toLowerCase().includes(confFilter);
 
-        const arrivalFilter = String(params?.arrival || '').trim();
-        const departureFilter = String(params?.departure || '').trim();
-        let dateMatch = true;
-        if (arrivalFilter && departureFilter) {
-            dateMatch = requestOperationalDatesOverlapRange(req, arrivalFilter, departureFilter);
-        } else if (arrivalFilter) {
-            dateMatch = requestOperationalDatesOverlapRange(req, arrivalFilter, '2100-12-31');
-        } else if (departureFilter) {
-            dateMatch = requestOperationalDatesOverlapRange(req, '1900-01-01', departureFilter);
-        }
+        const dateMatch = requestMatchesSearchDateRanges(
+            req,
+            String(params?.arrival || '').trim(),
+            String(params?.arrivalTo || '').trim(),
+            String(params?.departure || '').trim(),
+            String(params?.departureTo || '').trim()
+        );
 
         const createdByFilter = String(params?.createdByUserId || '').trim();
         let createdByMatch = true;
@@ -7759,6 +7756,14 @@ export default function RequestsManager({
         return meal || '-';
     };
 
+    /** Same figure as the Total Cost column: grand total including tax. */
+    const requestInclTaxTotal = (request: any) => {
+        const fin = calculateAccFinancials(request);
+        const fallbackEventTotal = (request.agenda || []).reduce((sum: number, item: any) => sum + (Number(item.rate || 0) * Number(item.pax || 0)) + Number(item.rental || 0), 0);
+        const rawTotal = parseFloat(String(request.totalCost ?? '').replace(/,/g, '') || '0');
+        return fin?.grandTotalWithTax || (rawTotal > 0 ? rawTotal : fallbackEventTotal);
+    };
+
     const handleColumnDragStart = (column: string) => {
         setDraggedColumn(column);
     };
@@ -8029,9 +8034,7 @@ export default function RequestsManager({
                                 <div className={`flex flex-col ${compact ? 'gap-1 min-w-[96px]' : 'gap-1.5 min-w-[120px]'}`}>
                                     {(() => {
                                         const fin = calculateAccFinancials(request);
-                                        const fallbackEventTotal = (request.agenda || []).reduce((sum: number, item: any) => sum + (Number(item.rate || 0) * Number(item.pax || 0)) + Number(item.rental || 0), 0);
-                                        const rawTotal = parseFloat(request.totalCost?.toString().replace(/,/g, '') || '0');
-                                        const tCost = fin?.grandTotalWithTax || (rawTotal > 0 ? rawTotal : fallbackEventTotal);
+                                        const tCost = requestInclTaxTotal(request);
                                         const pAmt = fin?.paidAmount ?? parseFloat(request.paidAmount?.toString().replace(/,/g, '') || '0');
                                         const percentage = tCost > 0 ? Math.round((pAmt / tCost) * 100) : 0;
                                         const clOpen = !!(request.collectLater || request.paymentStatus === 'CL');
@@ -8062,13 +8065,7 @@ export default function RequestsManager({
                                 <div className="flex flex-col items-end">
                                     <span className={`${compact ? 'text-[8px]' : 'text-[10px]'} uppercase font-bold opacity-30`} style={{ color: colors.textMain }}>{selectedCurrency}</span>
                                     <span className={`${compact ? 'text-sm' : 'text-xl'} font-bold tabular-nums`} style={{ color: colors.textMain }}>
-                                        {(() => {
-                                            const fin = calculateAccFinancials(request);
-                                            const fallbackEventTotal = (request.agenda || []).reduce((sum: number, item: any) => sum + (Number(item.rate || 0) * Number(item.pax || 0)) + Number(item.rental || 0), 0);
-                                            const rawTotal = parseFloat(request.totalCost?.toString().replace(/,/g, '') || '0');
-                                            const total = fin?.grandTotalWithTax || (rawTotal > 0 ? rawTotal : fallbackEventTotal);
-                                            return formatMoney(total);
-                                        })()}
+                                        {formatMoney(requestInclTaxTotal(request))}
                                     </span>
                                 </div>
                             )}
@@ -8087,6 +8084,8 @@ export default function RequestsManager({
         /** Search box, per-page, filter — only for All Requests. */
         allRequestsHeaderWidgets?: boolean;
         showColumnSettingsButton?: boolean;
+        subtitleExtra?: React.ReactNode;
+        headerAction?: React.ReactNode;
     };
 
     const renderRequestsTableBlock = (
@@ -8104,7 +8103,7 @@ export default function RequestsManager({
         } | null,
         blockOptions?: RequestTableBlockOptions
     ) => {
-        const { useCompactTable = false, allRequestsHeaderWidgets = false, showColumnSettingsButton = true } = blockOptions || {};
+        const { useCompactTable = false, allRequestsHeaderWidgets = false, showColumnSettingsButton = true, subtitleExtra = null, headerAction = null } = blockOptions || {};
         const fixedHeight = scrollMode === 'fixed';
         const compact = !!listPagination || useCompactTable;
         const theadPx = compact ? 'px-3' : 'px-6';
@@ -8186,6 +8185,7 @@ export default function RequestsManager({
                             {listPagination && listPagination.totalItems > 0 ? (
                                 <span className="opacity-70"> · Showing {showingFrom}–{showingTo}</span>
                             ) : null}
+                            {subtitleExtra}
                         </p>
                     </div>
                     {allRequestsHeaderWidgets && (
@@ -8312,8 +8312,9 @@ export default function RequestsManager({
                             </div>
                         </div>
                     )}
-                    {!allRequestsHeaderWidgets && listColumnSettingsControl && (
+                    {!allRequestsHeaderWidgets && (listColumnSettingsControl || headerAction) && (
                         <div className="flex flex-wrap items-center justify-end gap-2 w-full min-w-0 sm:w-auto">
+                            {headerAction}
                             {listColumnSettingsControl}
                         </div>
                     )}
@@ -8878,11 +8879,70 @@ export default function RequestsManager({
         return renderGridView();
     }
 
-    // Show Search Form when subView = 'search' (single page scroll via parent <main>; no nested overflow)
+    // Show Search Form when subView = 'search'. The page scrolls; the table uses the full content width.
     if (subView === 'search') {
         const compactSearchForm = searchFormExpanded && searchResults !== null;
+        const searchRevenueInclTax = (searchResults || []).reduce((sum: number, request: any) => sum + Number(requestInclTaxTotal(request) || 0), 0);
+        const exportSearchResultsCsv = () => {
+            const rows = searchResults || [];
+            const cols = visibleColumnOrder.filter((column) => column !== 'options');
+            const csvEscape = (value: unknown) => {
+                const s = String(value ?? '');
+                return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+            };
+            const cell = (request: any, column: string) => {
+                if (column === 'details') return [request.confirmationNo || 'N/A', request.id ? `#${request.id}` : ''].filter(Boolean).join(' ');
+                if (column === 'requestName') return request.requestName || 'Unnamed Request';
+                if (column === 'account') return accountLabel(request);
+                if (column === 'account_type') return accountTypeFromLinkedAccount(request);
+                if (column === 'request_segment') return requestSegmentListLabel(request);
+                if (column === 'type') return String(request.requestType || '');
+                if (column === 'meal') return getMealCellValue(request);
+                if (column === 'status') return String(request.status || '');
+                if (column === 'dates') {
+                    const rowType = normalizeRequestTypeKey(request.requestType);
+                    const evWindow = getEventDateWindow(request);
+                    const startVal = String(evWindow.start || request.eventStart || '').trim();
+                    const endVal = String(evWindow.end || evWindow.start || request.eventEnd || request.eventStart || '').trim();
+                    const checkInVal = String(request.checkIn || '').trim();
+                    const checkOutVal = String(request.checkOut || '').trim();
+                    if (rowType !== 'event' && checkInVal && checkInVal !== '-') return `In: ${checkInVal} Out: ${checkOutVal || '-'}`;
+                    return `Start: ${startVal || '-'} End: ${endVal || '-'}`;
+                }
+                if (column === 'stay_info') {
+                    const type = normalizeRequestTypeKey(request.requestType);
+                    const nights = Number(request.nights || calculateNights(request.checkIn, request.checkOut) || 0);
+                    const rooms = request.rooms ? Object.values(request.rooms).reduce((sum: number, r: any) => sum + Number((r as any).count || 0), 0) : 0;
+                    const days = calculateEventAgendaDays(request.agenda || []);
+                    if (type === 'event') return `${days} days`;
+                    if (type === 'event_rooms') return `${nights} nights, ${rooms} rooms, ${days} days`;
+                    return `${nights} nights, ${rooms} rooms`;
+                }
+                if (column === 'paid_amount') {
+                    const fin = calculateAccFinancials(request);
+                    const paid = fin?.paidAmount ?? parseFloat(String(request.paidAmount ?? '').replace(/,/g, '') || '0');
+                    return formatMoney(paid, 0);
+                }
+                if (column === 'total_cost') {
+                    const amount = convertSarToCurrency(Number(requestInclTaxTotal(request) || 0), selectedCurrency);
+                    return amount.toFixed(2);
+                }
+                return '';
+            };
+            const lines = [
+                cols.map((column) => csvEscape(columnLabels[column] || column)).join(','),
+                ...rows.map((request: any) => cols.map((column) => csvEscape(cell(request, column))).join(',')),
+            ];
+            const blob = new Blob([`\uFEFF${lines.join('\r\n')}`], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `request-search-${new Date().toISOString().slice(0, 10)}.csv`;
+            link.click();
+            URL.revokeObjectURL(url);
+        };
         return (
-            <div className="w-full min-h-full" style={{ backgroundColor: colors.bg }}>
+            <div className="w-full min-h-full min-w-0" style={{ backgroundColor: colors.bg }}>
                 <div
                     className={`shrink-0 border-b ${searchResults !== null ? 'pb-2' : ''}`}
                     style={{ borderColor: colors.border, backgroundColor: colors.card }}
@@ -8942,25 +9002,46 @@ export default function RequestsManager({
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col sm:flex-row flex-wrap justify-center items-stretch sm:items-end gap-4 w-full max-w-xl sm:max-w-5xl mx-auto">
-                                    <div className="w-full sm:flex-1 sm:min-w-[11rem] sm:max-w-[14rem]">
-                                        <label className="text-xs font-bold uppercase tracking-wider mb-2 block text-center sm:text-left" style={{ color: colors.textMuted }}>Arrival / Start Date</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-3xl mx-auto">
+                                    <div>
+                                        <label className="text-xs font-bold uppercase tracking-wider mb-2 block" style={{ color: colors.textMuted }}>Arrival / Start From Date</label>
                                         <input
                                             type="date"
                                             value={searchParams?.arrival || ''}
                                             onChange={(e) => updateSearchParams({ arrival: e.target.value })}
                                             className={`w-full rounded-lg border bg-black/20 outline-none focus:border-primary transition-colors ${compactSearchForm ? 'px-3 py-2 text-sm' : 'px-4 py-3'}`}
-                                            style={{ borderColor: colors.border, color: colors.textMain }} placeholder="mm/dd/yyyy" />
+                                            style={{ borderColor: colors.border, color: colors.textMain }} />
                                     </div>
-                                    <div className="w-full sm:flex-1 sm:min-w-[11rem] sm:max-w-[14rem]">
-                                        <label className="text-xs font-bold uppercase tracking-wider mb-2 block text-center sm:text-left" style={{ color: colors.textMuted }}>Departure / End Date</label>
+                                    <div>
+                                        <label className="text-xs font-bold uppercase tracking-wider mb-2 block" style={{ color: colors.textMuted }}>Arrival / Start To Date</label>
+                                        <input
+                                            type="date"
+                                            value={searchParams?.arrivalTo || ''}
+                                            onChange={(e) => updateSearchParams({ arrivalTo: e.target.value })}
+                                            className={`w-full rounded-lg border bg-black/20 outline-none focus:border-primary transition-colors ${compactSearchForm ? 'px-3 py-2 text-sm' : 'px-4 py-3'}`}
+                                            style={{ borderColor: colors.border, color: colors.textMain }} />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold uppercase tracking-wider mb-2 block" style={{ color: colors.textMuted }}>Departure / End From Date</label>
                                         <input
                                             type="date"
                                             value={searchParams?.departure || ''}
                                             onChange={(e) => updateSearchParams({ departure: e.target.value })}
                                             className={`w-full rounded-lg border bg-black/20 outline-none focus:border-primary transition-colors ${compactSearchForm ? 'px-3 py-2 text-sm' : 'px-4 py-3'}`}
-                                            style={{ borderColor: colors.border, color: colors.textMain }} placeholder="mm/dd/yyyy" />
+                                            style={{ borderColor: colors.border, color: colors.textMain }} />
                                     </div>
+                                    <div>
+                                        <label className="text-xs font-bold uppercase tracking-wider mb-2 block" style={{ color: colors.textMuted }}>Departure / End To Date</label>
+                                        <input
+                                            type="date"
+                                            value={searchParams?.departureTo || ''}
+                                            onChange={(e) => updateSearchParams({ departureTo: e.target.value })}
+                                            className={`w-full rounded-lg border bg-black/20 outline-none focus:border-primary transition-colors ${compactSearchForm ? 'px-3 py-2 text-sm' : 'px-4 py-3'}`}
+                                            style={{ borderColor: colors.border, color: colors.textMain }} />
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row flex-wrap justify-center items-stretch sm:items-end gap-4 w-full max-w-xl sm:max-w-5xl mx-auto">
                                     <div className="w-full sm:flex-1 sm:min-w-[11rem] sm:max-w-[16rem]">
                                         <label className="text-xs font-bold uppercase tracking-wider mb-2 block text-center sm:text-left" style={{ color: colors.textMuted }}>Created by</label>
                                         <select
@@ -9060,14 +9141,34 @@ export default function RequestsManager({
                 </div>
 
                 {searchResults !== null && (
-                    <div className="mt-4 w-full min-w-0 px-2 sm:px-4 md:px-6 max-w-[1800px] mx-auto">
+                    <div className="mt-4 w-full min-w-0">
                         {renderRequestsTableBlock(
                             searchResults,
                             'Search Results',
                             `${searchResults.length} requests match your criteria`,
                             'flow',
                             null,
-                            { useCompactTable: true, allRequestsHeaderWidgets: false, showColumnSettingsButton: true }
+                            {
+                                useCompactTable: true,
+                                allRequestsHeaderWidgets: false,
+                                showColumnSettingsButton: true,
+                                subtitleExtra: (
+                                    <span className="font-bold" style={{ color: colors.textMain }}>
+                                        {' '}· Total revenue {formatMoney(searchRevenueInclTax)}
+                                    </span>
+                                ),
+                                headerAction: (
+                                    <button
+                                        type="button"
+                                        onClick={exportSearchResultsCsv}
+                                        className="px-2.5 py-2 rounded-xl border hover:bg-white/5 transition-colors flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide"
+                                        style={{ borderColor: colors.border, color: colors.textMain }}
+                                        title="Export search results as CSV"
+                                    >
+                                        <Download size={14} /> CSV
+                                    </button>
+                                ),
+                            }
                         )}
                     </div>
                 )}
@@ -9079,16 +9180,9 @@ export default function RequestsManager({
 
     // Show All Requests Table when subView = 'list' (or default)
     const accountScopedList = Boolean(scopedAccountFilter?.accountId || scopedAccountFilter?.accountName);
-    const listTableScrollMode: TableBlockScrollMode = accountScopedList ? 'flow' : 'fixed';
+    const listTableScrollMode: TableBlockScrollMode = 'flow';
     return (
-        <div
-            className={
-                accountScopedList
-                    ? 'w-full min-h-0'
-                    : 'h-full flex flex-col min-h-0 overflow-hidden'
-            }
-            style={{ backgroundColor: colors.bg }}
-        >
+        <div className="w-full min-h-full min-w-0" style={{ backgroundColor: colors.bg }}>
             {renderRequestsTableBlock(
                 listPagedRequests,
                 accountScopedList ? `Requests — ${scopedAccountFilter?.accountName || 'Account'}` : 'All Requests',

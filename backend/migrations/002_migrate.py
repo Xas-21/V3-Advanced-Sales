@@ -126,6 +126,8 @@ def upsert(cur, table, cols, rows):
         for k, v in r.items():
             if isinstance(v, (dict, list)):
                 v = json.dumps(v)
+            elif v == "":
+                v = None
             clean[k] = v
         clean_rows.append(clean)
     cols_sql = ", ".join(cols)
@@ -239,8 +241,25 @@ def migrate():
     cur.execute("SELECT id FROM properties")
     valid_property_ids = {r["id"] for r in cur.fetchall()}
 
-    # Ensure every account-referenced property exists (stub) so accounts are not dropped.
-    cur.execute("SELECT DISTINCT payload->>'propertyId' AS pid FROM accounts_rows")
+    # Stub any property id referenced by blobs so child rows are not dropped.
+    cur.execute("""
+        SELECT DISTINCT pid FROM (
+            SELECT NULLIF(btrim(payload->>'propertyId'), '') AS pid FROM accounts_rows
+            UNION
+            SELECT NULLIF(btrim(property_id), '') FROM accounts_rows
+            UNION
+            SELECT NULLIF(btrim(payload->>'propertyId'), '') FROM requests_rows
+            UNION
+            SELECT NULLIF(btrim(property_id), '') FROM requests_rows
+            UNION
+            SELECT NULLIF(btrim(payload->>'propertyId'), '') FROM app_collection_rows
+            UNION
+            SELECT NULLIF(btrim(property_id), '') FROM app_collection_rows
+            UNION
+            SELECT NULLIF(btrim(map_key), '') FROM app_collection_maps WHERE collection_name = 'crm_state'
+        ) s
+        WHERE pid IS NOT NULL
+    """)
     stub_props = []
     for r in cur.fetchall():
         pid = empty_to_none(r.get("pid"))
@@ -322,6 +341,8 @@ def migrate():
     cur.execute("SELECT id, property_id, created_by_user_id, payload FROM accounts_rows")
     acc = cur.fetchall()
     arows, crows, actrows = [], [], []
+    # (account_id, original contact id) -> scoped account_contacts.id
+    raw_to_scoped: dict[tuple[str, str], str] = {}
     for r in acc:
         p = r["payload"]
         arows.append({
@@ -349,7 +370,10 @@ def migrate():
             "updated_at": r.get("updated_at"),
         })
         for i, ct in enumerate(p.get("contacts") or []):
+            raw_cid = empty_to_none(ct.get("id"))
             ct = ensure_scoped_child_id(p.get("id"), "contact", i, ct)
+            if raw_cid is not None:
+                raw_to_scoped[(str(p.get("id") or ""), str(raw_cid))] = ct.get("id")
             crows.append({
                 "id": ct.get("id"),
                 "account_id": p.get("id"),
@@ -410,6 +434,109 @@ def migrate():
         actrows,
     )
 
+    # ---- PROPERTY COLLECTIONS (promotions must exist before request.promotion_id FK) ----
+    for coll, table, cols in [
+        ("room_types", "rooms", ["id", "property_id", "name", "count", "size", "base_rate", "capacity", "payload"]),
+        ("venues", "venues", ["id", "property_id", "name", "is_combined", "shapes", "width", "length", "height", "area", "capacity", "payload"]),
+        ("taxes", "taxes", ["id", "property_id", "label", "rate", "scope", "payload"]),
+        ("financials", "financials", ["id", "property_id", "year", "months", "payload"]),
+        ("tasks", "tasks", ["id", "property_id", "task", "client", "priority", "completed", "date", "star", "category", "description", "assigned_to", "assignees", "payload"]),
+        ("promotions", "promotions", ["id", "property_id", "name", "status", "start_date", "end_date", "terms", "segments", "linked_accounts", "include_rooms_revenue", "include_events_revenue", "payload"]),
+    ]:
+        cur.execute(
+            "SELECT row_id, payload, updated_at FROM app_collection_rows WHERE collection_name=%s ORDER BY updated_at NULLS FIRST, row_id",
+            (coll,),
+        )
+        rows = []
+        used_pks: set[str] = set()
+        tax_by_id: dict[str, dict] = {}
+        for r in cur.fetchall():
+            p = r["payload"]
+            prop_id = empty_to_none(p.get("propertyId"))
+            pk = collection_pk(
+                r.get("row_id"),
+                prop_id,
+                p.get("id"),
+                used_pks,
+                skip_duplicates=(table == "taxes"),
+            )
+            if not pk:
+                if table != "taxes":
+                    continue
+                # Within-property tax type collision: last row wins (keeps latest rates).
+                pk = property_scoped_id(prop_id, p.get("id")) or r.get("row_id")
+                if not pk:
+                    continue
+            row = {
+                "id": pk,
+                "payload": json.dumps(p),
+            }
+            if table == "rooms":
+                row.update({"property_id": prop_id, "name": p.get("name"), "count": p.get("count"), "size": p.get("size"), "base_rate": p.get("baseRate"), "capacity": p.get("capacity")})
+            elif table == "venues":
+                row.update({"property_id": prop_id, "name": p.get("name"), "is_combined": p.get("isCombined"), "shapes": json.dumps(p.get("shapes", [])), "width": p.get("width"), "length": p.get("length"), "height": p.get("height"), "area": p.get("area"), "capacity": p.get("capacity")})
+            elif table == "taxes":
+                row["_src_updated_at"] = r.get("updated_at")
+                row.update({"property_id": prop_id, "label": p.get("label"), "rate": p.get("rate"), "scope": p.get("scope")})
+            elif table == "financials":
+                row.update({"property_id": prop_id, "year": p.get("year"), "months": json.dumps(p.get("months", []))})
+            elif table == "tasks":
+                row.update({"property_id": prop_id, "task": p.get("task"), "client": p.get("client"), "priority": p.get("priority"), "completed": p.get("completed"), "date": d(p.get("date")), "star": p.get("star"), "category": p.get("category"), "description": p.get("description"), "assigned_to": p.get("assignedTo"), "assignees": json.dumps(p.get("assignees", []))})
+            elif table == "promotions":
+                row.update({"property_id": prop_id, "name": p.get("name"), "status": p.get("status"), "start_date": d(p.get("startDate")), "end_date": d(p.get("endDate")), "terms": p.get("terms"), "segments": json.dumps(p.get("segments", [])), "linked_accounts": json.dumps(p.get("linkedAccounts", [])), "include_rooms_revenue": p.get("includeRoomsRevenue"), "include_events_revenue": p.get("includeEventsRevenue")})
+            if table == "taxes":
+                prev = tax_by_id.get(pk)
+                prev_ts = prev.get("_src_updated_at") if prev else None
+                new_ts = row.get("_src_updated_at")
+                if prev is None or prev_ts is None or (new_ts is not None and new_ts >= prev_ts):
+                    tax_by_id[pk] = row
+            else:
+                rows.append(row)
+        if table == "taxes":
+            rows = list(tax_by_id.values())
+            for row in rows:
+                row.pop("_src_updated_at", None)
+            # Drop historical #N / bare-id leftovers from earlier migrate passes.
+            cur.execute("DELETE FROM taxes")
+        rows = filter_fk(rows, "property_id", valid_property_ids, table)
+        counts[table] = upsert(cur, table, cols, rows)
+
+    cur.execute("SELECT id FROM promotions")
+    promo_ids = {r["id"] for r in cur.fetchall()}
+    stored_contact_ids = {c["id"] for c in crows}
+
+    def resolve_booker(account_id, raw_booker, request_id):
+        raw = empty_to_none(raw_booker)
+        if raw is None:
+            return None
+        raw_s = str(raw)
+        mapped = raw_to_scoped.get((str(account_id or ""), raw_s))
+        if mapped:
+            return mapped
+        if raw_s in stored_contact_ids:
+            return raw_s
+        cur.execute(
+            "INSERT INTO migration_orphans (target_table, parent_key, parent_id, payload) VALUES (%s,%s,%s,%s)",
+            ("requests", "booker_contact_id", request_id, json.dumps({"booker_contact_id": raw_s, "account_id": account_id})),
+        )
+        return None
+
+    def resolve_promotion(property_id, raw_promo, request_id):
+        raw = empty_to_none(raw_promo)
+        if raw is None:
+            return None
+        raw_s = str(raw)
+        scoped = property_scoped_id(empty_to_none(property_id), raw_s)
+        if scoped and scoped in promo_ids:
+            return scoped
+        if raw_s in promo_ids:
+            return raw_s
+        cur.execute(
+            "INSERT INTO migration_orphans (target_table, parent_key, parent_id, payload) VALUES (%s,%s,%s,%s)",
+            ("requests", "promotion_id", request_id, json.dumps({"promotion_id": raw_s, "property_id": property_id})),
+        )
+        return None
+
     # ---- REQUESTS ----
     cur.execute(
         "SELECT id, property_id, created_by_user_id, payload, created_at, updated_at FROM requests_rows"
@@ -445,8 +572,8 @@ def migrate():
             "payment_deadline": d(p.get("paymentDeadline")),
             "meal_plan": p.get("mealPlan"),
             "booker_name": p.get("bookerName"),
-            "booker_contact_id": p.get("bookerContactId"),
-            "promotion_id": p.get("promotionId"),
+            "booker_contact_id": resolve_booker(p.get("accountId"), p.get("bookerContactId"), rid),
+            "promotion_id": resolve_promotion(p.get("propertyId"), p.get("promotionId"), rid),
             "confirmation_no": p.get("confirmationNo"),
             "note": p.get("note"),
             "cancel_reason": p.get("cancelReason"),
@@ -610,66 +737,6 @@ def migrate():
         ["request_id", "template", "source", "public_token", "answers", "submitted_at", "updated_at", "payload", "idx"],
         frows,
     )
-
-    # ---- PROPERTY COLLECTIONS ----
-    for coll, table, cols in [
-        ("room_types", "rooms", ["id", "property_id", "name", "count", "size", "base_rate", "capacity", "payload"]),
-        ("venues", "venues", ["id", "property_id", "name", "is_combined", "shapes", "width", "length", "height", "area", "capacity", "payload"]),
-        ("taxes", "taxes", ["id", "property_id", "label", "rate", "scope", "payload"]),
-        ("financials", "financials", ["id", "property_id", "year", "months", "payload"]),
-        ("tasks", "tasks", ["id", "property_id", "task", "client", "priority", "completed", "date", "star", "category", "description", "assigned_to", "assignees", "payload"]),
-        ("promotions", "promotions", ["id", "property_id", "name", "status", "start_date", "end_date", "terms", "segments", "linked_accounts", "include_rooms_revenue", "include_events_revenue", "payload"]),
-    ]:
-        cur.execute(
-            "SELECT row_id, payload FROM app_collection_rows WHERE collection_name=%s ORDER BY row_id",
-            (coll,),
-        )
-        rows = []
-        used_pks: set[str] = set()
-        tax_by_id: dict[str, dict] = {}
-        for r in cur.fetchall():
-            p = r["payload"]
-            prop_id = empty_to_none(p.get("propertyId"))
-            pk = collection_pk(
-                r.get("row_id"),
-                prop_id,
-                p.get("id"),
-                used_pks,
-                skip_duplicates=(table == "taxes"),
-            )
-            if not pk:
-                if table != "taxes":
-                    continue
-                # Within-property tax type collision: last row wins (keeps latest rates).
-                pk = property_scoped_id(prop_id, p.get("id")) or r.get("row_id")
-                if not pk:
-                    continue
-            row = {
-                "id": pk,
-                "payload": json.dumps(p),
-            }
-            if table == "rooms":
-                row.update({"property_id": prop_id, "name": p.get("name"), "count": p.get("count"), "size": p.get("size"), "base_rate": p.get("baseRate"), "capacity": p.get("capacity")})
-            elif table == "venues":
-                row.update({"property_id": prop_id, "name": p.get("name"), "is_combined": p.get("isCombined"), "shapes": json.dumps(p.get("shapes", [])), "width": p.get("width"), "length": p.get("length"), "height": p.get("height"), "area": p.get("area"), "capacity": p.get("capacity")})
-            elif table == "taxes":
-                row.update({"property_id": prop_id, "label": p.get("label"), "rate": p.get("rate"), "scope": p.get("scope")})
-            elif table == "financials":
-                row.update({"property_id": prop_id, "year": p.get("year"), "months": json.dumps(p.get("months", []))})
-            elif table == "tasks":
-                row.update({"property_id": prop_id, "task": p.get("task"), "client": p.get("client"), "priority": p.get("priority"), "completed": p.get("completed"), "date": d(p.get("date")), "star": p.get("star"), "category": p.get("category"), "description": p.get("description"), "assigned_to": p.get("assignedTo"), "assignees": json.dumps(p.get("assignees", []))})
-            elif table == "promotions":
-                row.update({"property_id": prop_id, "name": p.get("name"), "status": p.get("status"), "start_date": d(p.get("startDate")), "end_date": d(p.get("endDate")), "terms": p.get("terms"), "segments": json.dumps(p.get("segments", [])), "linked_accounts": json.dumps(p.get("linkedAccounts", [])), "include_rooms_revenue": p.get("includeRoomsRevenue"), "include_events_revenue": p.get("includeEventsRevenue")})
-            if table == "taxes":
-                tax_by_id[pk] = row
-            else:
-                rows.append(row)
-        if table == "taxes":
-            rows = list(tax_by_id.values())
-            # Drop historical #N / bare-id leftovers from earlier migrate passes.
-            cur.execute("DELETE FROM taxes")
-        rows = filter_fk(rows, "property_id", valid_property_ids, table)
-        counts[table] = upsert(cur, table, cols, rows)
 
     # ---- CONTRACT TEMPLATES & CXL REASONS (from app_collections payload arrays) ----
     cur.execute("SELECT name, payload FROM app_collections WHERE name IN ('contract_templates','cxl_reasons')")

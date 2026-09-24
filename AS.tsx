@@ -811,7 +811,9 @@ export default function AdvancedSalesDashboard() {
     const [requestSearchParams, setRequestSearchParams] = useState({
         type: 'all',
         arrival: '',
+        arrivalTo: '',
         departure: '',
+        departureTo: '',
         account: '',
         segment: '',
         confNumber: '',

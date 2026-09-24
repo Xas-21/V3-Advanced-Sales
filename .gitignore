@@ -25,6 +25,7 @@ Thumbs.db
 *.log
 .idea/
 .vscode/
+backups/
 _pm_update.txt
 backend/scripts/fix_env.py
 backend/scripts/mk_env.*
