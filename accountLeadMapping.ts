@@ -10,7 +10,7 @@ export function contactDisplayName(c: any): string {
 }
 
 /** Stored contact primary key for a browser id such as ``C{timestamp}``. */
-export function persistedContactId(contacts: any[] | undefined, rawId: string): string {
+export function persistedContactId(contacts: Array<{ id?: unknown }> | undefined, rawId: string): string {
     const id = String(rawId || '').trim();
     if (!id) return '';
     const list = Array.isArray(contacts) ? contacts : [];

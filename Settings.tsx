@@ -148,7 +148,7 @@ function ProfileDashboardFallback() {
     );
 }
 
-function hotelFieldsFrom(prop: any) {
+function hotelFieldsFrom(prop: Record<string, unknown> | null | undefined) {
     return {
         legalName: String(prop?.legalName || ''),
         vatNumber: String(prop?.vatNumber || ''),
@@ -908,10 +908,13 @@ export default function Settings({
     const [hotelInfoSaveStatus, setHotelInfoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
     const [hotelDraft, setHotelDraft] = useState(() => hotelFieldsFrom(null));
 
+    const hotelPropertyId = String(managingProperty?.id || '');
     useEffect(() => {
         setHotelDraft(hotelFieldsFrom(managingProperty));
         setHotelInfoSaveStatus('idle');
-    }, [managingProperty?.id]);
+        // Same-property saves must keep the Saved flag. Reloading on every object change clears it.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [hotelPropertyId]);
     const [alertSettingsDraft, setAlertSettingsDraft] = useState<PropertyAlertSettingsMap>(() =>
         mergePropertyAlertSettings(null)
     );
@@ -1242,8 +1245,8 @@ export default function Settings({
                 if (!res.ok) throw new Error('Failed to save hotel information');
                 setHotelDraft({ ...hotelDraft, financeDepartmentLabel });
                 setManagingProperty(nextProp);
-                setProperties((prev: any[]) =>
-                    prev.map((p: any) => (String(p.id) === String(nextProp.id) ? nextProp : p))
+                setProperties((prev) =>
+                    prev.map((p) => (String(p.id) === String(nextProp.id) ? nextProp : p))
                 );
                 setHotelInfoSaveStatus('saved');
             } catch (err) {

@@ -397,7 +397,7 @@ export default function AccountsPage({
             return Array.from({ length: listTotalPages }, (_, i) => i + 1);
         }
         let start = Math.max(1, listCurrentPage - 3);
-        let end = Math.min(listTotalPages, start + 6);
+        const end = Math.min(listTotalPages, start + 6);
         start = Math.max(1, end - 6);
         return Array.from({ length: end - start + 1 }, (_, i) => start + i);
     }, [listCurrentPage, listTotalPages]);

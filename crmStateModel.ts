@@ -450,7 +450,7 @@ export function updatePipelineForLinkedRequest(
         out[stageKey] = (out[stageKey] || []).map(patch);
         return out;
     }
-    let out = movePipelineCard(pipeline, cardId, targetStage);
+    const out = movePipelineCard(pipeline, cardId, targetStage);
     out[targetStage] = (out[targetStage] || []).map(patch);
     return out;
 }
@@ -558,7 +558,7 @@ export function linkRequestToMonthlyPipelineCard(
         enteredFunnelAt: existing?.card?.enteredFunnelAt || new Date().toISOString().slice(0, 10),
     };
 
-    let out = clonePipeline(pipeline);
+    const out = clonePipeline(pipeline);
     PIPELINE_STAGE_KEYS.forEach((k) => {
         out[k] = (out[k] || []).filter((c: any) => String(c?.id) !== cardId);
     });
@@ -597,7 +597,7 @@ export function linkAgreementTemplateToMonthlyPipelineCard(
         enteredFunnelAt: existing?.card?.enteredFunnelAt || new Date().toISOString().slice(0, 10),
     };
 
-    let out = clonePipeline(pipeline);
+    const out = clonePipeline(pipeline);
     PIPELINE_STAGE_KEYS.forEach((k) => {
         out[k] = (out[k] || []).filter((c: any) => String(c?.id) !== cardId);
     });
@@ -756,7 +756,7 @@ export function upsertPipelineCardFromLogCall(
         callLoggedAt: opts?.nowIso || existingCard?.callLoggedAt,
     };
 
-    let out = clonePipeline(pipeline);
+    const out = clonePipeline(pipeline);
     if (monthChanged && priorPm) {
         PIPELINE_MOVABLE_STAGE_KEYS.forEach((k) => {
             out[k] = (out[k] || []).filter((c: any) => {

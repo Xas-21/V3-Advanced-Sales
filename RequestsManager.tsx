@@ -2302,7 +2302,7 @@ export default function RequestsManager({
             // is saved. Its database id is {accountId}:contact:{n}:C{timestamp}, and the
             // request foreign key rejects the raw C id.
             if (bookerContactId && !bookerContactId.includes(':contact:') && resolvedAccountId) {
-                const account = (accounts || []).find((a: any) => String(a?.id || '') === String(resolvedAccountId));
+                const account = (accounts || []).find((a) => String(a?.id || '') === String(resolvedAccountId));
                 if (account) {
                     const accRes = await fetch(apiUrl('/api/accounts'), {
                         method: 'POST',
@@ -2317,7 +2317,7 @@ export default function RequestsManager({
                         );
                         return;
                     }
-                    let savedAccount: any = null;
+                    let savedAccount: { id?: unknown; contacts?: Array<{ id?: unknown }> } | null = null;
                     try {
                         savedAccount = await accRes.json();
                     } catch {
@@ -2326,8 +2326,8 @@ export default function RequestsManager({
                     const contacts = Array.isArray(savedAccount?.contacts) ? savedAccount.contacts : account.contacts;
                     bookerContactId = persistedContactId(contacts, bookerContactId);
                     if (savedAccount?.id) {
-                        setAccounts((prev: any[]) =>
-                            prev.map((a: any) => (String(a?.id) === String(savedAccount.id) ? savedAccount : a)),
+                        setAccounts((prev) =>
+                            prev.map((a) => (String(a?.id) === String(savedAccount?.id) ? savedAccount : a)),
                         );
                     }
                 }
@@ -6428,7 +6428,7 @@ export default function RequestsManager({
                         onClick={() => {
                             const req = activeOptionsMenu !== null ? requests[activeOptionsMenu] : null;
                             if (!req) return;
-                            const account = accounts.find((a: any) => String(a?.id) === String(req.accountId)) || null;
+                            const account = accounts.find((a) => String(a?.id) === String(req.accountId)) || null;
                             const today = new Date();
                             const issuedOn = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
                             const model = buildProformaInvoice({

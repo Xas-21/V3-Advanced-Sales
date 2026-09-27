@@ -52,8 +52,8 @@ async function imageDataUrl(url: string): Promise<{ data: string; format: 'PNG' 
 }
 
 export async function renderProformaPdf(model: ProformaInvoice): Promise<Blob> {
-    const jspdfMod: any = await import('jspdf');
-    const jsPDF = jspdfMod?.jsPDF || jspdfMod?.default;
+    const jspdfMod = await import('jspdf');
+    const jsPDF = jspdfMod.jsPDF;
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const pageW = pdf.internal.pageSize.getWidth();
     const margin = 16;

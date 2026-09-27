@@ -45,16 +45,28 @@ export type ProformaInvoice = {
     fileStem: string;
 };
 
+type ProformaBag = { [key: string]: unknown };
+
 export type ProformaInvoiceInput = {
-    property?: any;
-    account?: any;
-    request?: any;
-    taxes?: any[];
+    property?: ProformaBag;
+    account?: ProformaBag;
+    request?: ProformaBag;
+    taxes?: ProformaBag[];
     currency?: string;
     issuedOn?: string;
     /** Property room-type names, in the same order as the request editor. */
     roomTypeNames?: string[];
 };
+
+function asBag(value: unknown): ProformaBag {
+    if (value && typeof value === 'object' && !Array.isArray(value)) return value as ProformaBag;
+    return {};
+}
+
+function bagList(value: unknown): ProformaBag[] {
+    if (!Array.isArray(value)) return [];
+    return value.filter((item): item is ProformaBag => !!item && typeof item === 'object' && !Array.isArray(item));
+}
 
 function money(n: number): number {
     return Math.round((Number(n) || 0) * 100) / 100;
@@ -65,8 +77,8 @@ function text(value: unknown): string {
 }
 
 /** Saved room type, or the first property room type the editor shows when the row is blank. */
-export function roomTypeLabel(room: any, catalogNames: string[] = []): string {
-    const saved = text(room?.type || room?.roomType || room?.name);
+export function roomTypeLabel(room: ProformaBag | null | undefined, catalogNames: string[] = []): string {
+    const saved = text(room?.type) || text(room?.roomType) || text(room?.name);
     if (saved) return saved;
     return text(catalogNames?.[0]);
 }
@@ -82,8 +94,8 @@ function stayRange(start: string, end: string): string {
     return a || b;
 }
 
-function roomNights(request: any, room: any): number {
-    const kind = normalizeRequestTypeKey(request?.requestType || '');
+function roomNights(request: ProformaBag, room: ProformaBag): number {
+    const kind = normalizeRequestTypeKey(text(request.requestType));
     if (kind === 'series' || kind === 'event_rooms') {
         const arrival = text(room?.arrival).slice(0, 10);
         const departure = text(room?.departure).slice(0, 10);
@@ -91,22 +103,22 @@ function roomNights(request: any, room: any): number {
         const manual = Number(room?.nights);
         if (arrival && Number.isFinite(manual) && manual > 0) return manual;
     }
-    return calculateNights(request?.checkIn, request?.checkOut);
+    return calculateNights(text(request.checkIn), text(request.checkOut));
 }
 
-function roomDate(request: any, room: any): string {
-    const kind = normalizeRequestTypeKey(request?.requestType || '');
+function roomDate(request: ProformaBag, room: ProformaBag): string {
+    const kind = normalizeRequestTypeKey(text(request.requestType));
     if (kind === 'series' || kind === 'event_rooms') {
         const arrival = text(room?.arrival).slice(0, 10);
         const departure = text(room?.departure).slice(0, 10);
         if (arrival || departure) return stayRange(arrival, departure);
     }
-    return stayRange(request?.checkIn, request?.checkOut);
+    return stayRange(text(request.checkIn), text(request.checkOut));
 }
 
-function buildLines(request: any, roomTypeNames: string[] = []): ProformaLine[] {
+function buildLines(request: ProformaBag, roomTypeNames: string[] = []): ProformaLine[] {
     const lines: ProformaLine[] = [];
-    for (const room of Array.isArray(request?.rooms) ? request.rooms : []) {
+    for (const room of bagList(request.rooms)) {
         const nights = roomNights(request, room);
         const count = Number(room?.count) || 0;
         const price = Number(room?.rate) || 0;
@@ -122,7 +134,7 @@ function buildLines(request: any, roomTypeNames: string[] = []): ProformaLine[] 
             kind: 'room',
         });
     }
-    for (const item of Array.isArray(request?.agenda) ? request.agenda : []) {
+    for (const item of bagList(request.agenda)) {
         const start = text(item?.startDate).slice(0, 10);
         const end = text(item?.endDate || item?.startDate).slice(0, 10);
         const days = start && end ? Math.max(1, inclusiveCalendarDays(start, end) || 1) : 1;
@@ -156,20 +168,20 @@ function buildLines(request: any, roomTypeNames: string[] = []): ProformaLine[] 
     return lines;
 }
 
-function buildTaxRows(lines: ProformaLine[], taxes: any[]): ProformaTaxRow[] {
+function buildTaxRows(lines: ProformaLine[], taxes: ProformaBag[]): ProformaTaxRow[] {
     const roomBase = money(lines.filter((line) => line.kind === 'room').reduce((sum, line) => sum + line.amount, 0));
     const eventBase = money(lines.filter((line) => line.kind === 'event').reduce((sum, line) => sum + line.amount, 0));
     const rows: ProformaTaxRow[] = [];
     for (const tax of taxes) {
         const rate = Number(tax?.rate) || 0;
         if (rate <= 0) continue;
-        const scope = tax?.scope || {};
+        const scope = asBag(tax.scope);
         let base = 0;
         if (scope.accommodation) base += roomBase;
         if (scope.events) base += eventBase;
         if (base <= 0) continue;
         rows.push({
-            label: text(tax?.label || tax?.name) || 'Tax',
+            label: text(tax.label) || text(tax.name) || 'Tax',
             rate,
             amount: money((base * rate) / 100),
         });
@@ -178,12 +190,12 @@ function buildTaxRows(lines: ProformaLine[], taxes: any[]): ProformaTaxRow[] {
 }
 
 export function buildProformaInvoice(input: ProformaInvoiceInput): ProformaInvoice {
-    const property = input.property || {};
-    const account = input.account || {};
-    const request = input.request || {};
+    const property = asBag(input.property);
+    const account = asBag(input.account);
+    const request = asBag(input.request);
     const roomTypeNames = Array.isArray(input.roomTypeNames) ? input.roomTypeNames : [];
     const lines = buildLines(request, roomTypeNames);
-    const taxes = buildTaxRows(lines, Array.isArray(input.taxes) ? input.taxes : []);
+    const taxes = buildTaxRows(lines, bagList(input.taxes));
     const net = money(lines.reduce((sum, line) => sum + line.amount, 0));
     const total = money(net + taxes.reduce((sum, row) => sum + row.amount, 0));
     const finance = text(property.financeDepartmentLabel) || 'Finance Department';

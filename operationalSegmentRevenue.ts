@@ -800,7 +800,7 @@ function proratedEventRevenueSubtotal(r: any, rangeStart: string, rangeEnd: stri
 export function sumRequestProratedRoomRevenueExTaxInRange(r: any, rangeStart: string, rangeEnd: string): number {
     if (!rangeStart || !rangeEnd) return 0;
     const br = computeRequestRevenueBreakdownNoTax(r);
-    let room = proratedRoomRevenueSubtotal(r, rangeStart, rangeEnd, br);
+    const room = proratedRoomRevenueSubtotal(r, rangeStart, rangeEnd, br);
     const event = proratedEventRevenueSubtotal(r, rangeStart, rangeEnd);
     const sub = room + event;
     let fallbackRoom = 0;

@@ -128,7 +128,7 @@ function parseEventPackages(raw: string | null): EventPackageEntry[] | null {
             const name = String(row?.name ?? '').trim();
             const code = String(row?.code ?? '').trim();
             const id = String(row?.id ?? '').trim() || newId('ep');
-            let timingId: EventPackageTimingId = isTimingId(row?.timingId) ? row.timingId : 'coffee_1';
+            const timingId: EventPackageTimingId = isTimingId(row?.timingId) ? row.timingId : 'coffee_1';
             if (name && code) out.push({ id, name, code, timingId });
         }
         return out.length ? out : null;
