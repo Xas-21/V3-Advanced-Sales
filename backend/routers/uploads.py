@@ -21,11 +21,35 @@ logger = logging.getLogger(__name__)
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024  # 20 MB
 ALLOWED_FOLDERS = {"feed", "chat", "general", "contracts", "requests"}
 ALLOWED_EXTENSIONS = {
-    ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp",
+    ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".avif", ".jfif",
+    ".heic", ".heif", ".tif", ".tiff",
     ".mp4", ".webm", ".mov",
-    ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt", ".csv", ".zip",
+    ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".xlsm", ".ppt", ".pptx", ".txt", ".csv", ".zip",
 }
-IMAGE_EXT = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
+IMAGE_EXT = {
+    ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".avif", ".jfif",
+    ".heic", ".heif", ".tif", ".tiff",
+}
+# Used when the browser sends a MIME type but a missing or odd filename suffix.
+_MIME_EXT = {
+    "image/jpeg": ".jpg",
+    "image/jpg": ".jpg",
+    "image/pjpeg": ".jpg",
+    "image/png": ".png",
+    "image/gif": ".gif",
+    "image/webp": ".webp",
+    "image/bmp": ".bmp",
+    "image/x-ms-bmp": ".bmp",
+    "image/avif": ".avif",
+    "image/jfif": ".jpg",
+    "image/heic": ".heic",
+    "image/heif": ".heif",
+    "image/tiff": ".tiff",
+    "application/pdf": ".pdf",
+    "application/vnd.ms-excel": ".xls",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+    "application/vnd.ms-excel.sheet.macroenabled.12": ".xlsm",
+}
 VIDEO_EXT = {".mp4", ".webm", ".mov"}
 
 # Log once when any legacy (pre-ownership-row) upload is served — do not spam per request.
@@ -42,6 +66,19 @@ def _uploads_root() -> Path:
     return root.resolve()
 
 
+def ensure_upload_dirs() -> None:
+    """Create feed, contracts, chat, requests, and general on the uploads volume.
+
+    A missing mount must not stop the API. Uploads then fail with a clear error.
+    """
+    try:
+        root = _uploads_root()
+        for folder in sorted(ALLOWED_FOLDERS):
+            (root / folder).mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        logger.warning("Upload folders are not writable: %s", exc)
+
+
 def _safe_folder(folder: str | None) -> str:
     f = re.sub(r"[^a-z0-9_-]", "", (folder or "general").strip().lower().split("/")[-1])
     if f not in ALLOWED_FOLDERS:
@@ -49,10 +86,14 @@ def _safe_folder(folder: str | None) -> str:
     return f
 
 
-def _ext_of(filename: str) -> str:
+def _ext_of(filename: str, content_type: str | None = None) -> str:
     ext = Path(filename or "").suffix.lower()
     if ext in ALLOWED_EXTENSIONS:
         return ext
+    mime = (content_type or "").split(";")[0].strip().lower()
+    mapped = _MIME_EXT.get(mime, "")
+    if mapped in ALLOWED_EXTENSIONS:
+        return mapped
     return ""
 
 
@@ -66,8 +107,9 @@ def _resource_type(ext: str) -> str:
 
 def _guess_media_type(ext: str) -> str:
     mapping = {
-        ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
-        ".gif": "image/gif", ".webp": "image/webp", ".bmp": "image/bmp",
+        ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".jfif": "image/jpeg", ".png": "image/png",
+        ".gif": "image/gif", ".webp": "image/webp", ".bmp": "image/bmp", ".avif": "image/avif",
+        ".heic": "image/heic", ".heif": "image/heif", ".tif": "image/tiff", ".tiff": "image/tiff",
         ".mp4": "video/mp4", ".webm": "video/webm", ".mov": "video/quicktime",
         ".pdf": "application/pdf",
         ".txt": "text/plain", ".csv": "text/csv",
@@ -76,6 +118,7 @@ def _guess_media_type(ext: str) -> str:
         ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         ".xls": "application/vnd.ms-excel",
         ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ".xlsm": "application/vnd.ms-excel.sheet.macroEnabled.12",
         ".ppt": "application/vnd.ms-powerpoint",
         ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     }
@@ -183,7 +226,7 @@ async def upload_local_file(
     user = require_user(session_id)
 
     original = (file.filename or "file").strip() or "file"
-    ext = _ext_of(original)
+    ext = _ext_of(original, file.content_type)
     if not ext:
         raise HTTPException(
             status_code=400,

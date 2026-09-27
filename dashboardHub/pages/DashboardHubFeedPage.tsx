@@ -124,10 +124,18 @@ function userInProperty(u: any, pid: string): boolean {
   return Array.isArray(ids) && ids.some((x: any) => String(x) === pid);
 }
 
+const WEB_IMAGE_RE = /\.(jpe?g|png|gif|webp|bmp|avif|jfif|heic|heif|tiff?)(?:$|\?)/i;
+
 function attachmentKind(file: File): 'image' | 'video' | 'file' {
   if (file.type.startsWith('image/')) return 'image';
   if (file.type.startsWith('video/')) return 'video';
+  if (WEB_IMAGE_RE.test(file.name || '')) return 'image';
   return 'file';
+}
+
+function isImageAttachment(a: FeedAttachment): boolean {
+  if (a.type === 'image') return true;
+  return WEB_IMAGE_RE.test(a.url || '') || WEB_IMAGE_RE.test(a.name || '');
 }
 
 function Avatar({ name, avatar, colors, size = 40, accent }: {
@@ -165,7 +173,7 @@ function AttachmentGallery({ items, colors }: { items: FeedAttachment[]; colors:
     <div className="flex flex-wrap gap-2 mt-3">
       {items.map((a, i) => {
         const href = mediaUrl(a.url);
-        if (a.type === 'image') {
+        if (isImageAttachment(a)) {
           return (
             <a key={i} href={href} target="_blank" rel="noopener noreferrer" className="block rounded-lg overflow-hidden border max-w-full"
               style={{ borderColor: colors.border }}>
@@ -760,10 +768,13 @@ export default function DashboardHubFeedPage({ colors }: { colors: any }) {
       const added: FeedAttachment[] = [];
       for (const file of Array.from(files).slice(0, 8)) {
         const result = await uploadFileLocal(file, { folder: 'feed' });
+        const fromServer = result.resource_type === 'image' || result.resource_type === 'video'
+          ? result.resource_type
+          : '';
         added.push({
           url: result.secure_url,
           publicId: result.public_id,
-          type: accept === 'file' ? attachmentKind(file) : accept,
+          type: fromServer || (accept === 'file' ? attachmentKind(file) : accept),
           name: file.name,
           bytes: result.bytes,
         });
@@ -1138,7 +1149,9 @@ export default function DashboardHubFeedPage({ colors }: { colors: any }) {
                       {attachments.map((a, i) => (
                         <div key={i} className="flex items-center gap-2 px-2 py-1 rounded-lg border text-xs"
                           style={{ borderColor: colors.border, color: colors.textMuted }}>
-                          {a.type === 'image' ? <ImageIcon size={12} /> : a.type === 'video' ? <Video size={12} /> : <FileText size={12} />}
+                          {isImageAttachment(a) ? (
+                            <img src={mediaUrl(a.url)} alt="" className="h-10 w-10 rounded object-cover" />
+                          ) : a.type === 'video' ? <Video size={12} /> : <FileText size={12} />}
                           <span className="truncate max-w-[120px]">{a.name || 'file'}</span>
                           <button type="button" onClick={() => setAttachments(attachments.filter((_, j) => j !== i))}>
                             <X size={12} />
@@ -1150,11 +1163,11 @@ export default function DashboardHubFeedPage({ colors }: { colors: any }) {
 
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-1">
-                      <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden"
+                      <input ref={imageInputRef} type="file" accept="image/*,.jpg,.jpeg,.png,.gif,.webp,.bmp,.avif,.heic,.heif,.tif,.tiff,.jfif" multiple className="hidden"
                         onChange={(e) => { void uploadFiles(e.target.files, 'image'); e.target.value = ''; }} />
                       <input ref={videoInputRef} type="file" accept="video/*" multiple className="hidden"
                         onChange={(e) => { void uploadFiles(e.target.files, 'video'); e.target.value = ''; }} />
-                      <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" multiple className="hidden"
+                      <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm,.ppt,.pptx,.txt" multiple className="hidden"
                         onChange={(e) => { void uploadFiles(e.target.files, 'file'); e.target.value = ''; }} />
                       {[
                         { ref: imageInputRef, icon: ImageIcon, title: 'Image' },

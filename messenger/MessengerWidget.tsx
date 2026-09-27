@@ -366,7 +366,9 @@ function MessengerPopup({ colors }: { colors: any }) {
     try {
       for (const file of Array.from(files).slice(0, 4)) {
         const r = await uploadFileLocal(file, { folder: 'chat' });
-        const type = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : 'file';
+        const type = r.resource_type === 'image' || r.resource_type === 'video'
+          ? r.resource_type
+          : file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : 'file';
         setAttachments((prev) => [...prev, { url: r.secure_url, publicId: r.public_id, type, name: file.name, bytes: r.bytes }]);
       }
     } finally {

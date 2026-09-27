@@ -9,10 +9,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy backend code
 COPY backend/ .
 
-# Uploads mount point must be writable by non-root (named volume inherits this on first create)
-RUN mkdir -p /data/uploads \
-    && adduser --disabled-password --gecos "" appuser \
-    && chown -R appuser /app /data/uploads
+# Pin uid 1000. A named volume created on an earlier root boot stays root-owned;
+# as-uploads-init in compose chowns /data/uploads to this user before the API starts.
+RUN addgroup --gid 1000 appuser \
+    && adduser --disabled-password --gecos "" --uid 1000 --ingroup appuser appuser \
+    && mkdir -p /data/uploads \
+    && chown -R appuser:appuser /app /data/uploads
 
 USER appuser
 

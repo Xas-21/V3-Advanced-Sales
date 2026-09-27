@@ -229,6 +229,7 @@ app.add_api_websocket_route("/ws", ws.websocket_endpoint)
 
 @app.on_event("startup")
 def on_startup():
+    uploads.ensure_upload_dirs()
     if storage_mode() == "postgres":
         init_database()
 

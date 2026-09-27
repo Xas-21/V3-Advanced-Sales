@@ -25,6 +25,12 @@ def _auth_override():
 def test_svg_extension_not_allowed():
     assert _ext_of("evil.svg") == ""
     assert _ext_of("photo.PNG") == ".png"
+    assert _ext_of("sheet.XLSX") == ".xlsx"
+    assert _ext_of("book.xlsm") == ".xlsm"
+    assert _ext_of("shot.HEIC") == ".heic"
+    assert _ext_of("scan", "image/png") == ".png"
+    assert _ext_of("rates", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") == ".xlsx"
+    assert _ext_of("evil.svg", "image/svg+xml") == ""
 
 
 def test_svg_upload_rejected():

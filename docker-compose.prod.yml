@@ -31,6 +31,18 @@ services:
           - as-postgres
     # Do not publish Postgres to the host in production unless you need admin access.
 
+  # Existing as-uploads-data volumes are often root-owned, so appuser gets
+  # Errno 13 on /data/uploads. This one-shot chown runs before the API starts.
+  as-uploads-init:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    user: "0:0"
+    volumes:
+      - as-uploads-data:/data/uploads
+    entrypoint: ["/bin/sh", "-c", "mkdir -p /data/uploads/feed /data/uploads/contracts /data/uploads/chat /data/uploads/requests /data/uploads/general && chown -R appuser:appuser /data/uploads"]
+    restart: "no"
+
   as-backend:
     build:
       context: .
@@ -53,9 +65,13 @@ services:
       retries: 3
       start_period: 15s
     restart: unless-stopped
+    # Keep this mount. network_mode: host does not replace it. Without it,
+    # /data/uploads is only a folder inside the container and files vanish on recreate.
     volumes:
       - as-uploads-data:/data/uploads
     depends_on:
+      as-uploads-init:
+        condition: service_completed_successfully
       as-postgres:
         condition: service_healthy
     # Behind nginx; expose only if you need direct API access:
