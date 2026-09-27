@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, Suspense, lazy } from 'react';
 import {
-    Settings as SettingsIcon, Building, BedDouble, DollarSign, Users,
+    Settings as SettingsIcon, Building, Landmark, BedDouble, DollarSign, Users,
     User, Upload, Save, Edit, Plus, Trash2, X, Check, Mail, Phone, Shield,
     MapPin, Layout, Box, FileText, List, ChevronDown, ChevronRight, ChevronUp, Monitor,
     TrendingUp, Calculator, CalendarDays, ChevronLeft, CheckSquare, Zap, CheckCircle2, Download, Clock,
@@ -146,6 +146,20 @@ function ProfileDashboardFallback() {
             Loading…
         </div>
     );
+}
+
+function hotelFieldsFrom(prop: any) {
+    return {
+        legalName: String(prop?.legalName || ''),
+        vatNumber: String(prop?.vatNumber || ''),
+        legalAddress: String(prop?.legalAddress || ''),
+        bankAccountName: String(prop?.bankAccountName || ''),
+        bankName: String(prop?.bankName || ''),
+        bankAccountNumber: String(prop?.bankAccountNumber || ''),
+        iban: String(prop?.iban || ''),
+        bankAddress: String(prop?.bankAddress || ''),
+        financeDepartmentLabel: String(prop?.financeDepartmentLabel || '').trim() || 'Finance Department',
+    };
 }
 
 export default function Settings({
@@ -890,7 +904,14 @@ export default function Settings({
         [normalizedFinancialData]
     );
 
-    const [activePropTab, setActivePropTab] = useState('rooms');
+    const [activePropTab, setActivePropTab] = useState('hotel_info');
+    const [hotelInfoSaveStatus, setHotelInfoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+    const [hotelDraft, setHotelDraft] = useState(() => hotelFieldsFrom(null));
+
+    useEffect(() => {
+        setHotelDraft(hotelFieldsFrom(managingProperty));
+        setHotelInfoSaveStatus('idle');
+    }, [managingProperty?.id]);
     const [alertSettingsDraft, setAlertSettingsDraft] = useState<PropertyAlertSettingsMap>(() =>
         mergePropertyAlertSettings(null)
     );
@@ -1180,6 +1201,7 @@ export default function Settings({
         : [{ id: 'profile', label: 'Settings', icon: User }];
 
     const propertyTabsList = [
+        { id: 'hotel_info', label: 'Hotel Information', icon: Landmark },
         { id: 'rooms', label: 'Room Types', icon: BedDouble },
         { id: 'venues', label: 'Venues', icon: Layout },
         { id: 'meals_packages', label: 'Meals & Packages', icon: UtensilsCrossed },
@@ -1193,6 +1215,100 @@ export default function Settings({
         { id: 'calls', label: 'Calls', icon: Phone },
         ...(appIsAdmin ? [{ id: 'users', label: 'User Mgmt', icon: Users }] : []),
     ];
+
+    const renderHotelInfoTab = () => {
+        const fields: { key: keyof ReturnType<typeof hotelFieldsFrom>; label: string; multiline?: boolean }[] = [
+            { key: 'legalName', label: 'Resort legal name' },
+            { key: 'vatNumber', label: 'VAT No' },
+            { key: 'legalAddress', label: 'Address', multiline: true },
+            { key: 'bankAccountName', label: 'Account name' },
+            { key: 'bankName', label: 'Bank name' },
+            { key: 'bankAccountNumber', label: 'Account number' },
+            { key: 'iban', label: 'IBAN' },
+            { key: 'bankAddress', label: 'Bank address', multiline: true },
+            { key: 'financeDepartmentLabel', label: 'Finance department' },
+        ];
+        const saveHotelInfo = async () => {
+            if (!managingProperty?.id) return;
+            setHotelInfoSaveStatus('saving');
+            const financeDepartmentLabel = hotelDraft.financeDepartmentLabel.trim() || 'Finance Department';
+            const nextProp = { ...managingProperty, ...hotelDraft, financeDepartmentLabel };
+            try {
+                const res = await fetch(apiUrl('/api/properties'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(nextProp),
+                });
+                if (!res.ok) throw new Error('Failed to save hotel information');
+                setHotelDraft({ ...hotelDraft, financeDepartmentLabel });
+                setManagingProperty(nextProp);
+                setProperties((prev: any[]) =>
+                    prev.map((p: any) => (String(p.id) === String(nextProp.id) ? nextProp : p))
+                );
+                setHotelInfoSaveStatus('saved');
+            } catch (err) {
+                console.error('Error saving hotel information:', err);
+                setHotelInfoSaveStatus('error');
+            }
+        };
+        return (
+            <div className="space-y-6 animate-in fade-in duration-300">
+                <div className="flex justify-between items-center gap-3">
+                    <div>
+                        <h2 className="text-xl font-bold" style={{ color: colors.textMain }}>Hotel Information</h2>
+                        <p className="text-xs mt-1" style={{ color: colors.textMuted }}>
+                            Legal name, VAT, address, and bank details printed on the proforma invoice. The property logo is the one already saved on this property.
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                        {hotelInfoSaveStatus === 'saved' && <span className="text-[10px] font-bold text-emerald-500">SAVED</span>}
+                        {hotelInfoSaveStatus === 'error' && <span className="text-[10px] font-bold text-red-500">ERROR SAVING</span>}
+                        <button
+                            type="button"
+                            onClick={saveHotelInfo}
+                            disabled={hotelInfoSaveStatus === 'saving'}
+                            className="px-6 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center gap-2 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
+                            style={{ backgroundColor: colors.primary, color: '#000' }}
+                        >
+                            {hotelInfoSaveStatus === 'saving' ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+                            {hotelInfoSaveStatus === 'saving' ? 'Saving...' : 'Save'}
+                        </button>
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {fields.map((field) => (
+                        <label key={field.key} className={field.multiline ? 'md:col-span-2' : ''}>
+                            <span className="text-[10px] font-bold uppercase tracking-wider block mb-1.5" style={{ color: colors.textMuted }}>{field.label}</span>
+                            {field.multiline ? (
+                                <textarea
+                                    value={hotelDraft[field.key]}
+                                    onChange={(e) => {
+                                        setHotelInfoSaveStatus('idle');
+                                        setHotelDraft((prev) => ({ ...prev, [field.key]: e.target.value }));
+                                    }}
+                                    rows={3}
+                                    className="w-full px-3 py-2 rounded-xl border bg-black/10 outline-none text-sm resize-y"
+                                    style={{ borderColor: colors.border, color: colors.textMain }}
+                                />
+                            ) : (
+                                <input
+                                    type="text"
+                                    value={hotelDraft[field.key]}
+                                    onChange={(e) => {
+                                        setHotelInfoSaveStatus('idle');
+                                        setHotelDraft((prev) => ({ ...prev, [field.key]: e.target.value }));
+                                    }}
+                                    placeholder={field.key === 'financeDepartmentLabel' ? 'Finance Department' : ''}
+                                    className="w-full px-3 py-2 rounded-xl border bg-black/10 outline-none text-sm"
+                                    style={{ borderColor: colors.border, color: colors.textMain }}
+                                />
+                            )}
+                        </label>
+                    ))}
+                </div>
+            </div>
+        );
+    };
 
     const renderPropertyTab = () => {
         if (managingProperty) {
@@ -1230,6 +1346,7 @@ export default function Settings({
                     </div>
 
                     <div className="mt-4">
+                        {activePropTab === 'hotel_info' && renderHotelInfoTab()}
                         {activePropTab === 'rooms' && renderRoomTypesTab()}
                         {activePropTab === 'venues' && renderVenuesTab()}
                         {activePropTab === 'meals_packages' && renderMealsPackagesTab()}
@@ -1275,7 +1392,10 @@ export default function Settings({
                                 <Edit size={14} />
                             </button>
                             <button
-                                onClick={() => setManagingProperty(prop)}
+                                onClick={() => {
+                                    setActivePropTab('hotel_info');
+                                    setManagingProperty(prop);
+                                }}
                                 className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-transform hover:scale-105"
                                 style={{ backgroundColor: colors.primary, color: '#000' }}>
                                 Manage Property

@@ -3275,8 +3275,7 @@ export default function CRM({
                                                                 <p className="text-xs truncate" style={{ color: colors.textMuted }}>{accountName}</p>
                                                             </div>
                                                         </div>
-                                                        {!crmReadOnly ? (
-                                                            <button
+                                                        <button
                                                                 type="button"
                                                                 title="Request options (OPTS)"
                                                                 className="shrink-0 p-1.5 rounded-md border opacity-70 hover:opacity-100 hover:bg-white/10 transition-all"
@@ -3288,7 +3287,6 @@ export default function CRM({
                                                             >
                                                                 <MoreHorizontal size={16} />
                                                             </button>
-                                                        ) : null}
                                                     </div>
                                                     <div className="flex flex-wrap gap-1 mb-2">
                                                         <span className="px-2 py-0.5 rounded text-[10px] font-medium" style={{ backgroundColor: `${stage.color}28`, color: stage.color }}>

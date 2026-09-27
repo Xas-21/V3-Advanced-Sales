@@ -450,12 +450,12 @@ export function getRequestChartBucketAnchorDate(r: any): string {
 
 function endOnEarliestAgendaStart(r: any): string {
     const agenda = Array.isArray(r?.agenda) ? r.agenda : [];
-    const rows = agenda
+    const rows: { start: string; end: string }[] = agenda
         .map((row: any) => ({
             start: parseYmdAgenda(row?.startDate),
             end: parseYmdAgenda(row?.endDate || row?.startDate),
         }))
-        .filter((row) => row.start);
+        .filter((row: { start: string; end: string }) => row.start);
     if (!rows.length) return '';
     const earliest = [...rows.map((row) => row.start)].sort()[0];
     const ends = rows
@@ -469,12 +469,12 @@ function endOnEarliestAgendaStart(r: any): string {
 /** Departure/end on the same row as the earliest arrival or agenda start. */
 function departureOnEarliestRoomArrival(r: any): string {
     const rooms = Array.isArray(r?.rooms) ? r.rooms : [];
-    const rows = rooms
+    const rows: { arrival: string; departure: string }[] = rooms
         .map((row: any) => ({
             arrival: parseYmdAgenda(row?.arrival || row?.checkIn || r?.checkIn),
             departure: parseYmdAgenda(row?.departure || row?.checkOut || r?.checkOut),
         }))
-        .filter((row) => row.arrival);
+        .filter((row: { arrival: string; departure: string }) => row.arrival);
     if (!rows.length) return '';
     const earliest = [...rows.map((row) => row.arrival)].sort()[0];
     const deps = rows

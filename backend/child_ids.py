@@ -46,6 +46,26 @@ def resolve_child_pk(parent_id: str, kind: str, idx: int, existing_id=None) -> s
     return scoped_child_id(parent_id, kind, idx, child_id_token(parent_id, kind, existing_id))
 
 
+def match_stored_contact_id(raw_id, stored_ids) -> str | None:
+    """Map a client contact id onto the account_contacts primary key.
+
+    New contacts are created in the browser as ``C{timestamp}``. The account
+    save stores ``{accountId}:contact:{idx}:C{timestamp}``. A request that still
+    sends the browser id must use the stored key or the booker foreign key fails.
+    """
+    raw = "" if raw_id is None else str(raw_id).strip()
+    if not raw:
+        return None
+    ids = [str(x).strip() for x in (stored_ids or []) if str(x or "").strip()]
+    if raw in ids:
+        return raw
+    suffix = f":{raw}"
+    for cid in ids:
+        if cid.endswith(suffix):
+            return cid
+    return None
+
+
 def ensure_scoped_child_id(parent_id: str, kind: str, idx: int, child: dict) -> dict:
     """Return a shallow copy of child with `id` set to a parent-scoped PK."""
     out = dict(child or {})

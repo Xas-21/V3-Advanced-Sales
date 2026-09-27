@@ -14,7 +14,7 @@ Design rules (per owner directive):
   field loss during the migration.
 - Real-time broadcasts: mutations trigger WebSocket events to connected clients.
 """
-from child_ids import resolve_child_pk, scoped_child_id
+from child_ids import match_stored_contact_id, resolve_child_pk, scoped_child_id
 from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Any, Optional
@@ -1054,6 +1054,34 @@ def _row_to_request_dict(r, cur):
     children = _load_request_children_maps(cur, [r["id"]])
     return _request_dict_from_row(r, children)
 
+def _resolve_booker_contact_id(cur, account_id: Optional[str], raw: Optional[str]) -> Optional[str]:
+    """Return an account_contacts.id for this booker, or None when it does not exist yet.
+
+    Browser-created contacts use ``C{timestamp}``. The stored primary key is
+    ``{accountId}:contact:{idx}:C{timestamp}``. Sending the browser id as
+    booker_contact_id raises fk_requests_booker_contact. Missing ids are stored
+    as NULL so the request still saves; booker_name is kept on the request.
+    """
+    bid = str(raw or "").strip()
+    if not bid:
+        return None
+    ids: list[str] = []
+    if account_id:
+        cur.execute(
+            "SELECT id FROM account_contacts WHERE account_id = %s ORDER BY idx",
+            (str(account_id),),
+        )
+        ids = [str(row["id"]) for row in cur.fetchall() if row.get("id")]
+        matched = match_stored_contact_id(bid, ids)
+        if matched:
+            return matched
+    cur.execute("SELECT id FROM account_contacts WHERE id = %s", (bid,))
+    row = cur.fetchone()
+    if row and row.get("id"):
+        return str(row["id"])
+    return None
+
+
 def upsert_request(data: dict) -> dict:
     item = {**(data if isinstance(data, dict) else {})}
     is_update_flag = item.pop("_update", None) is True
@@ -1125,6 +1153,9 @@ def upsert_request(data: dict) -> dict:
     pool = _get_pool()
     with pool.connection() as conn:
         with conn.cursor() as cur:
+            typed["booker_contact_id"] = _resolve_booker_contact_id(
+                cur, account_id, typed.get("booker_contact_id")
+            )
             # upsert parent
             cur.execute(
                 """
@@ -1531,17 +1562,19 @@ def upsert_account(data: dict) -> dict:
             # requests list / reports reflect a rename without re-editing each request.
             renamed_count = _cascade_account_rename_to_requests(cur, acc_id, item.get("name"))
             conn.commit()
-    item["updatedAt"] = _NOW().isoformat()
-    
+    # Re-read so contact ids are the stored primary keys, not the browser ids.
+    saved = get_account(acc_id) or item
+    saved["updatedAt"] = _NOW().isoformat()
+
     # Broadcast real-time change event
-    _broadcast_change("updated", "account", item, property_id)
+    _broadcast_change("updated", "account", saved, property_id)
     # If a rename touched linked requests, emit ONE lightweight refresh signal so
     # every open list (requests, dashboard, CRM) refetches — instead of one event
     # per request, which would flood the socket for large accounts.
     if renamed_count:
         _broadcast_change("refresh", "request", {"reason": "account_rename", "accountId": acc_id}, property_id)
-    
-    return item
+
+    return saved
 
 
 def _insert_account_contact(cur, account_id: str, c: dict, idx: int = 0):

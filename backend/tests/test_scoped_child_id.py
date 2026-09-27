@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from child_ids import (
     child_id_token,
     ensure_scoped_child_id,
+    match_stored_contact_id,
     resolve_child_pk,
     scoped_child_id,
 )
@@ -49,10 +50,19 @@ def test_child_id_token_keeps_stable_suffix():
     assert child_id_token("REQ-1", "room", "RM-9") == "RM-9"
 
 
+def test_match_stored_contact_id_maps_browser_id_to_scoped_pk():
+    stored = "A9:contact:2:C1790500461184"
+    assert match_stored_contact_id("C1790500461184", [stored, "A9:contact:0:C1"]) == stored
+    assert match_stored_contact_id(stored, [stored]) == stored
+    assert match_stored_contact_id("C999", [stored]) is None
+    assert match_stored_contact_id("", [stored]) is None
+
+
 if __name__ == "__main__":
     test_scoped_child_id_unique_across_parents()
     test_scoped_child_id_unique_within_parent_by_index()
     test_ensure_scoped_child_id_sets_id()
     test_resolve_child_pk_reindexes_stale_scoped_log_ids()
     test_child_id_token_keeps_stable_suffix()
+    test_match_stored_contact_id_maps_browser_id_to_scoped_pk()
     print("OK")

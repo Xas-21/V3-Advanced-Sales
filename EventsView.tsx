@@ -1559,7 +1559,7 @@ export default function EventsView({
                                         <span className="text-[10px] px-1.5 py-0.5 rounded border" style={{ borderColor: col.color + '40', color: col.color, backgroundColor: col.color + '10' }}>
                                             {event.type}
                                         </span>
-                                        {!readOnly && onOpenRequestOpts ? (
+                                        {onOpenRequestOpts ? (
                                             <button
                                                 type="button"
                                                 title="Request options (same as Requests OPTS)"

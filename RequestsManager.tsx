@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import AddAccountModal from './AddAccountModal';
 import ConfirmDialog from './ConfirmDialog';
-import { contactDisplayName } from './accountLeadMapping';
+import { contactDisplayName, persistedContactId } from './accountLeadMapping';
 import {
     resolveSegmentsForProperty,
     resolveAccountTypesForProperty,
@@ -64,6 +64,8 @@ import {
     REQUEST_SECTION_ADD_BTN_LG_CLASS,
     REQUEST_SECTION_ICON_ADD_BTN_CLASS,
 } from './beoShared';
+import { buildProformaInvoice, roomTypeLabel } from './proformaInvoice';
+import { downloadProformaPdf } from './proformaPdf';
 import { resolveUserAttributionId, createdByMatchesUser, requestInProperty, recordVisibleOnProperty } from './userProfileMetrics';
 import { usePropertyLoadGate } from './propertyScopedLoad';
 import { requestMatchesSearchDateRanges } from './operationalSegmentRevenue';
@@ -617,16 +619,17 @@ export default function RequestsManager({
         return out;
     }, [propertyRoomNames, accForm.rooms]);
 
-    /** If this property has no "Standard" room type, remap placeholder Standard rows to the first configured type. */
+    /** Blank room type displays as the first catalog name in the editor. Keep that value on the row so details, save, and the proforma match. */
     useEffect(() => {
         if (!propertyRoomNames.length) return;
         const hasStandard = propertyRoomNames.some((n) => String(n).toLowerCase() === 'standard');
         const first = propertyRoomNames[0];
-        if (!first || hasStandard) return;
+        if (!first) return;
         setAccForm((prev) => {
             let changed = false;
             const next = (prev.rooms || []).map((r: any) => {
-                if (String(r?.type || '') === 'Standard') {
+                const current = String(r?.type || '').trim();
+                if (!current || (!hasStandard && current === 'Standard')) {
                     changed = true;
                     return { ...r, type: first };
                 }
@@ -634,7 +637,7 @@ export default function RequestsManager({
             });
             return changed ? { ...prev, rooms: next } : prev;
         });
-    }, [propertyRoomNames]);
+    }, [propertyRoomNames, accForm.rooms]);
     const [uploadingDocs, setUploadingDocs] = useState<Record<string, boolean>>({});
     // Combined/Series forms would use similar structures or composite
 
@@ -2294,6 +2297,42 @@ export default function RequestsManager({
                     ? String(formData.mealPlan ?? '').trim()
                     : deriveRequestMealLabelFromRooms(savedRooms, formData.mealPlan);
 
+            let bookerContactId = String(formData.bookerContactId || '').trim();
+            // A contact added on this form exists only in the browser until the account
+            // is saved. Its database id is {accountId}:contact:{n}:C{timestamp}, and the
+            // request foreign key rejects the raw C id.
+            if (bookerContactId && !bookerContactId.includes(':contact:') && resolvedAccountId) {
+                const account = (accounts || []).find((a: any) => String(a?.id || '') === String(resolvedAccountId));
+                if (account) {
+                    const accRes = await fetch(apiUrl('/api/accounts'), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify(account),
+                    });
+                    if (!accRes.ok) {
+                        showSystemNotice(
+                            'Save failed',
+                            'The new contact person was not saved, so the request was not saved. Please try again.',
+                        );
+                        return;
+                    }
+                    let savedAccount: any = null;
+                    try {
+                        savedAccount = await accRes.json();
+                    } catch {
+                        savedAccount = null;
+                    }
+                    const contacts = Array.isArray(savedAccount?.contacts) ? savedAccount.contacts : account.contacts;
+                    bookerContactId = persistedContactId(contacts, bookerContactId);
+                    if (savedAccount?.id) {
+                        setAccounts((prev: any[]) =>
+                            prev.map((a: any) => (String(a?.id) === String(savedAccount.id) ? savedAccount : a)),
+                        );
+                    }
+                }
+            }
+
             const payload = {
                 ...formData,
                 rooms: savedRooms,
@@ -2309,7 +2348,7 @@ export default function RequestsManager({
                 account: formData.accountName || formData.leadId || formData.account || 'Unknown Account',
                 accountId: resolvedAccountId,
                 bookerName: String(formData.bookerName || '').trim(),
-                bookerContactId: String(formData.bookerContactId || '').trim(),
+                bookerContactId,
                 confirmationNo: formData.confirmationNo || 'N/A',
                 requestType: normalizedType === 'event_rooms'
                     ? 'Event with Rooms'
@@ -4685,7 +4724,7 @@ export default function RequestsManager({
                                         <td className="px-4 py-3 text-center">{row.pax ?? '—'}</td>
                                         <td className="px-4 py-3 text-right font-mono">{formatMoney(Number(row.rate || 0), 0)}</td>
                                         <td className="px-4 py-3 text-right font-mono">{formatMoney(Number(row.rental || 0), 0)}</td>
-                                        <td className="px-4 py-3 text-right font-bold text-primary">{formatMoney(line, 0)}</td>
+                                        <td className="px-4 py-3 text-right font-bold" style={{ color: colors.textMain }}>{formatMoney(line, 0)}</td>
                                         <td className="px-4 py-3 whitespace-pre-wrap max-w-[12rem] text-[10px] leading-snug opacity-90">{formatAgendaRowSessionNotes(row) || '—'}</td>
                                     </tr>
                                 );
@@ -4937,7 +4976,6 @@ export default function RequestsManager({
                                 ) : null}
                             </button>
                         )}
-                        {!readOnlyOperational && (
                         <button 
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -4948,7 +4986,6 @@ export default function RequestsManager({
                             style={{ borderColor: colors.border, color: colors.textMain }}>
                             <MoreHorizontal size={14} /> OPTS
                         </button>
-                        )}
                         <button 
                             onClick={() => setShowLogs(!showLogs)}
                             className="px-4 py-2 rounded-xl border font-bold text-xs flex items-center gap-2 hover:bg-white/5 transition-all"
@@ -4983,7 +5020,7 @@ export default function RequestsManager({
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-bold uppercase opacity-40">Confirmation #</p>
-                                        <p className="font-bold text-sm text-primary">{request.confirmationNo}</p>
+                                        <p className="font-bold text-sm" style={{ color: colors.textMain }}>{request.confirmationNo}</p>
                                     </div>
                                 </div>
                             </div>
@@ -5114,15 +5151,16 @@ export default function RequestsManager({
                                             const subtotal = Number(r.rate || 0) * Number(r.count || 0) * rNights;
                                             const rowIn = String(r.arrival || '').trim().slice(0, 10) || String(request.checkIn || '').trim() || '—';
                                             const rowOut = String(r.departure || '').trim().slice(0, 10) || String(request.checkOut || '').trim() || '—';
+                                            const typeLabel = roomTypeLabel(r, propertyRoomNames) || '—';
                                             return (
                                                 <tr key={idx}>
-                                                    <td className="px-4 py-4 font-bold whitespace-nowrap">{r.type}</td>
+                                                    <td className="px-4 py-4 font-bold whitespace-nowrap" style={{ color: colors.textMain }}>{typeLabel}</td>
                                                     <td className="px-4 py-4 font-mono text-[11px] whitespace-nowrap opacity-90">{rowIn}</td>
                                                     <td className="px-4 py-4 font-mono text-[11px] whitespace-nowrap opacity-90">{rowOut}</td>
                                                     <td className="px-4 py-4 opacity-70">{r.occupancy}</td>
                                                     <td className="px-4 py-4 text-center">{r.count}</td>
                                                     <td className="px-4 py-4 text-right font-mono">{formatMoney(Number(r.rate || 0), 0)}</td>
-                                                    <td className="pl-5 pr-4 py-4 text-right font-bold text-primary tabular-nums">{formatMoney(subtotal, 0)}</td>
+                                                    <td className="pl-5 pr-4 py-4 text-right font-bold tabular-nums" style={{ color: colors.textMain }}>{formatMoney(subtotal, 0)}</td>
                                                 </tr>
                                             );
                                         })}
@@ -6385,6 +6423,37 @@ export default function RequestsManager({
                                 </button>
                             );
                         })()}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            const req = activeOptionsMenu !== null ? requests[activeOptionsMenu] : null;
+                            if (!req) return;
+                            const account = accounts.find((a: any) => String(a?.id) === String(req.accountId)) || null;
+                            const today = new Date();
+                            const issuedOn = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                            const model = buildProformaInvoice({
+                                property: activeProperty,
+                                account,
+                                request: req,
+                                taxes: taxesList,
+                                currency,
+                                issuedOn,
+                                roomTypeNames: propertyRoomNames,
+                            });
+                            setActiveOptionsMenu(null);
+                            void downloadProformaPdf(model).catch((err) => {
+                                console.error('Proforma download failed', err);
+                                window.alert('Could not download the proforma invoice.');
+                            });
+                        }}
+                        className="w-full px-3 py-2 rounded-xl text-[11px] font-bold flex items-center gap-2.5 hover:bg-white/10 text-left transition-all active:scale-[0.98]"
+                        style={{ color: colors.textMain }}
+                    >
+                        <div className="w-6 h-6 rounded-md bg-sky-500/10 flex items-center justify-center text-sky-500">
+                            <Download size={12} />
+                        </div>
+                        <span>Proforma invoice</span>
+                    </button>
                     {!readOnlyOperational &&
                         (() => {
                             const optReq = activeOptionsMenu !== null ? requests[activeOptionsMenu] : null;
@@ -7848,25 +7917,19 @@ export default function RequestsManager({
                                             ) : null}
                                         </button>
                                     )}
-                                    {readOnlyOperational ? (
-                                        !(canManageRequestAlerts || requestHasAlerts(request)) ? (
-                                            <span className="text-[10px] opacity-30" style={{ color: colors.textMuted }}>—</span>
-                                        ) : null
-                                    ) : (
-                                        <button
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                const originalIndex = requests.findIndex(r => r.id === request.id);
-                                                setActiveOptionsMenu(originalIndex !== -1 ? originalIndex : null);
-                                            }}
-                                            className={`flex items-center ${compact ? 'gap-1 px-1.5 py-0.5' : 'gap-1.5 px-2 py-1'} rounded-md border ${compact ? 'text-[8px]' : 'text-[9px]'} font-black transition-all hover:bg-white/10 active:scale-95 opacity-60 hover:opacity-100`}
-                                            style={{ color: colors.textMain, borderColor: colors.border }}
-                                        >
-                                            <MoreHorizontal size={compact ? 10 : 12} />
-                                            <span>OPTS</span>
-                                        </button>
-                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            const originalIndex = requests.findIndex(r => r.id === request.id);
+                                            setActiveOptionsMenu(originalIndex !== -1 ? originalIndex : null);
+                                        }}
+                                        className={`flex items-center ${compact ? 'gap-1 px-1.5 py-0.5' : 'gap-1.5 px-2 py-1'} rounded-md border ${compact ? 'text-[8px]' : 'text-[9px]'} font-black transition-all hover:bg-white/10 active:scale-95 opacity-60 hover:opacity-100`}
+                                        style={{ color: colors.textMain, borderColor: colors.border }}
+                                    >
+                                        <MoreHorizontal size={compact ? 10 : 12} />
+                                        <span>OPTS</span>
+                                    </button>
                                 </div>
                             )}
 

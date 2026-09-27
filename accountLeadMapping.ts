@@ -9,6 +9,18 @@ export function contactDisplayName(c: any): string {
     return String(c?.name || '').trim();
 }
 
+/** Stored contact primary key for a browser id such as ``C{timestamp}``. */
+export function persistedContactId(contacts: any[] | undefined, rawId: string): string {
+    const id = String(rawId || '').trim();
+    if (!id) return '';
+    const list = Array.isArray(contacts) ? contacts : [];
+    for (const c of list) {
+        const cid = String(c?.id || '').trim();
+        if (cid === id || cid.endsWith(`:${id}`)) return cid;
+    }
+    return id;
+}
+
 function withContactName(c: any) {
     return { ...c, name: contactDisplayName(c) };
 }
