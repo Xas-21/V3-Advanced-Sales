@@ -57,6 +57,7 @@ import {
     resolveLeadLinkedRequest,
 } from './crmPipelineCardRequestDetails';
 import {
+    canDeleteRequestPayments,
     canDeleteRequests,
     canLinkRequestPromotions,
 } from './userPermissions';
@@ -294,6 +295,12 @@ export default function CRM({
     const [pipelineDetailHostMounted, setPipelineDetailHostMounted] = useState(false);
     const [pipelineDetailRequest, setPipelineDetailRequest] = useState<any | null>(null);
     const [pipelineOptsSearchParams, setPipelineOptsSearchParams] = useState<Record<string, unknown>>({});
+    const [pipelineEditRequestId, setPipelineEditRequestId] = useState<string | null>(null);
+    const [pipelineEditSearchParams, setPipelineEditSearchParams] = useState<Record<string, unknown>>({});
+    const closePipelineEdit = () => {
+        setPipelineEditRequestId(null);
+        setPipelineEditSearchParams({});
+    };
 
     const openPipelineRequestOpts = (requestId: string) => {
         setPipelineOptsHostMounted(true);
@@ -4238,7 +4245,12 @@ export default function CRM({
                 onHeadlessModifyDetails={(requestId) => {
                     setPipelineOptsHostMounted(false);
                     setPipelineOptsBootstrapId(null);
-                    onNavigateToRequest?.(requestId);
+                    setPipelineEditRequestId(String(requestId));
+                    setPipelineEditSearchParams({
+                        subView: 'new_request',
+                        editRequestId: requestId,
+                        duplicateFromRequestId: undefined,
+                    });
                 }}
                 onAfterRequestsMutate={onAfterRequestsMutate}
                 currentUser={currentUser}
@@ -4250,6 +4262,40 @@ export default function CRM({
                 promotionOptions={promotionOptions}
                 canLinkRequestPromotions={canLinkPromos}
             />
+        ) : null}
+        {pipelineEditRequestId ? (
+            <div
+                className="fixed inset-0 z-[230] flex items-center justify-center p-3 md:p-6"
+                style={{ backgroundColor: 'rgba(0,0,0,0.75)' }}
+                onClick={closePipelineEdit}
+            >
+                <div className="w-full max-w-6xl max-h-[95vh] min-h-0 flex flex-col" onClick={(e) => e.stopPropagation()}>
+                    <RequestsManager
+                        key={`crm-pipeline-edit-${pipelineEditRequestId}`}
+                        embedded
+                        theme={theme}
+                        subView="new_request"
+                        searchParams={pipelineEditSearchParams}
+                        setSearchParams={(p: any) => setPipelineEditSearchParams((prev) => ({ ...prev, ...p }))}
+                        activeProperty={activeProperty}
+                        accounts={accounts}
+                        setAccounts={setAccounts}
+                        sharedRequestsSeed={sharedRequests}
+                        onEmbeddedComplete={closePipelineEdit}
+                        onEmbeddedCancel={closePipelineEdit}
+                        onAfterRequestsMutate={onAfterRequestsMutate}
+                        currentUser={currentUser}
+                        currency={currency}
+                        segmentOptions={segmentOptions}
+                        accountTypeOptions={accountTypeOptions}
+                        canDeleteRequest={canDelRequests}
+                        canDeleteRequestPayments={canDeleteRequestPayments(currentUser)}
+                        readOnlyOperational={crmReadOnly}
+                        promotionOptions={promotionOptions}
+                        canLinkRequestPromotions={canLinkPromos}
+                    />
+                </div>
+            </div>
         ) : null}
         {pipelineDetailHostMounted && pipelineDetailRequest ? (
             <RequestsManager

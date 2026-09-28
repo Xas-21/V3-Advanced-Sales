@@ -75,7 +75,7 @@ export function normalizeAccountRatePeriod(raw: any): AccountRatePeriod | null {
 
 /**
  * Resolve a catalog rate for a new-request draft room.
- * Returns null when segment/dates/room/occupancy do not match (caller leaves rate 0).
+ * Returns null when nothing matches. The caller keeps the rate already typed on the row.
  * Multi-match: narrowest period (shortest end−start), then latest updatedAt, then id.
  */
 export function lookupAccountRoomRate(args: {
@@ -125,4 +125,13 @@ export function lookupAccountRoomRate(args: {
         return b.id.localeCompare(a.id);
     });
     return candidates[0].rate;
+}
+
+/**
+ * A catalog hit replaces the draft rate.
+ * No match (account has no rates, or none for this segment/dates/room) keeps the typed rate.
+ */
+export function applyLookedRoomRate(currentRate: unknown, looked: number | null): number {
+    if (looked == null) return Math.max(0, Number(currentRate) || 0);
+    return Math.max(0, Number(looked) || 0);
 }

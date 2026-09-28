@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { lookupAccountRoomRate, overlapsRateWindow, type AccountRatePeriod } from './accountRates';
+import { applyLookedRoomRate, lookupAccountRoomRate, overlapsRateWindow, type AccountRatePeriod } from './accountRates';
 
 const base: AccountRatePeriod = {
     id: 'AR1',
@@ -103,6 +103,12 @@ describe('lookupAccountRoomRate', () => {
                 occupancy: 'Single',
             })
         ).toBe(550);
+    });
+
+    it('keeps a typed rate when the account has no matching rate', () => {
+        expect(applyLookedRoomRate(350, null)).toBe(350);
+        expect(applyLookedRoomRate(350, 400)).toBe(400);
+        expect(applyLookedRoomRate(350, 0)).toBe(0);
     });
 
     it('returns null when period has empty segments', () => {

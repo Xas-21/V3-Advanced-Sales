@@ -101,7 +101,7 @@ import {
     type FeedbackAnswerValue,
     type FeedbackQuestion,
 } from './requestFeedbackConfig';
-import { lookupAccountRoomRate, type AccountRatePeriod } from './accountRates';
+import { applyLookedRoomRate, lookupAccountRoomRate, type AccountRatePeriod } from './accountRates';
 import { calculateEvtFinancials as calculateEvtFinancialsPure } from './requestFinancials';
 
 const REQUEST_SEARCH_STATUS_OPTIONS = [
@@ -233,7 +233,7 @@ interface RequestsManagerProps {
     onDetailHeadlessDismiss?: () => void;
     /** Fired when the user closes the small Options popover (backdrop or X), not when opening sub-modals. */
     onOptsHeadlessDismiss?: () => void;
-    /** From headless OPTS: navigate main app to Requests edit wizard for this request id. */
+    /** From headless OPTS: open this request for editing without leaving the current page. */
     onHeadlessModifyDetails?: (requestId: string) => void;
     /** From headless OPTS: open new-request wizard pre-filled from an existing request (duplicate). */
     onHeadlessDuplicateRequest?: (requestId: string) => void;
@@ -557,7 +557,7 @@ export default function RequestsManager({
 
     // Form Wizard State
     const [step, setStep] = useState(() => {
-        if (initialRequestType) return 2;
+        if (initialRequestType || searchParams?.editRequestId) return 2;
         if (restoredNewRequestDraft?.requestType) {
             return Math.max(2, Number(restoredNewRequestDraft.step) || 2);
         }
@@ -754,7 +754,7 @@ export default function RequestsManager({
     const [feedbackSaving, setFeedbackSaving] = useState(false);
     const [feedbackCopyState, setFeedbackCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
     const [activeOptionsMenu, setActiveOptionsMenu] = useState<number | null>(null);
-    const [isEditing, setIsEditing] = useState(false);
+    const [isEditing, setIsEditing] = useState(() => Boolean(searchParams?.editRequestId));
     const [accountRatePeriods, setAccountRatePeriods] = useState<AccountRatePeriod[]>([]);
     const skipNewRequestResetRef = useRef(false);
     const prevSubViewForNewRequestResetRef = useRef(subView);
@@ -1633,7 +1633,7 @@ export default function RequestsManager({
                     roomType: String(room?.type || ''),
                     occupancy: String(room?.occupancy || ''),
                 });
-                const nextRate = looked == null ? 0 : looked;
+                const nextRate = applyLookedRoomRate(room?.rate, looked);
                 if (Number(room?.rate || 0) === nextRate) return room;
                 changed = true;
                 return { ...room, rate: nextRate };
@@ -3334,6 +3334,10 @@ export default function RequestsManager({
             icon: getFormIcon(),
             maxWidthClass: formMaxWidth,
             onBack: () => {
+                if (embedded && isEditing) {
+                    onEmbeddedCancel?.();
+                    return;
+                }
                 setStep(1);
                 setRequestType(null);
             },
@@ -7641,7 +7645,13 @@ export default function RequestsManager({
                 <div className="flex flex-col h-full min-h-0 max-h-[88vh] rounded-2xl overflow-hidden border shadow-2xl" style={{ backgroundColor: colors.bg, borderColor: colors.border }}>
                     <div className="shrink-0 flex items-center justify-between px-5 py-3 border-b" style={{ backgroundColor: colors.card, borderColor: colors.border }}>
                         <h2 className="text-sm font-black uppercase tracking-widest" style={{ color: colors.textMain }}>
-                            {requestType === 'event_rooms' ? 'Event with accommodation' : requestType === 'event' ? 'Event' : 'New request'}
+                            {isEditing
+                                ? 'Modify request'
+                                : requestType === 'event_rooms'
+                                  ? 'Event with accommodation'
+                                  : requestType === 'event'
+                                    ? 'Event'
+                                    : 'New request'}
                         </h2>
                         <button type="button" onClick={() => onEmbeddedCancel?.()} className="p-2 rounded-lg hover:bg-white/10 transition-colors" style={{ color: colors.textMuted }} aria-label="Close">
                             <X size={20} />
