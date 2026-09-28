@@ -1,7 +1,7 @@
 # Rate Structure — Design
 
 **Date:** 2026-09-28  
-**Status:** Approved in conversation 2026-09-28 (page, request rules, charts deferred)
+**Status:** Approved in conversation 2026-09-28 (page and request rules). Charts added 2026-09-28 at the user’s request.
 
 ## Goal
 
@@ -63,9 +63,17 @@ If the plan has no price for that room type, occupancy, and meal plan on those d
 
 A removed or missing plan does not reprice. The dropdown shows the saved code and name as no longer available. Rooms keep the rates already stored on them.
 
+## Charts
+
+The Rate Structure page shows three charts for the active property. They use the same chart library as the rest of the app. A meal-plan filter applies to the first two. It defaults to the property’s first meal plan.
+
+**Prices.** For the selected plan and the selected period, a grouped bar chart. Each group is a room type. Each bar is one occupancy. The bar height is the price. A missing price is a gap, not a zero bar. If no period is selected, the chart uses the period that contains today, or the latest period if none contains today.
+
+**Coverage.** For that same plan, period, and meal plan, a count of filled prices versus prices the grid could hold (room types on the period × occupancies on the property). Under the count, list the missing combinations, such as `Deluxe · Single · BB`. This is how a user sees holes before a request hits them.
+
+**Plan use.** A bar chart of the property’s plans. Each bar is the number of requests that stored that plan. Cancelled requests are excluded. Beside it, the room revenue on those requests: the rate already saved on each room row, times rooms times nights, before tax. The range is the stay overlapping a From / To control on the page. The default range is the current calendar month. Requests with no plan are not a bar.
+
 ## Out of scope
 
-- Charts, “how often this plan was used,” or comparing the plan price with what was charged
-- A coverage report of room types missing a price in the current period (a later pass, after plans are in daily use)
 - Changing account-profile rates, except that they apply only when the request has no plan selected
 - Changing event package prices or meeting rental
