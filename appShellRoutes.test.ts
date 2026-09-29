@@ -5,6 +5,8 @@ describe('appShellRoutes', () => {
     it('maps main modules both ways', () => {
         expect(parseAppPath('/requests')).toEqual({ view: 'requests', hubTab: 'dashboard' });
         expect(viewToPath('crm')).toBe('/crm');
+        expect(viewToPath('rate_structure')).toBe('/rate-structure');
+        expect(parseAppPath('/rate-structure')).toEqual({ view: 'rate_structure', hubTab: 'dashboard' });
         expect(parseAppPath('/settings/')).toEqual({ view: 'settings', hubTab: 'dashboard' });
     });
 

@@ -45,6 +45,8 @@ describe('buildProformaInvoice', () => {
         expect(invoice.net).toBe(12600);
         expect(invoice.fileStem).toBe('C-9');
         expect(invoice.issuedOn).toBe('2026-09-27');
+        expect(invoice.invoiceNumber).toBe('');
+        expect(invoice.poNumber).toBe('');
     });
 
     it('uses each room stay for series and keeps one row per tax', () => {
@@ -183,5 +185,24 @@ describe('buildProformaInvoice', () => {
         ]);
         expect(invoice.net).toBe(62500);
         expect(invoice.taxes[0].amount).toBe(9375);
+    });
+
+    it('keeps invoice number and a filled PO, and leaves PO blank when skipped', () => {
+        const withPo = buildProformaInvoice({
+            account: { name: 'Acme' },
+            request: { id: 'R3', requestType: 'accommodation', checkIn: '2026-11-01', checkOut: '2026-11-02', rooms: [{ type: 'Deluxe', count: 1, rate: 10 }] },
+            invoiceNumber: 'k4829103',
+            poNumber: '  PO-77821  ',
+            issuedOn: '2026-09-29',
+        });
+        expect(withPo.invoiceNumber).toBe('K4829103');
+        expect(withPo.poNumber).toBe('PO-77821');
+        const skipped = buildProformaInvoice({
+            request: { id: 'R4', requestType: 'accommodation', checkIn: '2026-11-01', checkOut: '2026-11-02', rooms: [{ type: 'Deluxe', count: 1, rate: 10 }] },
+            invoiceNumber: 'A0000001',
+            poNumber: '   ',
+            issuedOn: '2026-09-29',
+        });
+        expect(skipped.poNumber).toBe('');
     });
 });

@@ -43,6 +43,8 @@ export type ProformaInvoice = {
     financeDepartmentLabel: string;
     logoUrl: string;
     fileStem: string;
+    invoiceNumber: string;
+    poNumber: string;
 };
 
 type ProformaBag = { [key: string]: unknown };
@@ -54,6 +56,8 @@ export type ProformaInvoiceInput = {
     taxes?: ProformaBag[];
     currency?: string;
     issuedOn?: string;
+    invoiceNumber?: string;
+    poNumber?: string;
     /** Property room-type names, in the same order as the request editor. */
     roomTypeNames?: string[];
 };
@@ -222,5 +226,7 @@ export function buildProformaInvoice(input: ProformaInvoiceInput): ProformaInvoi
         financeDepartmentLabel: finance,
         logoUrl: text(property.logoUrl),
         fileStem: stem,
+        invoiceNumber: text(input.invoiceNumber).toUpperCase(),
+        poNumber: text(input.poNumber),
     };
 }

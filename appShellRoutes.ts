@@ -16,6 +16,7 @@ export const APP_VIEW_PATHS: Record<string, string> = {
     contracts: '/contracts',
     accounts: '/accounts',
     promotions: '/promotions',
+    rate_structure: '/rate-structure',
     reports: '/reports',
     todo: '/todo',
     settings: '/settings',

@@ -3,7 +3,14 @@ from typing import Any, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
-from data_access import delete_request, list_requests as dal_list_requests, upsert_request
+from data_access import (
+    delete_request,
+    issue_request_proforma,
+    list_requests as dal_list_requests,
+    patch_request_proforma_po,
+    reissue_request_proforma,
+    upsert_request,
+)
 from utils import RequestIdCollisionError
 
 router = APIRouter(prefix="/api", tags=["Requests"])
@@ -51,3 +58,53 @@ def create_request(data: RequestCreateBody):
 def remove_request(req_id: str):
     delete_request(req_id)
     return {"message": "Deleted successfully"}
+
+
+class ProformaIssueBody(BaseModel):
+    poNumber: Optional[str] = None
+    fingerprint: Optional[str] = None
+    issuedOn: Optional[str] = None
+
+
+class ProformaPoBody(BaseModel):
+    poNumber: Optional[str] = None
+
+
+def _proforma_http(exc: Exception) -> None:
+    if isinstance(exc, KeyError):
+        raise HTTPException(status_code=404, detail="Request not found") from exc
+    if isinstance(exc, ValueError):
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if isinstance(exc, RuntimeError):
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    raise exc
+
+
+@router.post("/requests/{req_id}/proforma/issue")
+def issue_proforma(req_id: str, body: ProformaIssueBody):
+    try:
+        return issue_request_proforma(
+            req_id,
+            str(body.poNumber or ""),
+            str(body.fingerprint or ""),
+            str(body.issuedOn or ""),
+        )
+    except (KeyError, ValueError, RuntimeError) as exc:
+        _proforma_http(exc)
+
+
+@router.post("/requests/{req_id}/proforma/reissue")
+def reissue_proforma(req_id: str, body: ProformaIssueBody):
+    try:
+        return reissue_request_proforma(req_id, str(body.fingerprint or ""), str(body.issuedOn or ""))
+    except (KeyError, ValueError, RuntimeError) as exc:
+        _proforma_http(exc)
+
+
+@router.post("/requests/{req_id}/proforma/po")
+def patch_proforma_po(req_id: str, body: ProformaPoBody):
+    try:
+        return patch_request_proforma_po(req_id, str(body.poNumber or ""))
+    except (KeyError, ValueError, RuntimeError) as exc:
+        _proforma_http(exc)
+

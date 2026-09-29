@@ -79,7 +79,13 @@ export async function renderProformaPdf(model: ProformaInvoice): Promise<Blob> {
     pdf.setFontSize(10);
     pdf.text(`Date: ${displayDate(model.issuedOn)}`, margin, y);
     pdf.text(`Currency: ${model.currency || 'SAR'}`, margin + 70, y);
-    y += 8;
+    y += 6;
+    if (model.invoiceNumber) {
+        pdf.text(`Invoice No: ${model.invoiceNumber}`, margin, y);
+        y += 8;
+    } else {
+        y += 2;
+    }
 
     const colW = contentW / 2;
     const fromX = margin;
@@ -107,11 +113,15 @@ export async function renderProformaPdf(model: ProformaInvoice): Promise<Blob> {
         ['Vat No', model.hotelVat],
         ['Address', model.hotelAddress],
     ]);
-    const toBottom = writeBlock(toX, 'To', [
+    const toRows: [string, string][] = [
         ['Name', model.toName],
         ['Vat No', model.clientVat],
         ['Address', model.clientAddress],
-    ]);
+    ];
+    if (String(model.poNumber || '').trim()) {
+        toRows.push(['PO Number', String(model.poNumber).trim()]);
+    }
+    const toBottom = writeBlock(toX, 'To', toRows);
     y = Math.max(fromBottom, toBottom) + 4;
 
     const cols = [

@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import AddAccountModal from './AddAccountModal';
 import ConfirmDialog from './ConfirmDialog';
+import ProformaIssueModal from './ProformaIssueModal';
 import { contactDisplayName, persistedContactId } from './accountLeadMapping';
 import {
     resolveSegmentsForProperty,
@@ -66,6 +67,7 @@ import {
 } from './beoShared';
 import { buildProformaInvoice, roomTypeLabel } from './proformaInvoice';
 import { downloadProformaPdf } from './proformaPdf';
+import { figuresUnchanged, normalizeProforma, proformaFingerprint } from './proformaIssue';
 import { resolveUserAttributionId, createdByMatchesUser, requestInProperty, recordVisibleOnProperty } from './userProfileMetrics';
 import { usePropertyLoadGate } from './propertyScopedLoad';
 import { requestMatchesSearchDateRanges } from './operationalSegmentRevenue';
@@ -102,6 +104,14 @@ import {
     type FeedbackQuestion,
 } from './requestFeedbackConfig';
 import { applyLookedRoomRate, lookupAccountRoomRate, type AccountRatePeriod } from './accountRates';
+import {
+    lookupRatePlanPrice,
+    normalizeRatePlan,
+    ratePlanGapNote,
+    ratePlanTouch,
+    type RatePlan,
+    type RateTouchSnap,
+} from './ratePlans';
 import { calculateEvtFinancials as calculateEvtFinancialsPure } from './requestFinancials';
 
 const REQUEST_SEARCH_STATUS_OPTIONS = [
@@ -326,6 +336,9 @@ const initialAccommodation = {
     logs: [] as any[],
     segment: '',
     promotionId: '',
+    ratePlanId: '',
+    ratePlanCode: '',
+    ratePlanName: '',
     /** Set when payment source is Collect Later (CL). */
     collectLater: false as boolean,
     paymentStatus: '' as string,
@@ -543,6 +556,53 @@ export default function RequestsManager({
     const [propertyRoomNames, setPropertyRoomNames] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
+    const todayYmd = () => {
+        const t = new Date();
+        return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+    };
+
+    const buildProformaModel = (
+        req: any,
+        issuedOn: string,
+        invoiceNumber: string,
+        poNumber: string
+    ) => {
+        const account = accounts.find((a) => String(a?.id) === String(req?.accountId)) || null;
+        return buildProformaInvoice({
+            property: activeProperty,
+            account,
+            request: req,
+            taxes: taxesList,
+            currency,
+            issuedOn,
+            invoiceNumber,
+            poNumber,
+            roomTypeNames: propertyRoomNames,
+        });
+    };
+
+    const mergeRequestProforma = (reqId: string, doc: unknown) => {
+        const next = normalizeProforma(doc);
+        if (!next) return next;
+        setRequests((prev) =>
+            prev.map((r) => (String(r?.id) === String(reqId) ? { ...r, proforma: next } : r))
+        );
+        setProformaTarget((prev: any) =>
+            prev && String(prev.id) === String(reqId) ? { ...prev, proforma: next } : prev
+        );
+        return next;
+    };
+
+    const runProformaDownload = async (
+        req: any,
+        issuedOn: string,
+        invoiceNumber: string,
+        poNumber: string
+    ) => {
+        const model = buildProformaModel(req, issuedOn, invoiceNumber, poNumber);
+        await downloadProformaPdf(model);
+    };
+
     // View State
     const [viewMode, setViewMode] = useState<'search' | 'list' | 'kanban'>('list');
 
@@ -754,8 +814,26 @@ export default function RequestsManager({
     const [feedbackSaving, setFeedbackSaving] = useState(false);
     const [feedbackCopyState, setFeedbackCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
     const [activeOptionsMenu, setActiveOptionsMenu] = useState<number | null>(null);
+    const [proformaTarget, setProformaTarget] = useState<any>(null);
+    const [proformaBusy, setProformaBusy] = useState(false);
+    const [proformaError, setProformaError] = useState('');
+    const issuedProforma = normalizeProforma(proformaTarget?.proforma);
+    const currentProformaFp = proformaTarget
+        ? proformaFingerprint(
+              buildProformaModel(
+                  proformaTarget,
+                  issuedProforma?.issuedOn || todayYmd(),
+                  issuedProforma?.invoiceNumber || '',
+                  issuedProforma?.poNumber || ''
+              )
+          )
+        : '';
     const [isEditing, setIsEditing] = useState(() => Boolean(searchParams?.editRequestId));
     const [accountRatePeriods, setAccountRatePeriods] = useState<AccountRatePeriod[]>([]);
+    const [ratePlans, setRatePlans] = useState<RatePlan[]>([]);
+    const ratePlanHoldRef = useRef(false);
+    const ratePlanSigRef = useRef<string | null>(null);
+    const ratePlanPricedRef = useRef<string>('');
     const skipNewRequestResetRef = useRef(false);
     const prevSubViewForNewRequestResetRef = useRef(subView);
 
@@ -1609,8 +1687,20 @@ export default function RequestsManager({
         };
     }, [allowAccountRateAutofill, activeProperty?.id, accForm.accountId]);
 
+    const ratePlanRoomKey = JSON.stringify(
+        (Array.isArray(accForm.rooms) ? accForm.rooms : []).map(
+            (r: { id?: unknown; type?: unknown; occupancy?: unknown; mealPlan?: unknown }) => ({
+                id: String(r?.id ?? ''),
+                type: String(r?.type || ''),
+                occupancy: String(r?.occupancy || ''),
+                mealPlan: String(r?.mealPlan || ''),
+            })
+        )
+    );
+
     useEffect(() => {
         if (!allowAccountRateAutofill) return;
+        if (String(accForm.ratePlanId || '').trim()) return;
         if (requestType !== 'accommodation' && requestType !== 'series' && requestType !== 'event_rooms') {
             return;
         }
@@ -1632,6 +1722,7 @@ export default function RequestsManager({
                     stayEnd,
                     roomType: String(room?.type || ''),
                     occupancy: String(room?.occupancy || ''),
+                    mealPlan: String(room?.mealPlan || ''),
                 });
                 const nextRate = applyLookedRoomRate(room?.rate, looked);
                 if (Number(room?.rate || 0) === nextRate) return room;
@@ -1648,10 +1739,100 @@ export default function RequestsManager({
         accForm.segment,
         accForm.checkIn,
         accForm.checkOut,
-        // Re-run when room type/occupancy identity set changes (not when user types rate).
-        JSON.stringify(
-            (accForm.rooms || []).map((r: any) => `${r?.id}|${r?.type}|${r?.occupancy}`)
-        ),
+        accForm.ratePlanId,
+        // Re-run when room type, occupancy, or meal plan changes (not when the user types the rate).
+        ratePlanRoomKey,
+    ]);
+
+    useEffect(() => {
+        const pid = String(activeProperty?.id || '').trim();
+        if (!pid) {
+            setRatePlans([]);
+            return;
+        }
+        let cancelled = false;
+        fetch(apiUrl(`/api/rate-plans?propertyId=${encodeURIComponent(pid)}`))
+            .then((r) => (r.ok ? r.json() : []))
+            .then((data) => {
+                if (cancelled) return;
+                const next = (Array.isArray(data) ? data : [])
+                    .map(normalizeRatePlan)
+                    .filter(Boolean) as RatePlan[];
+                setRatePlans(next);
+            })
+            .catch(() => {
+                if (!cancelled) setRatePlans([]);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [activeProperty?.id]);
+
+    useEffect(() => {
+        if (requestType !== 'accommodation' && requestType !== 'series' && requestType !== 'event_rooms') return;
+        const planId = String(accForm.ratePlanId || '').trim();
+        const stayStart = String(accForm.checkIn || '').slice(0, 10);
+        const stayEnd = String(accForm.checkOut || stayStart).slice(0, 10);
+        const rooms = JSON.parse(ratePlanRoomKey) as RateTouchSnap['rooms'];
+        const snap: RateTouchSnap = {
+            planId,
+            stayStart,
+            stayEnd,
+            rooms,
+        };
+        const sig = JSON.stringify(snap);
+        // First sight of a form, including the form just loaded from a saved request, is a snapshot.
+        // Rates change only after the plan, the dates, or a room identity changes from that snapshot.
+        if (ratePlanHoldRef.current || ratePlanSigRef.current === null) {
+            ratePlanSigRef.current = sig;
+            ratePlanHoldRef.current = false;
+            ratePlanPricedRef.current = sig;
+            return;
+        }
+        if (ratePlanSigRef.current === sig && ratePlanPricedRef.current === sig) return;
+        const prev = JSON.parse(ratePlanSigRef.current) as RateTouchSnap;
+        if (!planId) {
+            ratePlanSigRef.current = sig;
+            ratePlanPricedRef.current = sig;
+            return;
+        }
+        const plan = ratePlans.find((p) => String(p.id) === planId) || null;
+        // A removed plan, or a catalog that has not loaded yet, must not rewrite rates.
+        // Leave the previous snapshot in place so a later load can still price this change.
+        if (!plan) return;
+        const touch = ratePlanTouch(prev, snap);
+        ratePlanSigRef.current = sig;
+        ratePlanPricedRef.current = sig;
+        if (!touch.all && touch.ids.length === 0) return;
+        const touchIds = new Set(touch.ids);
+        setAccForm((prevForm) => {
+            const currentRooms = Array.isArray(prevForm.rooms) ? prevForm.rooms : [];
+            let changed = false;
+            const nextRooms = currentRooms.map((room) => {
+                if (!touch.all && !touchIds.has(String(room?.id))) return room;
+                const looked = lookupRatePlanPrice({
+                    plan,
+                    stayStart,
+                    stayEnd,
+                    roomType: String(room?.type || ''),
+                    occupancy: String(room?.occupancy || ''),
+                    mealPlan: String(room?.mealPlan || ''),
+                });
+                if (looked == null) return room;
+                if (Number(room?.rate) === looked) return room;
+                changed = true;
+                return { ...room, rate: looked };
+            });
+            return changed ? { ...prevForm, rooms: nextRooms } : prevForm;
+        });
+        ratePlanPricedRef.current = sig;
+    }, [
+        requestType,
+        ratePlans,
+        accForm.ratePlanId,
+        accForm.checkIn,
+        accForm.checkOut,
+        ratePlanRoomKey,
     ]);
 
     useEffect(() => {
@@ -1765,6 +1946,8 @@ export default function RequestsManager({
 
     const hydrateFormsFromRequest = (req: any, opts?: { asDuplicate?: boolean }) => {
         if (!req) return;
+        ratePlanHoldRef.current = true;
+        ratePlanSigRef.current = null;
         const type = normalizeRequestTypeKey(req.requestType);
         const accountName = req.accountName || req.account || '';
         const sourceRef = String(req.confirmationNo || req.id || '').trim() || 'source request';
@@ -2378,6 +2561,9 @@ export default function RequestsManager({
                 paymentStatus: resolvedPaymentStatus,
                 segment: resolvedSegment,
                 promotionId: selectedPromotionId || '',
+                ratePlanId: String(formData.ratePlanId || '').trim(),
+                ratePlanCode: String(formData.ratePlanCode || '').trim(),
+                ratePlanName: String(formData.ratePlanName || '').trim(),
                 ...(createdByUserIdOut != null ? { createdByUserId: createdByUserIdOut } : {}),
             };
 
@@ -3474,6 +3660,34 @@ export default function RequestsManager({
                             </select>
                         </div>
                         <div>
+                            <label className="text-xs font-bold uppercase opacity-70 mb-1 block" style={{ color: colors.textMuted }}>Rate plan</label>
+                            <select
+                                value={accForm.ratePlanId || ''}
+                                onChange={(e) => {
+                                    const id = e.target.value;
+                                    const plan = ratePlans.find((p) => String(p.id) === id);
+                                    setAccForm({
+                                        ...accForm,
+                                        ratePlanId: id,
+                                        ratePlanCode: plan ? plan.code : (id ? accForm.ratePlanCode : ''),
+                                        ratePlanName: plan ? plan.name : (id ? accForm.ratePlanName : ''),
+                                    });
+                                }}
+                                className="w-full px-3 py-2 rounded border bg-black/20 outline-none focus:border-primary transition-all text-sm"
+                                style={{ borderColor: colors.border, color: colors.textMain }}
+                            >
+                                <option value="">Choose your rate plan</option>
+                                {ratePlans.map((p) => (
+                                    <option key={p.id} value={p.id}>{p.code} — {p.name}</option>
+                                ))}
+                                {accForm.ratePlanId && !ratePlans.some((p) => String(p.id) === String(accForm.ratePlanId)) ? (
+                                    <option value={accForm.ratePlanId}>
+                                        {(accForm.ratePlanCode || 'Plan')} — {(accForm.ratePlanName || 'Saved plan')} (no longer available)
+                                    </option>
+                                ) : null}
+                            </select>
+                        </div>
+                        <div>
                             <label className="text-xs font-bold uppercase opacity-70 mb-1 block" style={{ color: colors.textMuted }}>Request status</label>
                             <select
                                 value={accForm.status || 'Inquiry'}
@@ -3742,6 +3956,34 @@ export default function RequestsManager({
                                         <div className={`relative min-w-0 w-full max-w-[11rem] ${roomGridLikeSeries ? 'mx-auto' : 'mx-auto sm:ml-auto sm:mr-0'}`}>
                                             <input type="number" className="w-full min-w-0 py-1.5 px-2 text-[11px] rounded bg-black/20 border border-transparent focus:border-primary outline-none text-center font-mono tabular-nums"
                                                 value={room.rate} onChange={e => updateRoom(room.id, 'rate', Number(e.target.value))} />
+                                            {(() => {
+                                                const selectedId = String(accForm.ratePlanId || '').trim();
+                                                const plan = ratePlans.find((p) => String(p.id) === selectedId) || null;
+                                                const stayStart = String(accForm.checkIn || '').slice(0, 10);
+                                                const stayEnd = String(accForm.checkOut || stayStart).slice(0, 10);
+                                                const ready = Boolean(
+                                                    plan &&
+                                                    stayStart &&
+                                                    stayEnd &&
+                                                    String(room.type || '').trim() &&
+                                                    String(room.occupancy || '').trim() &&
+                                                    String(room.mealPlan || '').trim()
+                                                );
+                                                const looked = plan
+                                                    ? lookupRatePlanPrice({
+                                                        plan,
+                                                        stayStart,
+                                                        stayEnd,
+                                                        roomType: String(room.type || ''),
+                                                        occupancy: String(room.occupancy || ''),
+                                                        mealPlan: String(room.mealPlan || ''),
+                                                    })
+                                                    : null;
+                                                const note = ratePlanGapNote(looked != null, Boolean(plan), ready);
+                                                return note ? (
+                                                    <p className="text-[10px] mt-1 text-center leading-tight" style={{ color: colors.yellow || colors.textMuted }}>{note}</p>
+                                                ) : null;
+                                            })()}
                                         </div>
                                     </div>
                                     <div className="col-span-1 flex justify-center shrink-0">
@@ -6432,23 +6674,9 @@ export default function RequestsManager({
                         onClick={() => {
                             const req = activeOptionsMenu !== null ? requests[activeOptionsMenu] : null;
                             if (!req) return;
-                            const account = accounts.find((a) => String(a?.id) === String(req.accountId)) || null;
-                            const today = new Date();
-                            const issuedOn = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-                            const model = buildProformaInvoice({
-                                property: activeProperty,
-                                account,
-                                request: req,
-                                taxes: taxesList,
-                                currency,
-                                issuedOn,
-                                roomTypeNames: propertyRoomNames,
-                            });
+                            setProformaError('');
+                            setProformaTarget(req);
                             setActiveOptionsMenu(null);
-                            void downloadProformaPdf(model).catch((err) => {
-                                console.error('Proforma download failed', err);
-                                window.alert('Could not download the proforma invoice.');
-                            });
                         }}
                         className="w-full px-3 py-2 rounded-xl text-[11px] font-bold flex items-center gap-2.5 hover:bg-white/10 text-left transition-all active:scale-[0.98]"
                         style={{ color: colors.textMain }}
@@ -6768,6 +6996,152 @@ export default function RequestsManager({
                         </div>
                     </div>
                 )}
+                <ProformaIssueModal
+                    open={Boolean(proformaTarget)}
+                    colors={colors}
+                    firstIssue={!issuedProforma}
+                    issued={issuedProforma}
+                    figuresUnchangedNote={Boolean(issuedProforma && figuresUnchanged(issuedProforma.fingerprint, currentProformaFp))}
+                    busy={proformaBusy}
+                    error={proformaError}
+                    onClose={() => {
+                        if (proformaBusy) return;
+                        setProformaTarget(null);
+                        setProformaError('');
+                    }}
+                    onSkip={() => {
+                        void (async () => {
+                            if (!proformaTarget) return;
+                            setProformaBusy(true);
+                            setProformaError('');
+                            try {
+                                const fp = proformaFingerprint(buildProformaModel(proformaTarget, todayYmd(), '', ''));
+                                const doc = await fetch(
+                                    apiUrl(`/api/requests/${encodeURIComponent(String(proformaTarget.id))}/proforma/issue`),
+                                    {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        credentials: 'include',
+                                        body: JSON.stringify({ poNumber: '', fingerprint: fp, issuedOn: todayYmd() }),
+                                    }
+                                );
+                                if (!doc.ok) throw new Error('Could not issue the proforma invoice.');
+                                const saved = mergeRequestProforma(String(proformaTarget.id), await doc.json());
+                                if (!saved) throw new Error('Could not issue the proforma invoice.');
+                                await runProformaDownload(proformaTarget, saved.issuedOn, saved.invoiceNumber, saved.poNumber);
+                                setProformaTarget(null);
+                            } catch (err) {
+                                console.error('Proforma issue failed', err);
+                                setProformaError('Could not download the proforma invoice.');
+                            } finally {
+                                setProformaBusy(false);
+                            }
+                        })();
+                    }}
+                    onContinue={(poNumber) => {
+                        void (async () => {
+                            if (!proformaTarget) return;
+                            setProformaBusy(true);
+                            setProformaError('');
+                            try {
+                                const fp = proformaFingerprint(buildProformaModel(proformaTarget, todayYmd(), '', poNumber));
+                                const doc = await fetch(
+                                    apiUrl(`/api/requests/${encodeURIComponent(String(proformaTarget.id))}/proforma/issue`),
+                                    {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        credentials: 'include',
+                                        body: JSON.stringify({ poNumber, fingerprint: fp, issuedOn: todayYmd() }),
+                                    }
+                                );
+                                if (!doc.ok) throw new Error('Could not issue the proforma invoice.');
+                                const saved = mergeRequestProforma(String(proformaTarget.id), await doc.json());
+                                if (!saved) throw new Error('Could not issue the proforma invoice.');
+                                await runProformaDownload(proformaTarget, saved.issuedOn, saved.invoiceNumber, saved.poNumber);
+                                setProformaTarget(null);
+                            } catch (err) {
+                                console.error('Proforma issue failed', err);
+                                setProformaError('Could not download the proforma invoice.');
+                            } finally {
+                                setProformaBusy(false);
+                            }
+                        })();
+                    }}
+                    onDownload={() => {
+                        void (async () => {
+                            if (!proformaTarget || !issuedProforma) return;
+                            setProformaBusy(true);
+                            setProformaError('');
+                            try {
+                                await runProformaDownload(
+                                    proformaTarget,
+                                    issuedProforma.issuedOn,
+                                    issuedProforma.invoiceNumber,
+                                    issuedProforma.poNumber
+                                );
+                            } catch (err) {
+                                console.error('Proforma download failed', err);
+                                setProformaError('Could not download the proforma invoice.');
+                            } finally {
+                                setProformaBusy(false);
+                            }
+                        })();
+                    }}
+                    onReissue={() => {
+                        void (async () => {
+                            if (!proformaTarget || !issuedProforma) return;
+                            setProformaBusy(true);
+                            setProformaError('');
+                            try {
+                                const issuedOn = todayYmd();
+                                const fp = proformaFingerprint(buildProformaModel(proformaTarget, issuedOn, issuedProforma.invoiceNumber, issuedProforma.poNumber));
+                                const doc = await fetch(
+                                    apiUrl(`/api/requests/${encodeURIComponent(String(proformaTarget.id))}/proforma/reissue`),
+                                    {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        credentials: 'include',
+                                        body: JSON.stringify({ fingerprint: fp, issuedOn }),
+                                    }
+                                );
+                                if (!doc.ok) throw new Error('Could not re-issue the proforma invoice.');
+                                const saved = mergeRequestProforma(String(proformaTarget.id), await doc.json());
+                                if (!saved) throw new Error('Could not re-issue the proforma invoice.');
+                                await runProformaDownload(proformaTarget, saved.issuedOn, saved.invoiceNumber, saved.poNumber);
+                            } catch (err) {
+                                console.error('Proforma re-issue failed', err);
+                                setProformaError('Could not download the proforma invoice.');
+                            } finally {
+                                setProformaBusy(false);
+                            }
+                        })();
+                    }}
+                    onSavePo={(poNumber) => {
+                        void (async () => {
+                            if (!proformaTarget) return;
+                            setProformaBusy(true);
+                            setProformaError('');
+                            try {
+                                const doc = await fetch(
+                                    apiUrl(`/api/requests/${encodeURIComponent(String(proformaTarget.id))}/proforma/po`),
+                                    {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        credentials: 'include',
+                                        body: JSON.stringify({ poNumber }),
+                                    }
+                                );
+                                if (!doc.ok) throw new Error('Could not save the PO number.');
+                                mergeRequestProforma(String(proformaTarget.id), await doc.json());
+                            } catch (err) {
+                                console.error('Proforma PO save failed', err);
+                                setProformaError('Could not save the PO number.');
+                            } finally {
+                                setProformaBusy(false);
+                            }
+                        })();
+                    }}
+                />
                 <ConfirmDialog
                     isOpen={showDiscardDraftConfirm}
                     title="Discard?"

@@ -35,6 +35,7 @@ import {
     Palette,
     X,
     Target,
+    Tags,
     Briefcase as BriefcaseIcon,
     Menu,
     LogOut,
@@ -242,6 +243,7 @@ const AccountsPage = lazy(() => import('./AccountsPage'));
 const DashboardHubShell = lazy(() => import('./dashboardHub/DashboardHubShell'));
 const MessengerWidget = lazy(() => import('./messenger/MessengerWidget'));
 const PromotionsPage = lazy(() => import('./PromotionsPage'));
+const RateStructurePage = lazy(() => import('./RateStructurePage'));
 
 function PageLoadFallback({ label = 'Loading…' }: { label?: string }) {
     return (
@@ -579,6 +581,7 @@ const APP_SHELL_VIEW_IDS = new Set<string>([
     'contracts',
     'accounts',
     'promotions',
+    'rate_structure',
     'reports',
     'todo',
     'settings',
@@ -903,6 +906,7 @@ export default function AdvancedSalesDashboard() {
     const requestsLoadGate = useRef<PropertyLoadGate>({ current: '' });
     const financialsLoadGate = useRef<PropertyLoadGate>({ current: '' });
     const promotionsLoadGate = useRef<PropertyLoadGate>({ current: '' });
+    const ratePlansLoadGate = useRef<PropertyLoadGate>({ current: '' });
     const accountsLoadGate = useRef<PropertyLoadGate>({ current: '' });
     const taxesLoadGate = useRef<PropertyLoadGate>({ current: '' });
     const crmLoadGate = useRef<PropertyLoadGate>({ current: '' });
@@ -916,6 +920,7 @@ export default function AdvancedSalesDashboard() {
     // sync-skip guard so the refetch never re-POSTs and re-broadcasts).
     const [accountsLiveVersion, setAccountsLiveVersion] = useState(0);
     const [promotionsLiveVersion, setPromotionsLiveVersion] = useState(0);
+    const [ratePlansLiveVersion, setRatePlansLiveVersion] = useState(0);
     const [tasksLiveVersion, setTasksLiveVersion] = useState(0);
     const [financialsLiveVersion, setFinancialsLiveVersion] = useState(0);
     const [taxesLiveVersion, setTaxesLiveVersion] = useState(0);
@@ -1519,6 +1524,9 @@ export default function AdvancedSalesDashboard() {
             case 'promotions':
                 debouncedBump('promotions', setPromotionsLiveVersion);
                 break;
+            case 'rate_plans':
+                debouncedBump('rate_plans', setRatePlansLiveVersion);
+                break;
             case 'tasks':
                 debouncedBump('tasks', setTasksLiveVersion);
                 break;
@@ -1573,6 +1581,7 @@ export default function AdvancedSalesDashboard() {
     useWebSocket(handleLiveUpdate, isAuthenticated);
 
     const [promotions, setPromotions] = useState<any[]>([]);
+    const [ratePlans, setRatePlans] = useState<unknown[]>([]);
     const [propertyFinancialKpis, setPropertyFinancialKpis] = useState<any[]>([]);
     const [pendingOpenRequestId, setPendingOpenRequestId] = useState<string | null>(null);
     /** Headless RequestsManager on Events page for in-place OPTS (see eventsOptsBootstrapId). */
@@ -1707,6 +1716,25 @@ export default function AdvancedSalesDashboard() {
             cancelled = true;
         };
     }, [activeProperty?.id, promotionsLiveVersion]);
+
+    useEffect(() => {
+        let cancelled = false;
+        const pid = String(activeProperty?.id || '').trim();
+        setRatePlans([]);
+        if (!beginPropertyLoad(ratePlansLoadGate.current, pid)) return;
+        fetch(apiUrl(`/api/rate-plans?propertyId=${encodeURIComponent(pid)}`))
+            .then((res) => (res.ok ? res.json() : []))
+            .then((data) => {
+                if (cancelled || !isPropertyLoadCurrent(ratePlansLoadGate.current, pid)) return;
+                setRatePlans(Array.isArray(data) ? data : []);
+            })
+            .catch(() => {
+                if (!cancelled && isPropertyLoadCurrent(ratePlansLoadGate.current, pid)) setRatePlans([]);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [activeProperty?.id, ratePlansLiveVersion]);
 
     useEffect(() => {
         let cancelled = false;
@@ -3077,6 +3105,7 @@ export default function AdvancedSalesDashboard() {
             case 'contracts': return 'Contracts';
             case 'accounts': return 'Accounts';
             case 'promotions': return 'Promotions';
+            case 'rate_structure': return 'Rate Structure';
             case 'reports': return 'Reports';
             case 'todo': return 'To-Do Management';
             case 'settings': return 'Settings';
@@ -3092,7 +3121,8 @@ export default function AdvancedSalesDashboard() {
         { icon: Users, label: 'CRM', id: 'crm' },
         { icon: FileText, label: 'Contracts', id: 'contracts' },
         { icon: BriefcaseIcon, label: 'Accounts', id: 'accounts' },
-        { icon: Target, label: 'Promotions', id: 'promotions' }
+        { icon: Target, label: 'Promotions', id: 'promotions' },
+        { icon: Tags, label: 'Rate Structure', id: 'rate_structure' }
     ];
 
     // Main Dashboard (when authenticated)
@@ -3150,7 +3180,7 @@ export default function AdvancedSalesDashboard() {
                         {mainNavItems
                             .filter((item) => {
                                 if (item.id === 'accounts') return canShowAccountsNavItem(currentUser);
-                                if (item.id === 'promotions') return canAccessPromotions(currentUser);
+                                if (item.id === 'promotions' || item.id === 'rate_structure') return canAccessPromotions(currentUser);
                                 const perm = MAIN_NAV_ITEM_PERMISSIONS[item.id];
                                 return perm ? can(currentUser, perm) : false;
                             })
@@ -4242,6 +4272,18 @@ export default function AdvancedSalesDashboard() {
                             canEdit={canEditPromotions(currentUser)}
                             canDelete={canDeletePromotions(currentUser)}
                             currentUser={currentUser}
+                        />
+                    ) : currentView === 'rate_structure' ? (
+                        <RateStructurePage
+                            theme={theme}
+                            activeProperty={activeProperty}
+                            ratePlans={ratePlans}
+                            setRatePlans={setRatePlans}
+                            sharedRequests={sharedRequests}
+                            currency={currentCurrency}
+                            canCreate={canCreatePromotions(currentUser)}
+                            canEdit={canEditPromotions(currentUser)}
+                            canDelete={canDeletePromotions(currentUser)}
                         />
                     ) : currentView === 'crm' ? (
                         <CRM

@@ -4,6 +4,8 @@ export type AccountRateRow = {
     id: string;
     roomType: string;
     occupancy: string;
+    /** Meal-plan code (RO, BB, HB, FB, …). Empty on rates saved before meal plans were stored. */
+    mealPlan: string;
     rate: number;
 };
 
@@ -47,6 +49,7 @@ export function normalizeAccountRateRows(input: unknown): AccountRateRow[] {
             id: String(r?.id || `row-${i}`),
             roomType: String(r?.roomType || '').trim(),
             occupancy: String(r?.occupancy || '').trim(),
+            mealPlan: String(r?.mealPlan || '').trim(),
             rate: Math.max(0, Number(r?.rate) || 0),
         }))
         .filter((r) => r.roomType && r.occupancy);
@@ -76,6 +79,8 @@ export function normalizeAccountRatePeriod(raw: any): AccountRatePeriod | null {
 /**
  * Resolve a catalog rate for a new-request draft room.
  * Returns null when nothing matches. The caller keeps the rate already typed on the row.
+ * Meal plan: a row with a code matches only that code. A row with no code still matches
+ * any meal (rates saved before meal plan was stored). A coded row wins over a blank one.
  * Multi-match: narrowest period (shortest end−start), then latest updatedAt, then id.
  */
 export function lookupAccountRoomRate(args: {
@@ -86,11 +91,13 @@ export function lookupAccountRoomRate(args: {
     stayEnd: string;
     roomType: string;
     occupancy: string;
+    mealPlan?: string;
 }): number | null {
     const accountId = String(args.accountId || '').trim();
     const segmentKey = normKey(args.segment);
     const roomKey = normKey(args.roomType);
     const occKey = normKey(args.occupancy);
+    const mealKey = normKey(args.mealPlan);
     const stayStart = ymd(args.stayStart);
     const stayEnd = ymd(args.stayEnd || args.stayStart);
     if (!accountId || !segmentKey || !roomKey || !occKey || !stayStart || !stayEnd) return null;
@@ -107,7 +114,12 @@ export function lookupAccountRoomRate(args: {
         const pStart = ymd(p.startDate);
         const pEnd = ymd(p.endDate);
         if (!overlapsRateWindow(stayStart, stayEnd, pStart, pEnd)) continue;
-        const row = p.rows.find((r) => normKey(r.roomType) === roomKey && normKey(r.occupancy) === occKey);
+        const roomRows = p.rows.filter(
+            (r) => normKey(r.roomType) === roomKey && normKey(r.occupancy) === occKey
+        );
+        const row =
+            (mealKey ? roomRows.find((r) => normKey(r.mealPlan) === mealKey) : undefined) ||
+            roomRows.find((r) => !normKey(r.mealPlan));
         if (!row) continue;
         candidates.push({
             rate: Math.max(0, Number(row.rate) || 0),

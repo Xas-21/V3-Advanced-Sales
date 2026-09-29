@@ -367,7 +367,10 @@ export function getAllowedAppViewsForUser(user: any): Set<string> {
         if (can(user, perm)) allowed.add(viewId);
     }
     if (canShowAccountsNavItem(user)) allowed.add('accounts');
-    if (canAccessPromotions(user)) allowed.add('promotions');
+    if (canAccessPromotions(user)) {
+        allowed.add('promotions');
+        allowed.add('rate_structure');
+    }
     if (canAccessReports(user)) allowed.add('reports');
     return allowed;
 }

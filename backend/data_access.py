@@ -97,6 +97,7 @@ _FLAT_WITH_PID = {
     "promotions",
     "account_rates",
     "account_ledger",
+    "rate_plans",
 }
 # Tables keyed only by id (no property_id column). `properties` is itself the
 # tenant root; `contract_templates`/`cxl_reasons` are id-keyed payload-only.
@@ -402,6 +403,12 @@ def _signed_ledger_amount(entry_type: str, amount) -> float:
     return v  # adjustment: as-is
 
 
+def _extract_rate_plans(p: dict) -> dict:
+    code = str(p.get("code") or "").strip() or None
+    name = str(p.get("name") or "").strip() or None
+    return {"code": code, "name": name}
+
+
 def _extract_account_ledger(p: dict) -> dict:
     return {
         "account_id": str(p.get("accountId") or "").strip() or None,
@@ -421,6 +428,7 @@ _EXTRACTORS = {
     "promotions": _extract_promotions,
     "account_rates": _extract_account_rates,
     "account_ledger": _extract_account_ledger,
+    "rate_plans": _extract_rate_plans,
 }
 
 
@@ -834,6 +842,158 @@ def get_request(req_id: str) -> Optional[dict]:
             return _request_dict_from_row(r, children)
 
 
+_INVOICE_NUMBER_RE = __import__("re").compile(r"^[A-Z]\d{7}$")
+
+
+def _normalize_invoice_number(value: Any) -> str:
+    return str(value or "").strip().upper()
+
+
+def _mint_invoice_number(taken: set[str]) -> str:
+    import secrets
+    import string
+
+    for _ in range(64):
+        letter = secrets.choice(string.ascii_uppercase)
+        digits = f"{secrets.randbelow(10_000_000):07d}"
+        n = f"{letter}{digits}"
+        if n not in taken:
+            return n
+    raise RuntimeError("Could not mint a unique invoice number")
+
+
+def _issuer_fields() -> tuple[str, str]:
+    try:
+        from dependencies import get_current_user_ctx
+
+        user = get_current_user_ctx() or {}
+    except Exception:
+        user = {}
+    uid = str(user.get("id") or "").strip()
+    name = str(user.get("name") or user.get("username") or user.get("email") or "").strip()
+    return uid, name
+
+
+def _load_request_parent_for_update(cur, req_id: str):
+    cur.execute(
+        "SELECT id, property_id, proforma FROM requests WHERE id = %s FOR UPDATE;",
+        (str(req_id),),
+    )
+    row = cur.fetchone()
+    if not row:
+        raise KeyError(req_id)
+    _assert_write_access(row.get("property_id"))
+    return row
+
+
+def _taken_invoice_numbers(cur, property_id: Optional[str]) -> set[str]:
+    cur.execute(
+        """
+        SELECT proforma->>'invoiceNumber' AS n
+        FROM requests
+        WHERE property_id IS NOT DISTINCT FROM %s
+          AND NULLIF(BTRIM(proforma->>'invoiceNumber'), '') IS NOT NULL;
+        """,
+        (property_id,),
+    )
+    out: set[str] = set()
+    for row in cur.fetchall():
+        n = _normalize_invoice_number(row.get("n"))
+        if _INVOICE_NUMBER_RE.match(n):
+            out.add(n)
+    return out
+
+
+def issue_request_proforma(req_id: str, po_number: str, fingerprint: str, issued_on: str) -> dict:
+    """Mint once. If a number already exists, return it unchanged."""
+    from psycopg.errors import UniqueViolation
+
+    rid = str(req_id or "").strip()
+    po = str(po_number or "").strip()
+    fp = str(fingerprint or "")
+    issued = str(issued_on or "").strip()[:10] or _NOW().date().isoformat()
+    issued_by_id, issued_by_name = _issuer_fields()
+    last_error = None
+    pool = _get_pool()
+    for _ in range(16):
+        try:
+            with pool.connection() as conn:
+                with conn.cursor() as cur:
+                    row = _load_request_parent_for_update(cur, rid)
+                    current = row.get("proforma") if isinstance(row.get("proforma"), dict) else {}
+                    existing = _normalize_invoice_number(current.get("invoiceNumber"))
+                    if _INVOICE_NUMBER_RE.match(existing):
+                        return current
+                    taken = _taken_invoice_numbers(cur, row.get("property_id"))
+                    number = _mint_invoice_number(taken)
+                    doc = {
+                        "invoiceNumber": number,
+                        "poNumber": po,
+                        "issuedOn": issued,
+                        "issuedById": issued_by_id,
+                        "issuedByName": issued_by_name,
+                        "fingerprint": fp,
+                    }
+                    cur.execute(
+                        "UPDATE requests SET proforma = %s, updated_at = NOW() WHERE id = %s;",
+                        (Json(doc), rid),
+                    )
+                    conn.commit()
+            item = get_request(rid) or {"id": rid, "proforma": doc}
+            _broadcast_change("updated", "request", item, row.get("property_id"))
+            return doc
+        except UniqueViolation as exc:
+            last_error = exc
+            continue
+    raise RuntimeError("Could not mint a unique invoice number") from last_error
+
+
+def patch_request_proforma_po(req_id: str, po_number: str) -> dict:
+    rid = str(req_id or "").strip()
+    po = str(po_number or "").strip()
+    pool = _get_pool()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            row = _load_request_parent_for_update(cur, rid)
+            current = dict(row.get("proforma") if isinstance(row.get("proforma"), dict) else {})
+            existing = _normalize_invoice_number(current.get("invoiceNumber"))
+            if not _INVOICE_NUMBER_RE.match(existing):
+                raise ValueError("Proforma has not been issued yet.")
+            current["poNumber"] = po
+            cur.execute(
+                "UPDATE requests SET proforma = %s, updated_at = NOW() WHERE id = %s;",
+                (Json(current), rid),
+            )
+            conn.commit()
+    item = get_request(rid) or {"id": rid, "proforma": current}
+    _broadcast_change("updated", "request", item, row.get("property_id"))
+    return current
+
+
+def reissue_request_proforma(req_id: str, fingerprint: str, issued_on: str) -> dict:
+    rid = str(req_id or "").strip()
+    fp = str(fingerprint or "")
+    issued = str(issued_on or "").strip()[:10] or _NOW().date().isoformat()
+    pool = _get_pool()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            row = _load_request_parent_for_update(cur, rid)
+            current = dict(row.get("proforma") if isinstance(row.get("proforma"), dict) else {})
+            existing = _normalize_invoice_number(current.get("invoiceNumber"))
+            if not _INVOICE_NUMBER_RE.match(existing):
+                raise ValueError("Proforma has not been issued yet.")
+            current["issuedOn"] = issued
+            current["fingerprint"] = fp
+            cur.execute(
+                "UPDATE requests SET proforma = %s, updated_at = NOW() WHERE id = %s;",
+                (Json(current), rid),
+            )
+            conn.commit()
+    item = get_request(rid) or {"id": rid, "proforma": current}
+    _broadcast_change("updated", "request", item, row.get("property_id"))
+    return current
+
+
 def get_public_feedback_by_token(token: str) -> Optional[dict]:
     """Explicit public opt-in: load feedback form by publicToken without auth.
 
@@ -1046,6 +1206,7 @@ def _request_dict_from_row(r, children: dict) -> dict:
         "alerts": child_arr("alerts"), "transportation": child_arr("transportation"),
         "invoices": children.get("invoices", {}).get(rid),
         "feedback": children.get("feedback", {}).get(rid),
+        "proforma": r.get("proforma") if isinstance(r.get("proforma"), dict) else None,
     }
 
 

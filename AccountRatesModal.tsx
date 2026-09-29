@@ -11,6 +11,10 @@ import {
     OCCUPANCY_TYPES_CHANGED_EVENT,
 } from './propertyOccupancyTypes';
 import { resolveSegmentsForProperty } from './propertyTaxonomy';
+import {
+    MEALS_PACKAGES_CHANGED_EVENT,
+    resolveMealPlansForProperty,
+} from './propertyMealsPackages';
 
 type Props = {
     open: boolean;
@@ -49,6 +53,7 @@ export default function AccountRatesModal({
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [roomNames, setRoomNames] = useState<string[]>([]);
     const [occRev, setOccRev] = useState(0);
+    const [mealsRev, setMealsRev] = useState(0);
 
     const [periodDraft, setPeriodDraft] = useState({
         id: '',
@@ -58,7 +63,7 @@ export default function AccountRatesModal({
     });
 
     const [rowModalOpen, setRowModalOpen] = useState(false);
-    const [rowDraft, setRowDraft] = useState({ roomType: '', occupancy: '', rate: 0 });
+    const [rowDraft, setRowDraft] = useState({ roomType: '', occupancy: '', mealPlan: '', rate: 0 });
     const [editingRowId, setEditingRowId] = useState<string | null>(null);
 
     const segmentOptions = useMemo(() => {
@@ -71,10 +76,20 @@ export default function AccountRatesModal({
         return resolveOccupancyTypesForProperty(propertyId, activeProperty);
     }, [propertyId, activeProperty, occRev]);
 
+    const mealPlanOptions = useMemo(() => {
+        void mealsRev;
+        return resolveMealPlansForProperty(propertyId, activeProperty);
+    }, [propertyId, activeProperty, mealsRev]);
+
     useEffect(() => {
         const onOcc = () => setOccRev((n) => n + 1);
+        const onMeals = () => setMealsRev((n) => n + 1);
         window.addEventListener(OCCUPANCY_TYPES_CHANGED_EVENT, onOcc);
-        return () => window.removeEventListener(OCCUPANCY_TYPES_CHANGED_EVENT, onOcc);
+        window.addEventListener(MEALS_PACKAGES_CHANGED_EVENT, onMeals);
+        return () => {
+            window.removeEventListener(OCCUPANCY_TYPES_CHANGED_EVENT, onOcc);
+            window.removeEventListener(MEALS_PACKAGES_CHANGED_EVENT, onMeals);
+        };
     }, []);
 
     const selected = useMemo(
@@ -219,6 +234,7 @@ export default function AccountRatesModal({
         setRowDraft({
             roomType: roomNames[0] || '',
             occupancy: occupancyOptions[0] || 'Single',
+            mealPlan: mealPlanOptions[0]?.code || 'RO',
             rate: 0,
         });
         setRowModalOpen(true);
@@ -226,7 +242,12 @@ export default function AccountRatesModal({
 
     const openEditRow = (row: AccountRateRow) => {
         setEditingRowId(row.id);
-        setRowDraft({ roomType: row.roomType, occupancy: row.occupancy, rate: row.rate });
+        setRowDraft({
+            roomType: row.roomType,
+            occupancy: row.occupancy,
+            mealPlan: row.mealPlan || '',
+            rate: row.rate,
+        });
         setRowModalOpen(true);
     };
 
@@ -234,26 +255,28 @@ export default function AccountRatesModal({
         if (!selected) return;
         const roomType = String(rowDraft.roomType || '').trim();
         const occupancy = String(rowDraft.occupancy || '').trim();
+        const mealPlan = String(rowDraft.mealPlan || '').trim();
         const rate = Math.max(0, Number(rowDraft.rate) || 0);
-        if (!roomType || !occupancy) {
-            setError('Room type and occupancy are required.');
+        if (!roomType || !occupancy || !mealPlan) {
+            setError('Room type, occupancy, and meal plan are required.');
             return;
         }
         setError('');
+        const sameCombo = (r: AccountRateRow) =>
+            r.roomType.toLowerCase() === roomType.toLowerCase() &&
+            r.occupancy.toLowerCase() === occupancy.toLowerCase() &&
+            String(r.mealPlan || '').toLowerCase() === mealPlan.toLowerCase();
         const nextRows = [...(selected.rows || [])];
         if (editingRowId) {
             const idx = nextRows.findIndex((r) => r.id === editingRowId);
-            if (idx >= 0) nextRows[idx] = { ...nextRows[idx], roomType, occupancy, rate };
+            if (idx >= 0) nextRows[idx] = { ...nextRows[idx], roomType, occupancy, mealPlan, rate };
         } else {
-            const dup = nextRows.find(
-                (r) =>
-                    r.roomType.toLowerCase() === roomType.toLowerCase() &&
-                    r.occupancy.toLowerCase() === occupancy.toLowerCase()
-            );
+            const dup = nextRows.find(sameCombo);
             if (dup) {
                 dup.rate = rate;
+                dup.mealPlan = mealPlan;
             } else {
-                nextRows.push({ id: newRowId(), roomType, occupancy, rate });
+                nextRows.push({ id: newRowId(), roomType, occupancy, mealPlan, rate });
             }
         }
         try {
@@ -296,7 +319,7 @@ export default function AccountRatesModal({
             onClick={onClose}
         >
             <div
-                className="relative w-full max-w-md max-h-[85vh] flex flex-col rounded-2xl border shadow-2xl animate-in zoom-in-95 duration-200"
+                className="relative w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl border shadow-2xl animate-in zoom-in-95 duration-200"
                 style={{
                     backgroundColor: colors.card,
                     borderColor: colors.primary + '55',
@@ -507,6 +530,7 @@ export default function AccountRatesModal({
                                             <tr style={{ backgroundColor: colors.bg, color: colors.textMuted }}>
                                                 <th className="text-left px-3 py-2 font-bold text-[10px] uppercase">Room</th>
                                                 <th className="text-left px-3 py-2 font-bold text-[10px] uppercase">Occ.</th>
+                                                <th className="text-left px-3 py-2 font-bold text-[10px] uppercase">Meal</th>
                                                 <th className="text-right px-3 py-2 font-bold text-[10px] uppercase">Rate</th>
                                                 {!readOnly && <th className="w-16" />}
                                             </tr>
@@ -526,6 +550,9 @@ export default function AccountRatesModal({
                                                     </td>
                                                     <td className="px-3 py-2" style={{ color: colors.textMuted }}>
                                                         {row.occupancy}
+                                                    </td>
+                                                    <td className="px-3 py-2" style={{ color: colors.textMuted }}>
+                                                        {row.mealPlan || '—'}
                                                     </td>
                                                     <td className="px-3 py-2 text-right font-mono" style={{ color: colors.textMain }}>
                                                         {Number(row.rate).toLocaleString()}
@@ -613,7 +640,7 @@ export default function AccountRatesModal({
                     onClick={() => setRowModalOpen(false)}
                 >
                     <div
-                        className="w-full max-w-xs p-5 rounded-2xl border shadow-2xl space-y-3"
+                        className="w-full max-w-sm p-5 rounded-2xl border shadow-2xl space-y-3"
                         style={{ backgroundColor: colors.card, borderColor: colors.border }}
                         onClick={(e) => e.stopPropagation()}
                     >
@@ -666,6 +693,28 @@ export default function AccountRatesModal({
                                         {o}
                                     </option>
                                 ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-black uppercase tracking-widest" style={{ color: colors.textMuted }}>
+                                Meal plan
+                            </label>
+                            <select
+                                value={rowDraft.mealPlan}
+                                onChange={(e) => setRowDraft((d) => ({ ...d, mealPlan: e.target.value }))}
+                                className="w-full mt-1 px-3 py-2 rounded border bg-black/20 text-sm"
+                                style={{ borderColor: colors.border, color: colors.textMain }}
+                            >
+                                <option value="">Select…</option>
+                                {mealPlanOptions.map((m) => (
+                                    <option key={m.id || m.code} value={m.code}>
+                                        {m.code} — {m.name}
+                                    </option>
+                                ))}
+                                {rowDraft.mealPlan &&
+                                !mealPlanOptions.some((m) => m.code.toLowerCase() === rowDraft.mealPlan.toLowerCase()) ? (
+                                    <option value={rowDraft.mealPlan}>{rowDraft.mealPlan}</option>
+                                ) : null}
                             </select>
                         </div>
                         <div>
