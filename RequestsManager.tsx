@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { apiUrl } from './backendApi';
 import {
-    LayoutList, Search, Plus, Calendar, User, FileText, Check, DollarSign,
-    Box, Users, Clock, Coffee, Utensils, Music, Bus, Car, BedDouble,
+    Search, Plus, Calendar, User, FileText, DollarSign,
+    Box, Users, Clock, Music, Car, BedDouble,
     Trash2, Save, ChevronDown, ChevronRight, Calculator, Filter,
-    MoreHorizontal, Moon, Bed, Tag, X, Settings, CreditCard, RefreshCw, Printer, Download,
+    MoreHorizontal, Moon, Bed, X, Settings, CreditCard, RefreshCw, Printer, Download,
     Bell, AlertTriangle, Star, Copy, RotateCcw, MessageSquare
 } from 'lucide-react';
 import AddAccountModal from './AddAccountModal';
