@@ -422,6 +422,29 @@ export default function RequestsManager({
     scopedAccountFilter,
 }: RequestsManagerProps) {
     const colors = theme.colors;
+
+    /** Status chroma for request list, kanban rows, and UI dots (theme tokens — not grid row fills). */
+    const getStatusColor = (status: string) => {
+        const s = String(status || '').trim().toLowerCase();
+        switch (s) {
+            case 'inquiry':
+                return colors.textMuted;
+            case 'accepted':
+                return colors.yellow;
+            case 'tentative':
+                return colors.blue;
+            case 'definite':
+                return colors.green;
+            case 'actual':
+                return '#059669';
+            case 'lost':
+            case 'cancelled':
+                return colors.red;
+            default:
+                return colors.primary;
+        }
+    };
+
     /** Saturated status row fills only when the shell is a dark theme (luxury / colorful). */
     const gridRoomsThemeDark = useMemo(
         () => screenLuminanceFromHex(String(colors.bg || '#ffffff')) < 0.34,
@@ -8088,27 +8111,6 @@ export default function RequestsManager({
         return colors[Math.abs(hash) % colors.length];
     };
 
-    /** Status chroma for request list, kanban rows, and UI dots (theme tokens — not grid row fills). */
-    const getStatusColor = (status: string) => {
-        const s = String(status || '').trim().toLowerCase();
-        switch (s) {
-            case 'inquiry':
-                return colors.textMuted;
-            case 'accepted':
-                return colors.yellow;
-            case 'tentative':
-                return colors.blue;
-            case 'definite':
-                return colors.green;
-            case 'actual':
-                return '#059669';
-            case 'lost':
-            case 'cancelled':
-                return colors.red;
-            default:
-                return colors.primary;
-        }
-    };
 
     /** Bright accent for rooms grid only (left bar + status label on tinted row backgrounds). */
     const getGridRoomsStatusAccent = (status: string) => {
