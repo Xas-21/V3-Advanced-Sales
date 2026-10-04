@@ -2,9 +2,10 @@ import {
     calculateNights,
     inclusiveCalendarDays,
     normalizeRequestTypeKey,
+    transportRowCount,
 } from './beoShared';
 
-export type ProformaLineKind = 'room' | 'event';
+export type ProformaLineKind = 'room' | 'event' | 'transport';
 
 export type ProformaLine = {
     date: string;
@@ -169,12 +170,30 @@ function buildLines(request: ProformaBag, roomTypeNames: string[] = []): Proform
             });
         }
     }
+    for (const trip of bagList(request.transportation)) {
+        const price = Number(trip?.costPerWay) || 0;
+        const quantity = transportRowCount(trip);
+        const amount = money(price * quantity);
+        if (amount <= 0) continue;
+        const vehicle = text(trip?.type) || 'Transfer';
+        const notes = text(trip?.notes);
+        const timing = text(trip?.timing);
+        lines.push({
+            date: timing || stayRange(text(request.checkIn), text(request.checkOut)),
+            description: notes ? `Transfer · ${vehicle} — ${notes}` : `Transfer · ${vehicle}`,
+            quantity,
+            price: money(price),
+            amount,
+            kind: 'transport',
+        });
+    }
     return lines;
 }
 
 function buildTaxRows(lines: ProformaLine[], taxes: ProformaBag[]): ProformaTaxRow[] {
     const roomBase = money(lines.filter((line) => line.kind === 'room').reduce((sum, line) => sum + line.amount, 0));
     const eventBase = money(lines.filter((line) => line.kind === 'event').reduce((sum, line) => sum + line.amount, 0));
+    const transportBase = money(lines.filter((line) => line.kind === 'transport').reduce((sum, line) => sum + line.amount, 0));
     const rows: ProformaTaxRow[] = [];
     for (const tax of taxes) {
         const rate = Number(tax?.rate) || 0;
@@ -183,6 +202,7 @@ function buildTaxRows(lines: ProformaLine[], taxes: ProformaBag[]): ProformaTaxR
         let base = 0;
         if (scope.accommodation) base += roomBase;
         if (scope.events) base += eventBase;
+        if (scope.transport) base += transportBase;
         if (base <= 0) continue;
         rows.push({
             label: text(tax.label) || text(tax.name) || 'Tax',

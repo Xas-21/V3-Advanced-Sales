@@ -205,4 +205,51 @@ describe('buildProformaInvoice', () => {
         });
         expect(skipped.poNumber).toBe('');
     });
+
+    it('adds a transfer line with vehicle type, cost, and notes, and taxes it on the transport scope', () => {
+        const invoice = buildProformaInvoice({
+            account: { name: 'Acme' },
+            request: {
+                id: 'R5',
+                requestType: 'accommodation',
+                checkIn: '2026-11-01',
+                checkOut: '2026-11-03',
+                rooms: [{ type: 'Deluxe', count: 1, rate: 100 }],
+                transportation: [
+                    { type: 'Sedan', costPerWay: 250, notes: 'Airport pickup', timing: '14:00' },
+                    { type: 'SUV', count: 7, costPerWay: 100, notes: 'Same type' },
+                    { type: 'Coach', costPerWay: 0, notes: 'Complimentary' },
+                ],
+            },
+            taxes: [
+                { label: 'VAT', rate: 15, scope: { accommodation: true, transport: true } },
+                { label: 'Municipality', rate: 5, scope: { accommodation: true } },
+            ],
+            issuedOn: '2026-09-29',
+        });
+        expect(invoice.lines.filter((line) => line.kind === 'transport')).toEqual([
+            {
+                date: '14:00',
+                description: 'Transfer · Sedan — Airport pickup',
+                quantity: 1,
+                price: 250,
+                amount: 250,
+                kind: 'transport',
+            },
+            {
+                date: '2026-11-01 – 2026-11-03',
+                description: 'Transfer · SUV — Same type',
+                quantity: 7,
+                price: 100,
+                amount: 700,
+                kind: 'transport',
+            },
+        ]);
+        expect(invoice.lines.some((line) => line.description.includes('Complimentary'))).toBe(false);
+        expect(invoice.net).toBe(1150);
+        expect(invoice.taxes).toEqual([
+            { label: 'VAT', rate: 15, amount: 172.5 },
+            { label: 'Municipality', rate: 5, amount: 10 },
+        ]);
+    });
 });

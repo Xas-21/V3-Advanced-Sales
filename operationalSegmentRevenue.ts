@@ -3,6 +3,8 @@
  * Shared by Reports and the main dashboard for consistent period revenue.
  */
 
+import { transportRowAmount } from './beoShared';
+
 export function inDateRangeYMD(dateStr: string, start: string, end: string): boolean {
     const d = String(dateStr || '').slice(0, 10);
     if (!start || !end) return true;
@@ -87,7 +89,7 @@ export function computeRequestRevenueBreakdownNoTax(r: any): {
         const rowCost = (Number(item?.rate || 0) * Number(item?.pax || 0)) + Number(item?.rental || 0);
         return sum + rowCost * rowDays;
     }, 0);
-    const transportRevenue = transport.reduce((sum: number, row: any) => sum + Number(row?.costPerWay || 0), 0);
+    const transportRevenue = transport.reduce((sum: number, row: any) => sum + transportRowAmount(row), 0);
     let lineSum = roomsRevenue + eventRevenue + transportRevenue;
     const storedNoTax = asNumberReport(
         r?.grandTotalNoTax ?? r?.totalCostNoTax ?? r?.totalCost ?? r?.grandTotal ?? r?.totalAmount ?? 0

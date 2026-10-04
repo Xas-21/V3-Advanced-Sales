@@ -143,4 +143,19 @@ describe('requestFinancials characterization', () => {
     expect(fin.paidAmount).toBe(1500);
     expect(fin.paymentStatus).toBe('Deposit');
   });
+
+  it('multiplies transfer cost by vehicle quantity', () => {
+    const fin = calculateAccFinancialsForRequest(
+      {
+        checkIn: '2026-05-01',
+        checkOut: '2026-05-02',
+        rooms: [],
+        agenda: [],
+        transportation: [{ costPerWay: 100, count: 7 }],
+      },
+      [],
+      'accommodation'
+    );
+    expect(fin.transCostNoTax).toBe(700);
+  });
 });

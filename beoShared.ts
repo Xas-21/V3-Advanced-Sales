@@ -19,6 +19,18 @@ export function paymentsMeetOrExceedTotal(paidSum: number, totalCost: number): b
     return Math.round(paidSum * 100) >= Math.round(totalCost * 100);
 }
 
+/** Vehicle quantity on a transport row. Missing or invalid count is one trip (legacy rows). */
+export function transportRowCount(trip: { count?: unknown } | null | undefined): number {
+    const n = Number(trip?.count);
+    if (Number.isFinite(n) && n > 0) return n;
+    return 1;
+}
+
+/** Pre-tax transfer amount: cost per way × quantity. */
+export function transportRowAmount(trip: { costPerWay?: unknown; count?: unknown } | null | undefined): number {
+    return (Number(trip?.costPerWay) || 0) * transportRowCount(trip);
+}
+
 /** Local calendar YYYY-MM-DD in the user's timezone (any time of day maps to that calendar date). */
 export function localCalendarIsoDate(d: Date = new Date()): string {
     const y = d.getFullYear();
@@ -392,7 +404,10 @@ export function calculateAccFinancialsForRequest(
         return acc + (Number(r.count || 0) * rowNights);
     }, 0);
 
-    const transCostNoTax = (form.transportation || []).reduce((acc: number, t: any) => acc + (Number(t.costPerWay || 0)), 0);
+    const transCostNoTax = (form.transportation || []).reduce(
+        (acc: number, t: any) => acc + transportRowAmount(t),
+        0
+    );
 
     const eventCostNoTax = (form.agenda || []).reduce((acc: number, item: any) => {
         const start = String(item?.startDate || '').slice(0, 10);

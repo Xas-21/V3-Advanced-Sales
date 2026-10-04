@@ -8,6 +8,7 @@ import {
     UNMAPPED_TAXONOMY_LABEL,
 } from './propertyTaxonomy';
 import { addProratedRequestFinancialsToDashboardBuckets } from './operationalSegmentRevenue';
+import { transportRowAmount } from './beoShared';
 
 export type VsLyKind = 'rooms' | 'mice' | 'full';
 
@@ -409,7 +410,7 @@ export function computeRequestRevenueBreakdownNoTax(r: any): {
         const rowCost = (Number(item?.rate || 0) * Number(item?.pax || 0)) + Number(item?.rental || 0);
         return sum + rowCost * rowDays;
     }, 0);
-    const transportRevenue = transport.reduce((sum: number, row: any) => sum + Number(row?.costPerWay || 0), 0);
+    const transportRevenue = transport.reduce((sum: number, row: any) => sum + transportRowAmount(row), 0);
     let lineSum = roomsRevenue + eventRevenue + transportRevenue;
     const storedNoTax = asNumber(
         r?.grandTotalNoTax ?? r?.totalCostNoTax ?? r?.totalCost ?? r?.grandTotal ?? r?.totalAmount ?? 0

@@ -59,6 +59,7 @@ import {
     formatAgendaRowVenueDisplay,
     deriveRequestMealLabelFromRooms,
     paymentsMeetOrExceedTotal,
+    transportRowCount,
     shouldPromoteDefiniteToActual,
     requestSectionAddButtonStyle,
     REQUEST_SECTION_ADD_BTN_CLASS,
@@ -3180,7 +3181,7 @@ export default function RequestsManager({
         const addTrip = () => {
             setAccForm({
                 ...accForm,
-                transportation: [...accForm.transportation, { id: Date.now(), type: 'Sedan', pax: 1, costPerWay: 0, timing: '', notes: '' }]
+                transportation: [...accForm.transportation, { id: Date.now(), type: 'Sedan', count: 1, pax: 1, costPerWay: 0, timing: '', notes: '' }]
             });
         };
 
@@ -4038,7 +4039,8 @@ export default function RequestsManager({
 
                     <div className="space-y-3">
                         <div className="grid grid-cols-12 gap-4 px-4 py-2 opacity-40 text-[10px] font-bold uppercase">
-                            <div className="col-span-3">Vehicle Type</div>
+                            <div className="col-span-2">Vehicle Type</div>
+                            <div className="col-span-1 text-center">Qty</div>
                             <div className="col-span-2 text-center">Pax</div>
                             <div className="col-span-2 text-right">Cost / Way</div>
                             <div className="col-span-2">Timing</div>
@@ -4047,11 +4049,15 @@ export default function RequestsManager({
                         </div>
                         {accForm.transportation.map((trip) => (
                             <div key={trip.id} className="grid grid-cols-12 gap-4 items-center p-3 rounded-lg bg-black/10 border border-white/5 hover:border-white/10 transition-all group">
-                                <div className="col-span-3">
+                                <div className="col-span-2">
                                     <select className="w-full p-2 text-sm rounded bg-black/20 border border-transparent focus:border-primary outline-none"
                                         value={trip.type} onChange={e => updateTrip(trip.id, 'type', e.target.value)}>
                                         <option>Sedan</option><option>SUV</option><option>Luxury</option><option>Mini Bus</option><option>Coach</option>
                                     </select>
+                                </div>
+                                <div className="col-span-1 text-center">
+                                    <input type="number" min={1} className="w-full p-2 text-sm rounded bg-black/20 border border-transparent focus:border-primary outline-none text-center"
+                                        value={transportRowCount(trip)} onChange={e => updateTrip(trip.id, 'count', Math.max(1, Number(e.target.value) || 1))} />
                                 </div>
                                 <div className="col-span-2 text-center">
                                     <input type="number" className="w-full p-2 text-sm rounded bg-black/20 border border-transparent focus:border-primary outline-none text-center"

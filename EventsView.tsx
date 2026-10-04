@@ -52,6 +52,7 @@ import {
     sumAgendaAttendeeDays,
     expandAgendaRowVenueOccupancies,
     formatAgendaRowVenueDisplay,
+    transportRowAmount,
 } from './beoShared';
 import { rechartsTooltipThemeProps } from './rechartsChartLegend';
 import { StatusBadge, KPICard } from './dashboardHub/dashboardChrome';
@@ -208,7 +209,7 @@ function computeRequestTotalWithTax(req: any, taxes: any[] = []) {
         return sum + (count * rate * nights);
     }, 0);
     const eventCostNoTax = agenda.reduce((sum: number, item: any) => sum + (Number(item.rate || 0) * Number(item.pax || 0)) + Number(item.rental || 0), 0);
-    const transCostNoTax = transport.reduce((sum: number, t: any) => sum + Number(t.costPerWay || 0), 0);
+    const transCostNoTax = transport.reduce((sum: number, t: any) => sum + transportRowAmount(t), 0);
     let roomsTax = 0;
     let eventTax = 0;
     let transTax = 0;
@@ -262,7 +263,7 @@ export function computeRequestCostBreakdown(req: any) {
         const rowCost = (Number(item?.rate || 0) * Number(item?.pax || 0)) + Number(item?.rental || 0);
         return sum + (rowCost * rowDays);
     }, 0);
-    const transportRevenue = transport.reduce((sum: number, row: any) => sum + Number(row?.costPerWay || 0), 0);
+    const transportRevenue = transport.reduce((sum: number, row: any) => sum + transportRowAmount(row), 0);
     let lineSum = roomsRevenue + eventRevenue + transportRevenue;
     const storedNoTax = asNumber(
         req?.grandTotalNoTax ??

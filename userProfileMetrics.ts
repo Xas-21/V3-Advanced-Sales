@@ -1,5 +1,5 @@
 import { flattenCrmLeads } from './accountProfileData';
-import { calculateNights, inclusiveCalendarDays, normalizeRequestTypeKey } from './beoShared';
+import { calculateNights, inclusiveCalendarDays, normalizeRequestTypeKey, transportRowAmount } from './beoShared';
 import {
     eachInclusiveAgendaDayYmd,
     eachOccupiedNightYmd,
@@ -108,7 +108,7 @@ export function computeProfileRequestPreTax(req: any): number {
         return s + line;
     }, 0);
 
-    const transportRevenue = transport.reduce((s: number, t: any) => s + Number(t?.costPerWay || 0), 0);
+    const transportRevenue = transport.reduce((s: number, t: any) => s + transportRowAmount(t), 0);
     let lineSum = roomsRevenue + eventRevenue + transportRevenue;
     const storedNoTax = asNumber(req?.grandTotalNoTax ?? req?.totalCostNoTax);
     if (lineSum <= 0 && storedNoTax > 0) lineSum = storedNoTax;
