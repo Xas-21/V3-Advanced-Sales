@@ -6,6 +6,8 @@ export type ProformaExtraItem = {
     quantity: number;
     price: number;
     vatPercent: number;
+    taxId: string;
+    taxLabel: string;
     startDate: string;
     endDate: string;
 };
@@ -103,6 +105,8 @@ export function emptyProformaExtraItem(): ProformaExtraItem {
         quantity: 1,
         price: 0,
         vatPercent: 0,
+        taxId: '',
+        taxLabel: '',
         startDate: '',
         endDate: '',
     };
@@ -121,6 +125,8 @@ export function normalizeExtraItems(raw: unknown): ProformaExtraItem[] {
             quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 0,
             price: Number.isFinite(price) ? price : 0,
             vatPercent: Number.isFinite(vat) && vat > 0 ? vat : 0,
+            taxId: String(doc.taxId || '').trim(),
+            taxLabel: String(doc.taxLabel || '').trim(),
             startDate: String(doc.startDate || '').trim().slice(0, 10),
             endDate: String(doc.endDate || '').trim().slice(0, 10),
         };

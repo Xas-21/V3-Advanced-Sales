@@ -1022,6 +1022,8 @@ def _normalize_extra_items(raw: Any) -> list[dict]:
                 "quantity": qty if qty > 0 else 0,
                 "price": price,
                 "vatPercent": vat if vat > 0 else 0,
+                "taxId": str(item.get("taxId") or "").strip(),
+                "taxLabel": str(item.get("taxLabel") or "").strip(),
                 "startDate": str(item.get("startDate") or "").strip()[:10],
                 "endDate": str(item.get("endDate") or "").strip()[:10],
             }

@@ -7118,6 +7118,13 @@ export default function RequestsManager({
                     figuresUnchangedNote={Boolean(issuedProforma && figuresUnchanged(issuedProforma.fingerprint, currentProformaFp))}
                     busy={proformaBusy}
                     error={proformaError}
+                    taxes={(taxesList || [])
+                        .map((tax: any) => ({
+                            id: String(tax?.id || '').trim(),
+                            label: String(tax?.label || tax?.name || 'Tax').trim(),
+                            rate: Number(tax?.rate) || 0,
+                        }))
+                        .filter((tax: { id: string; rate: number }) => tax.id && tax.rate > 0)}
                     onClose={() => {
                         if (proformaBusy) return;
                         setProformaTarget(null);

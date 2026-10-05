@@ -290,7 +290,7 @@ describe('buildProformaInvoice', () => {
         expect(invoice.lines.some((line) => /other/i.test(line.description))).toBe(false);
     });
 
-    it('adds extra invoice-only lines and VAT grouped by the item rate, not hotel tax scopes', () => {
+    it('adds extra invoice lines into the matching property tax row', () => {
         const invoice = buildProformaInvoice({
             request: {
                 id: 'R6',
@@ -301,11 +301,14 @@ describe('buildProformaInvoice', () => {
             },
             extraItems: [
                 { description: 'Late checkout', quantity: 2, price: 50, vatPercent: 15 },
-                { description: 'Parking', quantity: 1, price: 40, vatPercent: 5 },
+                { description: 'Parking', quantity: 1, price: 40, taxId: 'muni', vatPercent: 5 },
                 { description: '  ', quantity: 1, price: 99, vatPercent: 15 },
                 { description: 'Zero', quantity: 1, price: 0, vatPercent: 15 },
             ],
-            taxes: [{ label: 'VAT', rate: 15, scope: { accommodation: true } }],
+            taxes: [
+                { id: 'vat', label: 'VAT', rate: 15, scope: { accommodation: true } },
+                { id: 'muni', label: 'Municipality Fee', rate: 5, scope: { events: true } },
+            ],
             issuedOn: '2026-09-29',
         });
         expect(invoice.lines.filter((line) => line.kind === 'extra')).toEqual([
@@ -326,14 +329,15 @@ describe('buildProformaInvoice', () => {
                 amount: 40,
                 kind: 'extra',
                 vatPercent: 5,
+                taxId: 'muni',
             },
         ]);
         expect(invoice.net).toBe(340);
         expect(invoice.taxes).toEqual([
-            { label: 'VAT', rate: 15, amount: 30 },
-            { label: 'Added items VAT', rate: 5, amount: 2 },
-            { label: 'Added items VAT', rate: 15, amount: 15 },
+            { label: 'VAT', rate: 15, amount: 45 },
+            { label: 'Municipality Fee', rate: 5, amount: 2 },
         ]);
+        expect(invoice.taxes.some((row) => /added items/i.test(row.label))).toBe(false);
         expect(invoice.total).toBe(387);
     });
 

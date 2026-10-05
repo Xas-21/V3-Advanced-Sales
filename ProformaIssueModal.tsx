@@ -7,6 +7,8 @@ import {
 
 type Colors = Record<string, string>;
 
+export type ProformaTaxChoice = { id: string; label: string; rate: number };
+
 type Props = {
     open: boolean;
     colors: Colors;
@@ -15,6 +17,7 @@ type Props = {
     figuresUnchangedNote: boolean;
     busy: boolean;
     error: string;
+    taxes: ProformaTaxChoice[];
     onClose: () => void;
     onSkip: () => void;
     onContinue: (poNumber: string) => void;
@@ -28,6 +31,14 @@ function cloneItems(items: ProformaExtraItem[] | undefined): ProformaExtraItem[]
     return (items || []).map((row) => ({ ...row }));
 }
 
+function selectedTaxId(row: ProformaExtraItem, taxes: ProformaTaxChoice[]): string {
+    if (row.taxId) return row.taxId;
+    const rate = Number(row.vatPercent) || 0;
+    if (rate <= 0) return '';
+    const same = taxes.filter((tax) => tax.rate === rate);
+    return (same.find((tax) => /vat/i.test(tax.label)) || same[0])?.id || '';
+}
+
 export default function ProformaIssueModal({
     open,
     colors,
@@ -36,6 +47,7 @@ export default function ProformaIssueModal({
     figuresUnchangedNote,
     busy,
     error,
+    taxes,
     onClose,
     onSkip,
     onContinue,
@@ -115,17 +127,33 @@ export default function ProformaIssueModal({
                         />
                     </label>
                     <label className="col-span-4 sm:col-span-2 text-[10px] font-bold uppercase" style={{ color: colors.textMuted }}>
-                        VAT %
-                        <input
-                            type="number"
-                            min={0}
-                            step="0.01"
-                            value={row.vatPercent}
-                            onChange={(e) => updateItem(row.id, { vatPercent: Number(e.target.value) || 0 })}
+                        Tax
+                        <select
+                            value={selectedTaxId(row, taxes)}
+                            onChange={(e) => {
+                                const tax = taxes.find((item) => item.id === e.target.value);
+                                updateItem(row.id, {
+                                    taxId: tax?.id || '',
+                                    taxLabel: tax?.label || '',
+                                    vatPercent: tax?.rate || 0,
+                                });
+                            }}
                             className="mt-1 w-full px-2 py-1.5 rounded border outline-none text-sm font-normal"
                             style={fieldStyle}
                             disabled={busy}
-                        />
+                        >
+                            <option value="">No tax</option>
+                            {taxes.map((tax) => (
+                                <option key={tax.id} value={tax.id}>
+                                    {tax.label} {tax.rate}%
+                                </option>
+                            ))}
+                            {row.taxId && !taxes.some((tax) => tax.id === row.taxId) ? (
+                                <option value={row.taxId}>
+                                    {row.taxLabel || 'Saved tax'} {row.vatPercent}%
+                                </option>
+                            ) : null}
+                        </select>
                     </label>
                     <button
                         type="button"
@@ -188,7 +216,16 @@ export default function ProformaIssueModal({
                 <button
                     type="button"
                     disabled={busy}
-                    onClick={() => onSaveItems(itemsDraft)}
+                    onClick={() =>
+                        onSaveItems(
+                            itemsDraft.map((row) => {
+                                const tax = taxes.find((item) => item.id === selectedTaxId(row, taxes));
+                                return tax
+                                    ? { ...row, taxId: tax.id, taxLabel: tax.label, vatPercent: tax.rate }
+                                    : { ...row, taxId: '', taxLabel: '', vatPercent: 0 };
+                            })
+                        )
+                    }
                     className="px-3 py-1.5 rounded-xl text-sm font-semibold text-white"
                     style={{ background: colors.primary }}
                 >

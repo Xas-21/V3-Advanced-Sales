@@ -15,6 +15,7 @@ export type ProformaLine = {
     amount: number;
     kind: ProformaLineKind;
     vatPercent?: number;
+    taxId?: string;
 };
 
 export type ProformaTaxRow = {
@@ -148,6 +149,7 @@ function extraItemLines(extraItems: ProformaBag[] = []): ProformaLine[] {
         const price = Number(item?.price) || 0;
         const amount = money(quantity * price);
         if (!description || amount <= 0) continue;
+        const taxId = text(item?.taxId);
         lines.push({
             date: transportLineDate(item),
             description,
@@ -156,26 +158,39 @@ function extraItemLines(extraItems: ProformaBag[] = []): ProformaLine[] {
             amount,
             kind: 'extra',
             vatPercent: Number(item?.vatPercent) || 0,
+            ...(taxId ? { taxId } : {}),
         });
     }
     return lines;
 }
 
-function extraTaxRows(lines: ProformaLine[]): ProformaTaxRow[] {
-    const byRate = new Map<number, number>();
-    for (const line of lines) {
-        if (line.kind !== 'extra') continue;
-        const rate = Number(line.vatPercent) || 0;
-        if (rate <= 0) continue;
-        byRate.set(rate, money((byRate.get(rate) || 0) + money((line.amount * rate) / 100)));
+function propertyTaxLabel(tax: ProformaBag): string {
+    return text(tax.label) || text(tax.name) || 'Tax';
+}
+
+function taxForExtraLine(line: ProformaLine, taxes: ProformaBag[]): ProformaBag | null {
+    const id = text(line.taxId);
+    if (id) {
+        const byId = taxes.find((tax) => text(tax.id) === id);
+        if (byId) return byId;
     }
-    return [...byRate.entries()]
-        .sort((a, b) => a[0] - b[0])
-        .map(([rate, amount]) => ({
-            label: 'Added items VAT',
-            rate,
-            amount,
-        }));
+    const rate = Number(line.vatPercent) || 0;
+    if (rate <= 0) return null;
+    const sameRate = taxes.filter((tax) => Number(tax.rate) === rate);
+    return sameRate.find((tax) => /vat/i.test(propertyTaxLabel(tax))) || sameRate[0] || null;
+}
+
+function addExtraTax(rows: ProformaTaxRow[], line: ProformaLine, taxes: ProformaBag[]) {
+    const tax = taxForExtraLine(line, taxes);
+    if (!tax) return;
+    const rate = Number(tax.rate) || 0;
+    if (rate <= 0) return;
+    const label = propertyTaxLabel(tax);
+    const add = money((line.amount * rate) / 100);
+    if (add <= 0) return;
+    const row = rows.find((item) => item.label === label && item.rate === rate);
+    if (row) row.amount = money(row.amount + add);
+    else rows.push({ label, rate, amount: add });
 }
 
 function buildLines(request: ProformaBag, roomTypeNames: string[] = [], extraItems: ProformaBag[] = []): ProformaLine[] {
@@ -267,7 +282,9 @@ function buildTaxRows(lines: ProformaLine[], taxes: ProformaBag[]): ProformaTaxR
             amount: money((base * rate) / 100),
         });
     }
-    rows.push(...extraTaxRows(lines));
+    for (const line of lines) {
+        if (line.kind === 'extra') addExtraTax(rows, line, taxes);
+    }
     return rows;
 }
 
