@@ -252,4 +252,51 @@ describe('buildProformaInvoice', () => {
             { label: 'Municipality', rate: 5, amount: 10 },
         ]);
     });
+
+    it('adds extra invoice-only lines and VAT grouped by the item rate, not hotel tax scopes', () => {
+        const invoice = buildProformaInvoice({
+            request: {
+                id: 'R6',
+                requestType: 'accommodation',
+                checkIn: '2026-11-01',
+                checkOut: '2026-11-03',
+                rooms: [{ type: 'Deluxe', count: 1, rate: 100 }],
+            },
+            extraItems: [
+                { description: 'Late checkout', quantity: 2, price: 50, vatPercent: 15 },
+                { description: 'Parking', quantity: 1, price: 40, vatPercent: 5 },
+                { description: '  ', quantity: 1, price: 99, vatPercent: 15 },
+                { description: 'Zero', quantity: 1, price: 0, vatPercent: 15 },
+            ],
+            taxes: [{ label: 'VAT', rate: 15, scope: { accommodation: true } }],
+            issuedOn: '2026-09-29',
+        });
+        expect(invoice.lines.filter((line) => line.kind === 'extra')).toEqual([
+            {
+                date: '2026-11-01 – 2026-11-03',
+                description: 'Late checkout',
+                quantity: 2,
+                price: 50,
+                amount: 100,
+                kind: 'extra',
+                vatPercent: 15,
+            },
+            {
+                date: '2026-11-01 – 2026-11-03',
+                description: 'Parking',
+                quantity: 1,
+                price: 40,
+                amount: 40,
+                kind: 'extra',
+                vatPercent: 5,
+            },
+        ]);
+        expect(invoice.net).toBe(340);
+        expect(invoice.taxes).toEqual([
+            { label: 'VAT', rate: 15, amount: 30 },
+            { label: 'Added items VAT', rate: 5, amount: 2 },
+            { label: 'Added items VAT', rate: 15, amount: 15 },
+        ]);
+        expect(invoice.total).toBe(387);
+    });
 });

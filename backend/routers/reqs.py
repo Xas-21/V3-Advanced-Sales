@@ -8,6 +8,7 @@ from data_access import (
     issue_request_proforma,
     list_requests as dal_list_requests,
     patch_request_proforma_po,
+    patch_request_proforma_items,
     reissue_request_proforma,
     upsert_request,
 )
@@ -70,6 +71,10 @@ class ProformaPoBody(BaseModel):
     poNumber: Optional[str] = None
 
 
+class ProformaItemsBody(BaseModel):
+    extraItems: Optional[list[Any]] = None
+
+
 def _proforma_http(exc: Exception) -> None:
     if isinstance(exc, KeyError):
         raise HTTPException(status_code=404, detail="Request not found") from exc
@@ -105,6 +110,14 @@ def reissue_proforma(req_id: str, body: ProformaIssueBody):
 def patch_proforma_po(req_id: str, body: ProformaPoBody):
     try:
         return patch_request_proforma_po(req_id, str(body.poNumber or ""))
+    except (KeyError, ValueError, RuntimeError) as exc:
+        _proforma_http(exc)
+
+
+@router.post("/requests/{req_id}/proforma/items")
+def patch_proforma_items(req_id: str, body: ProformaItemsBody):
+    try:
+        return patch_request_proforma_items(req_id, body.extraItems or [])
     except (KeyError, ValueError, RuntimeError) as exc:
         _proforma_http(exc)
 

@@ -49,6 +49,28 @@ describe('proformaIssue', () => {
         expect(figuresUnchanged(a, b)).toBe(true);
     });
 
+    it('fingerprint changes when extra invoice items change', () => {
+        const a = proformaFingerprint(sampleModel());
+        const b = proformaFingerprint(
+            buildProformaInvoice({
+                property: { legalName: 'Hotel', vatNumber: '1', legalAddress: 'A' },
+                account: { name: 'Acme', clientTaxId: '9', street: 'St', city: 'City', country: 'SA' },
+                request: {
+                    id: 'R1',
+                    confirmationNo: 'C-1',
+                    requestType: 'accommodation',
+                    checkIn: '2026-11-01',
+                    checkOut: '2026-11-03',
+                    rooms: [{ type: 'Deluxe', count: 1, rate: 100 }],
+                },
+                extraItems: [{ description: 'Parking', quantity: 1, price: 40, vatPercent: 15 }],
+                taxes: [{ label: 'VAT', rate: 15, scope: { accommodation: true } }],
+                issuedOn: '2026-09-29',
+            })
+        );
+        expect(a).not.toBe(b);
+    });
+
     it('fingerprint changes when a room rate changes', () => {
         const a = proformaFingerprint(sampleModel({ rate: 100 }));
         const b = proformaFingerprint(sampleModel({ rate: 200 }));
@@ -68,6 +90,13 @@ describe('proformaIssue', () => {
         expect(doc?.invoiceNumber).toBe('K4829103');
         expect(doc?.poNumber).toBe('PO-9');
         expect(doc?.issuedOn).toBe('2026-09-29');
+        expect(doc?.extraItems).toEqual([]);
+        expect(
+            normalizeProforma({
+                invoiceNumber: 'A0000001',
+                extraItems: [{ description: ' Parking ', quantity: 2, price: 40, vatPercent: 15 }],
+            })?.extraItems
+        ).toEqual([{ id: 'xi-0', description: 'Parking', quantity: 2, price: 40, vatPercent: 15 }]);
         expect(normalizeProforma({ invoiceNumber: 'nope' })).toBeNull();
         expect(normalizeProforma(null)).toBeNull();
     });

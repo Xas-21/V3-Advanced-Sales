@@ -164,6 +164,29 @@ def test_proforma_issue_unique_and_po(proforma_fixtures):
     assert reissue.json().get("issuedOn") == "2026-10-01"
     assert reissue.json().get("poNumber") == "PO-9"
 
+    items = client.post(
+        f"/api/requests/{fx['req_a']}/proforma/items",
+        headers=headers,
+        json={
+            "extraItems": [
+                {"id": "xi-1", "description": "Late checkout", "quantity": 2, "price": 50, "vatPercent": 15}
+            ]
+        },
+    )
+    assert items.status_code == 200, items.text
+    assert items.json().get("invoiceNumber") == number
+    assert items.json().get("extraItems")[0]["description"] == "Late checkout"
+
+    reissue2 = client.post(
+        f"/api/requests/{fx['req_a']}/proforma/reissue",
+        headers=headers,
+        json={"fingerprint": "fp-items", "issuedOn": "2026-10-02"},
+    )
+    assert reissue2.status_code == 200, reissue2.text
+    assert reissue2.json().get("invoiceNumber") == number
+    assert reissue2.json().get("extraItems")[0]["description"] == "Late checkout"
+    assert reissue2.json().get("issuedOn") == "2026-10-02"
+
     foreign = client.post(
         f"/api/requests/{fx['req_other']}/proforma/issue",
         headers=headers,

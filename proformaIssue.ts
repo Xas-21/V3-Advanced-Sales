@@ -1,5 +1,13 @@
 export const INVOICE_NUMBER_RE = /^[A-Z]\d{7}$/;
 
+export type ProformaExtraItem = {
+    id: string;
+    description: string;
+    quantity: number;
+    price: number;
+    vatPercent: number;
+};
+
 export type ProformaIssue = {
     invoiceNumber: string;
     poNumber: string;
@@ -7,6 +15,7 @@ export type ProformaIssue = {
     issuedById: string;
     issuedByName: string;
     fingerprint: string;
+    extraItems: ProformaExtraItem[];
 };
 
 export type InvoiceParts = { letter: string; digits: string };
@@ -85,6 +94,33 @@ export function figuresUnchanged(stored: string | null | undefined, current: str
     return Boolean(a) && a === b;
 }
 
+export function emptyProformaExtraItem(): ProformaExtraItem {
+    return {
+        id: `xi-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        description: '',
+        quantity: 1,
+        price: 0,
+        vatPercent: 0,
+    };
+}
+
+export function normalizeExtraItems(raw: unknown): ProformaExtraItem[] {
+    if (!Array.isArray(raw)) return [];
+    return raw.map((item, i) => {
+        const doc = item && typeof item === 'object' ? (item as Record<string, unknown>) : {};
+        const quantity = Number(doc.quantity);
+        const price = Number(doc.price);
+        const vat = Number(doc.vatPercent ?? doc.vat);
+        return {
+            id: String(doc.id || `xi-${i}`),
+            description: String(doc.description || '').trim(),
+            quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 0,
+            price: Number.isFinite(price) ? price : 0,
+            vatPercent: Number.isFinite(vat) && vat > 0 ? vat : 0,
+        };
+    });
+}
+
 export function normalizeProforma(raw: unknown): ProformaIssue | null {
     if (!raw || typeof raw !== 'object') return null;
     const doc = raw as Record<string, unknown>;
@@ -99,5 +135,6 @@ export function normalizeProforma(raw: unknown): ProformaIssue | null {
         issuedById: String(doc.issuedById || '').trim(),
         issuedByName: String(doc.issuedByName || '').trim(),
         fingerprint: String(doc.fingerprint || ''),
+        extraItems: normalizeExtraItems(doc.extraItems),
     };
 }

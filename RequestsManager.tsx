@@ -601,6 +601,7 @@ export default function RequestsManager({
             issuedOn,
             invoiceNumber,
             poNumber,
+            extraItems: normalizeProforma(req?.proforma)?.extraItems,
             roomTypeNames: propertyRoomNames,
         });
     };
@@ -7165,6 +7166,31 @@ export default function RequestsManager({
                             } catch (err) {
                                 console.error('Proforma PO save failed', err);
                                 setProformaError('Could not save the PO number.');
+                            } finally {
+                                setProformaBusy(false);
+                            }
+                        })();
+                    }}
+                    onSaveItems={(items) => {
+                        void (async () => {
+                            if (!proformaTarget) return;
+                            setProformaBusy(true);
+                            setProformaError('');
+                            try {
+                                const doc = await fetch(
+                                    apiUrl(`/api/requests/${encodeURIComponent(String(proformaTarget.id))}/proforma/items`),
+                                    {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        credentials: 'include',
+                                        body: JSON.stringify({ extraItems: items }),
+                                    }
+                                );
+                                if (!doc.ok) throw new Error('Could not save invoice items.');
+                                mergeRequestProforma(String(proformaTarget.id), await doc.json());
+                            } catch (err) {
+                                console.error('Proforma items save failed', err);
+                                setProformaError('Could not save invoice items.');
                             } finally {
                                 setProformaBusy(false);
                             }

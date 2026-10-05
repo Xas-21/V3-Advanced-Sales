@@ -5,7 +5,7 @@ import {
     transportRowCount,
 } from './beoShared';
 
-export type ProformaLineKind = 'room' | 'event' | 'transport';
+export type ProformaLineKind = 'room' | 'event' | 'transport' | 'extra';
 
 export type ProformaLine = {
     date: string;
@@ -14,6 +14,7 @@ export type ProformaLine = {
     price: number;
     amount: number;
     kind: ProformaLineKind;
+    vatPercent?: number;
 };
 
 export type ProformaTaxRow = {
@@ -59,6 +60,7 @@ export type ProformaInvoiceInput = {
     issuedOn?: string;
     invoiceNumber?: string;
     poNumber?: string;
+    extraItems?: ProformaBag[];
     /** Property room-type names, in the same order as the request editor. */
     roomTypeNames?: string[];
 };
@@ -121,7 +123,45 @@ function roomDate(request: ProformaBag, room: ProformaBag): string {
     return stayRange(text(request.checkIn), text(request.checkOut));
 }
 
-function buildLines(request: ProformaBag, roomTypeNames: string[] = []): ProformaLine[] {
+function extraItemLines(extraItems: ProformaBag[] = [], date: string): ProformaLine[] {
+    const lines: ProformaLine[] = [];
+    for (const item of extraItems) {
+        const description = text(item?.description);
+        const quantity = Number(item?.quantity) || 0;
+        const price = Number(item?.price) || 0;
+        const amount = money(quantity * price);
+        if (!description || amount <= 0) continue;
+        lines.push({
+            date,
+            description,
+            quantity,
+            price: money(price),
+            amount,
+            kind: 'extra',
+            vatPercent: Number(item?.vatPercent) || 0,
+        });
+    }
+    return lines;
+}
+
+function extraTaxRows(lines: ProformaLine[]): ProformaTaxRow[] {
+    const byRate = new Map<number, number>();
+    for (const line of lines) {
+        if (line.kind !== 'extra') continue;
+        const rate = Number(line.vatPercent) || 0;
+        if (rate <= 0) continue;
+        byRate.set(rate, money((byRate.get(rate) || 0) + money((line.amount * rate) / 100)));
+    }
+    return [...byRate.entries()]
+        .sort((a, b) => a[0] - b[0])
+        .map(([rate, amount]) => ({
+            label: 'Added items VAT',
+            rate,
+            amount,
+        }));
+}
+
+function buildLines(request: ProformaBag, roomTypeNames: string[] = [], extraItems: ProformaBag[] = []): ProformaLine[] {
     const lines: ProformaLine[] = [];
     for (const room of bagList(request.rooms)) {
         const nights = roomNights(request, room);
@@ -187,6 +227,7 @@ function buildLines(request: ProformaBag, roomTypeNames: string[] = []): Proform
             kind: 'transport',
         });
     }
+    lines.push(...extraItemLines(extraItems, stayRange(text(request.checkIn), text(request.checkOut))));
     return lines;
 }
 
@@ -210,6 +251,7 @@ function buildTaxRows(lines: ProformaLine[], taxes: ProformaBag[]): ProformaTaxR
             amount: money((base * rate) / 100),
         });
     }
+    rows.push(...extraTaxRows(lines));
     return rows;
 }
 
@@ -218,7 +260,7 @@ export function buildProformaInvoice(input: ProformaInvoiceInput): ProformaInvoi
     const account = asBag(input.account);
     const request = asBag(input.request);
     const roomTypeNames = Array.isArray(input.roomTypeNames) ? input.roomTypeNames : [];
-    const lines = buildLines(request, roomTypeNames);
+    const lines = buildLines(request, roomTypeNames, bagList(input.extraItems));
     const taxes = buildTaxRows(lines, bagList(input.taxes));
     const net = money(lines.reduce((sum, line) => sum + line.amount, 0));
     const total = money(net + taxes.reduce((sum, row) => sum + row.amount, 0));

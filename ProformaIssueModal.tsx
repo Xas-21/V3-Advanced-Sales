@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import type { ProformaIssue } from './proformaIssue';
+import {
+    emptyProformaExtraItem,
+    type ProformaExtraItem,
+    type ProformaIssue,
+} from './proformaIssue';
 
 type Colors = Record<string, string>;
 
@@ -17,7 +21,12 @@ type Props = {
     onDownload: () => void;
     onReissue: () => void;
     onSavePo: (poNumber: string) => void;
+    onSaveItems: (items: ProformaExtraItem[]) => void;
 };
+
+function cloneItems(items: ProformaExtraItem[] | undefined): ProformaExtraItem[] {
+    return (items || []).map((row) => ({ ...row }));
+}
 
 export default function ProformaIssueModal({
     open,
@@ -33,15 +42,22 @@ export default function ProformaIssueModal({
     onDownload,
     onReissue,
     onSavePo,
+    onSaveItems,
 }: Props) {
     const [poDraft, setPoDraft] = useState('');
     const [editingPo, setEditingPo] = useState(false);
+    const [editingItems, setEditingItems] = useState(false);
+    const [itemsDraft, setItemsDraft] = useState<ProformaExtraItem[]>([]);
+
+    const extraKey = JSON.stringify(issued?.extraItems || []);
 
     useEffect(() => {
         if (!open) return;
         setPoDraft(issued?.poNumber || '');
         setEditingPo(false);
-    }, [open, issued?.poNumber, firstIssue]);
+        setEditingItems(false);
+        setItemsDraft(cloneItems(issued?.extraItems));
+    }, [open, issued?.poNumber, extraKey, firstIssue]);
 
     if (!open) return null;
 
@@ -51,11 +67,116 @@ export default function ProformaIssueModal({
         background: 'transparent',
     };
 
+    const updateItem = (id: string, patch: Partial<ProformaExtraItem>) => {
+        setItemsDraft((prev) => prev.map((row) => (row.id === id ? { ...row, ...patch } : row)));
+    };
+
+    const itemsEditor = (
+        <div className="mb-3 space-y-2">
+            <p className="text-xs" style={{ color: colors.textMuted }}>
+                Extra lines appear on this invoice only. They do not change the request total.
+            </p>
+            {itemsDraft.map((row) => (
+                <div key={row.id} className="grid grid-cols-12 gap-2 items-end">
+                    <label className="col-span-12 sm:col-span-5 text-[10px] font-bold uppercase" style={{ color: colors.textMuted }}>
+                        Description
+                        <input
+                            value={row.description}
+                            onChange={(e) => updateItem(row.id, { description: e.target.value })}
+                            className="mt-1 w-full px-2 py-1.5 rounded border outline-none text-sm font-normal"
+                            style={fieldStyle}
+                            disabled={busy}
+                        />
+                    </label>
+                    <label className="col-span-4 sm:col-span-2 text-[10px] font-bold uppercase" style={{ color: colors.textMuted }}>
+                        Qty
+                        <input
+                            type="number"
+                            min={0}
+                            value={row.quantity}
+                            onChange={(e) => updateItem(row.id, { quantity: Number(e.target.value) || 0 })}
+                            className="mt-1 w-full px-2 py-1.5 rounded border outline-none text-sm font-normal"
+                            style={fieldStyle}
+                            disabled={busy}
+                        />
+                    </label>
+                    <label className="col-span-4 sm:col-span-2 text-[10px] font-bold uppercase" style={{ color: colors.textMuted }}>
+                        Price
+                        <input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            value={row.price}
+                            onChange={(e) => updateItem(row.id, { price: Number(e.target.value) || 0 })}
+                            className="mt-1 w-full px-2 py-1.5 rounded border outline-none text-sm font-normal"
+                            style={fieldStyle}
+                            disabled={busy}
+                        />
+                    </label>
+                    <label className="col-span-4 sm:col-span-2 text-[10px] font-bold uppercase" style={{ color: colors.textMuted }}>
+                        VAT %
+                        <input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            value={row.vatPercent}
+                            onChange={(e) => updateItem(row.id, { vatPercent: Number(e.target.value) || 0 })}
+                            className="mt-1 w-full px-2 py-1.5 rounded border outline-none text-sm font-normal"
+                            style={fieldStyle}
+                            disabled={busy}
+                        />
+                    </label>
+                    <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => setItemsDraft((prev) => prev.filter((item) => item.id !== row.id))}
+                        className="col-span-12 sm:col-span-1 px-2 py-1.5 rounded-xl border text-xs"
+                        style={{ borderColor: colors.border, color: colors.textMain }}
+                    >
+                        Delete
+                    </button>
+                </div>
+            ))}
+            <div className="flex flex-wrap justify-end gap-2">
+                <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setItemsDraft((prev) => [...prev, emptyProformaExtraItem()])}
+                    className="px-3 py-1.5 rounded-xl border text-sm"
+                    style={{ borderColor: colors.border, color: colors.textMain }}
+                >
+                    Add item
+                </button>
+                <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => {
+                        setEditingItems(false);
+                        setItemsDraft(cloneItems(issued?.extraItems));
+                    }}
+                    className="px-3 py-1.5 rounded-xl border text-sm"
+                    style={{ borderColor: colors.border, color: colors.textMain }}
+                >
+                    Cancel
+                </button>
+                <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => onSaveItems(itemsDraft)}
+                    className="px-3 py-1.5 rounded-xl text-sm font-semibold text-white"
+                    style={{ background: colors.primary }}
+                >
+                    Save
+                </button>
+            </div>
+        </div>
+    );
+
     return (
         <div className="fixed inset-0 z-[220] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !busy && onClose()} />
             <div
-                className="relative w-full max-w-md rounded-2xl border shadow-2xl p-5"
+                className={`relative w-full rounded-2xl border shadow-2xl p-5 ${editingItems ? 'max-w-3xl' : 'max-w-md'}`}
                 style={{ borderColor: colors.border, background: colors.cardBg || colors.bg }}
             >
                 <h3 className="text-base font-bold mb-3" style={{ color: colors.textMain }}>
@@ -126,6 +247,10 @@ export default function ProformaIssueModal({
                                 <dt className="opacity-70">Issued by</dt>
                                 <dd>{issued?.issuedByName || issued?.issuedById || '—'}</dd>
                             </div>
+                            <div className="flex justify-between gap-3">
+                                <dt className="opacity-70">Added items</dt>
+                                <dd>{issued?.extraItems?.length ? `${issued.extraItems.length}` : 'None'}</dd>
+                            </div>
                         </dl>
                         {figuresUnchangedNote ? (
                             <p className="text-xs mb-3" style={{ color: colors.textMuted }}>
@@ -167,17 +292,44 @@ export default function ProformaIssueModal({
                                 </div>
                             </div>
                         ) : null}
+                        {editingItems ? itemsEditor : null}
                         <div className="flex flex-wrap justify-end gap-2">
-                            {!editingPo ? (
-                                <button
-                                    type="button"
-                                    disabled={busy}
-                                    onClick={() => setEditingPo(true)}
-                                    className="px-4 py-2 rounded-xl border text-sm font-semibold"
-                                    style={{ borderColor: colors.border, color: colors.textMain }}
-                                >
-                                    Edit PO
-                                </button>
+                            {!editingPo && !editingItems ? (
+                                <>
+                                    <button
+                                        type="button"
+                                        disabled={busy}
+                                        onClick={() => {
+                                            setEditingItems(true);
+                                            setItemsDraft((prev) => (prev.length ? prev : [emptyProformaExtraItem()]));
+                                        }}
+                                        className="px-4 py-2 rounded-xl border text-sm font-semibold"
+                                        style={{ borderColor: colors.border, color: colors.textMain }}
+                                    >
+                                        Add item
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={busy}
+                                        onClick={() => {
+                                            setEditingItems(true);
+                                            setItemsDraft((prev) => (prev.length ? prev : [emptyProformaExtraItem()]));
+                                        }}
+                                        className="px-4 py-2 rounded-xl border text-sm font-semibold"
+                                        style={{ borderColor: colors.border, color: colors.textMain }}
+                                    >
+                                        Edit items
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={busy}
+                                        onClick={() => setEditingPo(true)}
+                                        className="px-4 py-2 rounded-xl border text-sm font-semibold"
+                                        style={{ borderColor: colors.border, color: colors.textMain }}
+                                    >
+                                        Edit PO
+                                    </button>
+                                </>
                             ) : null}
                             <button
                                 type="button"

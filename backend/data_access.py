@@ -933,6 +933,7 @@ def issue_request_proforma(req_id: str, po_number: str, fingerprint: str, issued
                         "issuedById": issued_by_id,
                         "issuedByName": issued_by_name,
                         "fingerprint": fp,
+                        "extraItems": [],
                     }
                     cur.execute(
                         "UPDATE requests SET proforma = %s, updated_at = NOW() WHERE id = %s;",
@@ -984,6 +985,60 @@ def reissue_request_proforma(req_id: str, fingerprint: str, issued_on: str) -> d
                 raise ValueError("Proforma has not been issued yet.")
             current["issuedOn"] = issued
             current["fingerprint"] = fp
+            cur.execute(
+                "UPDATE requests SET proforma = %s, updated_at = NOW() WHERE id = %s;",
+                (Json(current), rid),
+            )
+            conn.commit()
+    item = get_request(rid) or {"id": rid, "proforma": current}
+    _broadcast_change("updated", "request", item, row.get("property_id"))
+    return current
+
+
+def _normalize_extra_items(raw: Any) -> list[dict]:
+    if not isinstance(raw, list):
+        return []
+    out: list[dict] = []
+    for i, item in enumerate(raw):
+        if not isinstance(item, dict):
+            continue
+        desc = str(item.get("description") or "").strip()
+        try:
+            qty = float(item.get("quantity") or 0)
+        except (TypeError, ValueError):
+            qty = 0.0
+        try:
+            price = float(item.get("price") or 0)
+        except (TypeError, ValueError):
+            price = 0.0
+        try:
+            vat = float(item.get("vatPercent") if item.get("vatPercent") is not None else item.get("vat") or 0)
+        except (TypeError, ValueError):
+            vat = 0.0
+        out.append(
+            {
+                "id": str(item.get("id") or f"xi-{i}"),
+                "description": desc,
+                "quantity": qty if qty > 0 else 0,
+                "price": price,
+                "vatPercent": vat if vat > 0 else 0,
+            }
+        )
+    return out
+
+
+def patch_request_proforma_items(req_id: str, extra_items: Any) -> dict:
+    rid = str(req_id or "").strip()
+    items = _normalize_extra_items(extra_items)
+    pool = _get_pool()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            row = _load_request_parent_for_update(cur, rid)
+            current = dict(row.get("proforma") if isinstance(row.get("proforma"), dict) else {})
+            existing = _normalize_invoice_number(current.get("invoiceNumber"))
+            if not _INVOICE_NUMBER_RE.match(existing):
+                raise ValueError("Proforma has not been issued yet.")
+            current["extraItems"] = items
             cur.execute(
                 "UPDATE requests SET proforma = %s, updated_at = NOW() WHERE id = %s;",
                 (Json(current), rid),
