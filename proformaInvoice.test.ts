@@ -237,7 +237,7 @@ describe('buildProformaInvoice', () => {
                 kind: 'transport',
             },
             {
-                date: '2026-11-01 – 2026-11-03',
+                date: '',
                 description: 'Transfer · SUV — Same type',
                 quantity: 7,
                 price: 100,
@@ -251,6 +251,43 @@ describe('buildProformaInvoice', () => {
             { label: 'VAT', rate: 15, amount: 172.5 },
             { label: 'Municipality', rate: 5, amount: 10 },
         ]);
+    });
+
+    it('uses transfer from/to dates on the invoice, not the request stay', () => {
+        const invoice = buildProformaInvoice({
+            request: {
+                id: 'R7',
+                requestType: 'accommodation',
+                checkIn: '2026-11-01',
+                checkOut: '2026-11-10',
+                rooms: [{ type: 'Deluxe', count: 1, rate: 100 }],
+                transportation: [
+                    { type: 'Sedan', costPerWay: 50, startDate: '2026-11-03' },
+                    { type: 'SUV', costPerWay: 80, startDate: '2026-11-04', endDate: '2026-11-06' },
+                    { type: 'Coach', costPerWay: 90, startDate: '2026-11-07', endDate: '2026-11-07' },
+                ],
+            },
+        });
+        expect(invoice.lines.filter((line) => line.kind === 'transport').map((line) => line.date)).toEqual([
+            '2026-11-03',
+            '2026-11-04 – 2026-11-06',
+            '2026-11-07 – 2026-11-07',
+        ]);
+    });
+
+    it('prints the custom other vehicle name, not Other', () => {
+        const invoice = buildProformaInvoice({
+            request: {
+                id: 'R8',
+                requestType: 'accommodation',
+                checkIn: '2026-11-01',
+                checkOut: '2026-11-03',
+                rooms: [{ type: 'Deluxe', count: 1, rate: 100 }],
+                transportation: [{ type: 'Other', otherType: 'Sprinter van', costPerWay: 200 }],
+            },
+        });
+        expect(invoice.lines.find((line) => line.kind === 'transport')?.description).toBe('Transfer · Sprinter van');
+        expect(invoice.lines.some((line) => /other/i.test(line.description))).toBe(false);
     });
 
     it('adds extra invoice-only lines and VAT grouped by the item rate, not hotel tax scopes', () => {

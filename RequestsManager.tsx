@@ -3182,7 +3182,7 @@ export default function RequestsManager({
         const addTrip = () => {
             setAccForm({
                 ...accForm,
-                transportation: [...accForm.transportation, { id: Date.now(), type: 'Sedan', count: 1, pax: 1, costPerWay: 0, timing: '', notes: '' }]
+                transportation: [...accForm.transportation, { id: Date.now(), type: 'Sedan', count: 1, pax: 1, costPerWay: 0, startDate: '', endDate: '', otherType: '', timing: '', notes: '' }]
             });
         };
 
@@ -4048,12 +4048,19 @@ export default function RequestsManager({
                             <div className="col-span-2">Notes</div>
                             <div className="col-span-1"></div>
                         </div>
-                        {accForm.transportation.map((trip) => (
-                            <div key={trip.id} className="grid grid-cols-12 gap-4 items-center p-3 rounded-lg bg-black/10 border border-white/5 hover:border-white/10 transition-all group">
+                        {accForm.transportation.map((trip) => {
+                            const vehicleOptions = ['Sedan', 'SUV', 'Luxury', 'Mini Bus', 'Coach', 'Other'];
+                            const selectType = vehicleOptions.includes(trip.type) ? trip.type : trip.type ? 'Other' : 'Sedan';
+                            const otherTypeValue =
+                                trip.otherType ||
+                                (trip.type && !vehicleOptions.includes(trip.type) ? trip.type : '');
+                            return (
+                            <div key={trip.id} className="p-3 rounded-lg bg-black/10 border border-white/5 hover:border-white/10 transition-all group space-y-2">
+                                <div className="grid grid-cols-12 gap-4 items-center">
                                 <div className="col-span-2">
                                     <select className="w-full p-2 text-sm rounded bg-black/20 border border-transparent focus:border-primary outline-none"
-                                        value={trip.type} onChange={e => updateTrip(trip.id, 'type', e.target.value)}>
-                                        <option>Sedan</option><option>SUV</option><option>Luxury</option><option>Mini Bus</option><option>Coach</option>
+                                        value={selectType} onChange={e => updateTrip(trip.id, 'type', e.target.value)}>
+                                        <option>Sedan</option><option>SUV</option><option>Luxury</option><option>Mini Bus</option><option>Coach</option><option>Other</option>
                                     </select>
                                 </div>
                                 <div className="col-span-1 text-center">
@@ -4081,8 +4088,42 @@ export default function RequestsManager({
                                         <Trash2 size={16} />
                                     </button>
                                 </div>
+                                </div>
+                                <div className="grid grid-cols-12 gap-4 items-center">
+                                    <div className="col-span-3">
+                                        <label className="text-[10px] font-bold uppercase opacity-50 mb-1 block" style={{ color: colors.textMuted }}>From</label>
+                                        <input
+                                            type="date"
+                                            className="w-full p-2 text-sm rounded bg-black/20 border border-transparent focus:border-primary outline-none"
+                                            value={trip.startDate || ''}
+                                            onChange={(e) => updateTrip(trip.id, 'startDate', e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="col-span-3">
+                                        <label className="text-[10px] font-bold uppercase opacity-50 mb-1 block" style={{ color: colors.textMuted }}>To</label>
+                                        <input
+                                            type="date"
+                                            className="w-full p-2 text-sm rounded bg-black/20 border border-transparent focus:border-primary outline-none"
+                                            value={trip.endDate || ''}
+                                            onChange={(e) => updateTrip(trip.id, 'endDate', e.target.value)}
+                                        />
+                                    </div>
+                                    {selectType === 'Other' ? (
+                                        <div className="col-span-4">
+                                            <label className="text-[10px] font-bold uppercase opacity-50 mb-1 block" style={{ color: colors.textMuted }}>Vehicle type</label>
+                                            <input
+                                                type="text"
+                                                className="w-full p-2 text-sm rounded bg-black/20 border border-transparent focus:border-primary outline-none"
+                                                placeholder="Enter vehicle type"
+                                                value={otherTypeValue}
+                                                onChange={(e) => updateTrip(trip.id, 'otherType', e.target.value)}
+                                            />
+                                        </div>
+                                    ) : null}
+                                </div>
                             </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 

@@ -101,6 +101,23 @@ function stayRange(start: string, end: string): string {
     return a || b;
 }
 
+/** Trip from/to dates, or time of day. Never the request stay. */
+export function transportLineDate(trip: ProformaBag | null | undefined): string {
+    const from = text(trip?.startDate).slice(0, 10);
+    const to = text(trip?.endDate).slice(0, 10);
+    if (from && to) return `${from} – ${to}`;
+    if (from) return from;
+    if (to) return to;
+    return text(trip?.timing);
+}
+
+export function transportVehicleLabel(trip: ProformaBag | null | undefined): string {
+    const type = text(trip?.type);
+    const custom = text(trip?.otherType);
+    if (/^other$/i.test(type)) return custom || 'Transfer';
+    return type || custom || 'Transfer';
+}
+
 function roomNights(request: ProformaBag, room: ProformaBag): number {
     const kind = normalizeRequestTypeKey(text(request.requestType));
     if (kind === 'series' || kind === 'event_rooms') {
@@ -215,11 +232,10 @@ function buildLines(request: ProformaBag, roomTypeNames: string[] = [], extraIte
         const quantity = transportRowCount(trip);
         const amount = money(price * quantity);
         if (amount <= 0) continue;
-        const vehicle = text(trip?.type) || 'Transfer';
+        const vehicle = transportVehicleLabel(trip);
         const notes = text(trip?.notes);
-        const timing = text(trip?.timing);
         lines.push({
-            date: timing || stayRange(text(request.checkIn), text(request.checkOut)),
+            date: transportLineDate(trip),
             description: notes ? `Transfer · ${vehicle} — ${notes}` : `Transfer · ${vehicle}`,
             quantity,
             price: money(price),
