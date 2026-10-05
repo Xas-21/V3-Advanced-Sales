@@ -310,7 +310,7 @@ describe('buildProformaInvoice', () => {
         });
         expect(invoice.lines.filter((line) => line.kind === 'extra')).toEqual([
             {
-                date: '2026-11-01 – 2026-11-03',
+                date: '',
                 description: 'Late checkout',
                 quantity: 2,
                 price: 50,
@@ -319,7 +319,7 @@ describe('buildProformaInvoice', () => {
                 vatPercent: 15,
             },
             {
-                date: '2026-11-01 – 2026-11-03',
+                date: '',
                 description: 'Parking',
                 quantity: 1,
                 price: 40,
@@ -335,5 +335,25 @@ describe('buildProformaInvoice', () => {
             { label: 'Added items VAT', rate: 15, amount: 15 },
         ]);
         expect(invoice.total).toBe(387);
+    });
+
+    it('uses extra item from/to dates, not the request stay', () => {
+        const invoice = buildProformaInvoice({
+            request: {
+                id: 'R9',
+                requestType: 'accommodation',
+                checkIn: '2026-11-01',
+                checkOut: '2026-11-10',
+                rooms: [{ type: 'Deluxe', count: 1, rate: 100 }],
+            },
+            extraItems: [
+                { description: 'Late checkout', quantity: 1, price: 50, startDate: '2026-11-04' },
+                { description: 'Parking', quantity: 1, price: 40, startDate: '2026-11-05', endDate: '2026-11-07' },
+            ],
+        });
+        expect(invoice.lines.filter((line) => line.kind === 'extra').map((line) => line.date)).toEqual([
+            '2026-11-04',
+            '2026-11-05 – 2026-11-07',
+        ]);
     });
 });

@@ -743,6 +743,43 @@ export default function RequestsManager({
         'total_cost',
     ]);
     const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
+    const resizableListColumns = useMemo(
+        () => new Set(['details', 'requestName', 'account', 'account_type', 'request_segment']),
+        []
+    );
+    const listColumnDefaultWidth: Record<string, number> = useMemo(
+        () => ({
+            details: 148,
+            requestName: 150,
+            account: 168,
+            account_type: 140,
+            request_segment: 140,
+        }),
+        []
+    );
+    const [listColumnWidths, setListColumnWidths] = useState<Record<string, number>>(() => {
+        const defaults = { details: 148, requestName: 150, account: 168, account_type: 140, request_segment: 140 };
+        try {
+            const raw = localStorage.getItem('as.requestList.columnWidths');
+            if (!raw) return defaults;
+            const parsed = JSON.parse(raw) as Record<string, unknown>;
+            const next = { ...defaults };
+            for (const key of Object.keys(defaults)) {
+                const n = Number(parsed[key]);
+                if (Number.isFinite(n)) next[key as keyof typeof next] = Math.round(Math.min(480, Math.max(72, n)));
+            }
+            return next;
+        } catch {
+            return defaults;
+        }
+    });
+    useEffect(() => {
+        try {
+            localStorage.setItem('as.requestList.columnWidths', JSON.stringify(listColumnWidths));
+        } catch {
+            /* ignore quota */
+        }
+    }, [listColumnWidths]);
     /** Per-column visibility for the request list table (options column always shown). Toggled via gear on All Requests and Search. */
     const [listColumnVisible, setListColumnVisible] = useState<Record<string, boolean>>(() => {
         const o: Record<string, boolean> = {};
@@ -831,6 +868,12 @@ export default function RequestsManager({
                 return true;
             }),
         [columnOrder, listColumnVisible, listColumnVisibilityKeys]
+    );
+    const listFlexColumn = useMemo(
+        () =>
+            [...visibleColumnOrder].reverse().find((column) => !resizableListColumns.has(column)) ||
+            visibleColumnOrder[visibleColumnOrder.length - 1],
+        [visibleColumnOrder, resizableListColumns]
     );
     const [expandedLog, setExpandedLog] = useState<number | null>(null);
     const [selectedRequest, setSelectedRequest] = useState<any>(null);
@@ -8292,7 +8335,56 @@ export default function RequestsManager({
         return fin?.grandTotalWithTax || (rawTotal > 0 ? rawTotal : fallbackEventTotal);
     };
 
-    const handleColumnDragStart = (column: string) => {
+    const listColumnWidth = (column: string) =>
+        resizableListColumns.has(column) ? listColumnWidths[column] ?? listColumnDefaultWidth[column] : undefined;
+
+    const listColumnClipStyle = (column: string): React.CSSProperties | undefined => {
+        if (resizableListColumns.has(column)) {
+            const w = listColumnWidth(column);
+            if (!w) return undefined;
+            return { width: w, maxWidth: w };
+        }
+        if (column === listFlexColumn) return undefined;
+        const fixed: Record<string, number> = {
+            options: 100,
+            type: 168,
+            meal: 84,
+            status: 124,
+            dates: 148,
+            stay_info: 80,
+            paid_amount: 140,
+        };
+        const w = fixed[column];
+        return w ? { width: w } : undefined;
+    };
+
+    const startListColumnResize = (column: string, event: React.MouseEvent) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const startX = event.clientX;
+        const startW = listColumnWidth(column) || 140;
+        const move = (ev: MouseEvent) => {
+            const next = Math.round(Math.min(480, Math.max(72, startW + ev.clientX - startX)));
+            setListColumnWidths((prev) => (prev[column] === next ? prev : { ...prev, [column]: next }));
+        };
+        const up = () => {
+            window.removeEventListener('mousemove', move);
+            window.removeEventListener('mouseup', up);
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        };
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        window.addEventListener('mousemove', move);
+        window.addEventListener('mouseup', up);
+    };
+
+    const handleColumnDragStart = (column: string, event?: React.DragEvent) => {
+        const target = event?.target as HTMLElement | undefined;
+        if (target?.closest('[data-col-resize]')) {
+            event?.preventDefault();
+            return;
+        }
         setDraggedColumn(column);
     };
 
@@ -8347,9 +8439,10 @@ export default function RequestsManager({
 
                     return (
                         <td key={column}
-                            className={`${cpy} ${cpx} border-y ${isFirst ? `border-l ${rFirst}` : ''} ${isLast ? `border-r ${rLast}` : ''} ${column === 'total_cost' ? 'text-right' : column === 'dates' ? 'text-left whitespace-nowrap' : column === 'account_type' || column === 'request_segment' || column === 'account' || column === 'requestName' || column === 'details' ? 'text-left' : 'text-center'}`}
+                            className={`${cpy} ${cpx} border-y ${isFirst ? `border-l ${rFirst}` : ''} ${isLast ? `border-r ${rLast}` : ''} ${resizableListColumns.has(column) ? 'overflow-hidden' : ''} ${column === 'total_cost' ? 'text-right' : column === 'dates' ? 'text-left whitespace-nowrap' : column === 'account_type' || column === 'request_segment' || column === 'account' || column === 'requestName' || column === 'details' ? 'text-left' : 'text-center'}`}
                             style={{
                                 ...cellStyle,
+                                ...listColumnClipStyle(column),
                                 borderLeft: isFirst ? `${borderAccent} solid ${getStatusColor(request.status)}` : `1px solid ${colors.border}`,
                                 boxShadow: compact ? '0 2px 8px rgba(0,0,0,0.04)' : '0 4px 12px rgba(0,0,0,0.05)'
                             }}
@@ -8393,18 +8486,20 @@ export default function RequestsManager({
                             )}
 
                             {column === 'details' && (
-                                <div className="flex flex-col gap-0.5">
+                                <div className="flex flex-col gap-0.5 min-w-0 max-w-full overflow-hidden">
                                     <button
                                         onClick={() => { setSelectedRequest(request); }}
-                                        className={`font-black ${compact ? 'text-xs' : 'text-sm'} tracking-tight hover:underline text-left transition-all`}
+                                        className={`font-black ${compact ? 'text-xs' : 'text-sm'} tracking-tight hover:underline text-left transition-all block w-full truncate`}
                                         style={{ color: colors.primary }}
+                                        title={String(request.confirmationNo || '')}
                                     >
                                         {request.confirmationNo}
                                     </button>
                                     <button
                                         onClick={() => { setSelectedRequest(request); }}
-                                        className={`${compact ? 'text-[9px]' : 'text-[10px]'} font-mono opacity-40 hover:opacity-100 text-left w-fit transition-opacity hover:underline`}
+                                        className={`${compact ? 'text-[9px]' : 'text-[10px]'} font-mono opacity-40 hover:opacity-100 text-left w-full truncate transition-opacity hover:underline`}
                                         style={{ color: colors.textMain }}
+                                        title={`#${request.id}`}
                                     >
                                         #{request.id}
                                     </button>
@@ -8412,20 +8507,20 @@ export default function RequestsManager({
                             )}
 
                             {column === 'requestName' && (
-                                 <span className={`${compact ? 'text-xs max-w-[120px]' : 'text-sm max-w-[150px]'} font-bold truncate inline-block`} style={{ color: colors.textMain }} title={request.requestName}>
+                                 <span className={`${compact ? 'text-xs' : 'text-sm'} font-bold truncate block max-w-full`} style={{ color: colors.textMain }} title={request.requestName}>
                                     {request.requestName || 'Unnamed Request'}
                                  </span>
                             )}
 
                             {column === 'account' && (
-                                <div className={`flex items-center ${compact ? 'gap-2' : 'gap-3'}`}>
+                                <div className={`flex items-center min-w-0 max-w-full overflow-hidden ${compact ? 'gap-2' : 'gap-3'}`}>
                                     <div className={`${compact ? 'w-7 h-7 text-[10px]' : 'w-9 h-9 text-xs'} rounded-full flex items-center justify-center font-bold text-white shadow-sm shrink-0`}
                                         style={{ backgroundColor: getAvatarColor(acct || '?') }}>
                                         {getInitials(acct || '? ?')}
                                     </div>
-                                    <div className="flex flex-col min-w-0">
-                                        <span className={`${compact ? 'text-xs' : 'text-sm'} font-bold truncate`} style={{ color: colors.textMain }}>{acct || '-'}</span>
-                                        <span className={`${compact ? 'text-[9px]' : 'text-[10px]'} opacity-50 truncate`} style={{ color: colors.textMain }}>{request.accountType}</span>
+                                    <div className="flex flex-col min-w-0 overflow-hidden">
+                                        <span className={`${compact ? 'text-xs' : 'text-sm'} font-bold truncate`} style={{ color: colors.textMain }} title={acct || '-'}>{acct || '-'}</span>
+                                        <span className={`${compact ? 'text-[9px]' : 'text-[10px]'} opacity-50 truncate`} style={{ color: colors.textMain }} title={request.accountType}>{request.accountType}</span>
                                     </div>
                                 </div>
                             )}
@@ -8435,7 +8530,7 @@ export default function RequestsManager({
                                     const at = accountTypeFromLinkedAccount(request);
                                     return (
                                         <span
-                                            className={`${compact ? 'text-xs' : 'text-sm'} font-medium truncate inline-block max-w-[160px]`}
+                                            className={`${compact ? 'text-xs' : 'text-sm'} font-medium truncate block max-w-full`}
                                             style={{ color: colors.textMain }}
                                             title={at}
                                         >
@@ -8446,7 +8541,7 @@ export default function RequestsManager({
 
                             {column === 'request_segment' && (
                                 <span
-                                    className={`${compact ? 'text-xs' : 'text-sm'} font-medium truncate inline-block max-w-[160px]`}
+                                    className={`${compact ? 'text-xs' : 'text-sm'} font-medium truncate block max-w-full`}
                                     style={{ color: colors.textMain }}
                                     title={requestSegmentListLabel(request)}
                                 >
@@ -8844,18 +8939,39 @@ export default function RequestsManager({
             </div>
 
             <div className={fixedHeight ? `flex-1 overflow-auto ${bodyPad} min-h-0` : bodyPad}>
-                <table className={`w-full text-left border-separate ${spacingY}`}>
+                <table className={`w-full text-left border-separate ${spacingY}`} style={{ tableLayout: 'fixed' }}>
+                    <colgroup>
+                        {visibleColumnOrder.map((column) => (
+                            <col key={column} style={listColumnClipStyle(column)} />
+                        ))}
+                    </colgroup>
                     <thead>
                         <tr>
                             {visibleColumnOrder.map((column) => (
                                 <th key={column}
                                     draggable
-                                    onDragStart={() => handleColumnDragStart(column)}
+                                    onDragStart={(e) => handleColumnDragStart(column, e)}
                                     onDragOver={(e) => e.preventDefault()}
                                     onDrop={() => handleColumnDrop(column)}
-                                    className={`${theadPx} ${theadPy} ${theadText} font-bold uppercase tracking-wider cursor-move opacity-50`}
-                                    style={{ color: colors.textMain }}>
-                                    {columnLabels[column as keyof typeof columnLabels]}
+                                    className={`relative ${theadPx} ${theadPy} ${theadText} font-bold uppercase tracking-wider cursor-move opacity-50 ${resizableListColumns.has(column) ? 'overflow-hidden' : ''}`}
+                                    style={{ color: colors.textMain, ...listColumnClipStyle(column) }}>
+                                    <span className={resizableListColumns.has(column) ? 'block truncate pr-2' : undefined}>
+                                        {columnLabels[column as keyof typeof columnLabels]}
+                                    </span>
+                                    {resizableListColumns.has(column) ? (
+                                        <span
+                                            data-col-resize
+                                            role="separator"
+                                            aria-orientation="vertical"
+                                            aria-label={`Resize ${columnLabels[column] || column}`}
+                                            title="Drag to resize"
+                                            onMouseDown={(e) => startListColumnResize(column, e)}
+                                            onClick={(e) => e.stopPropagation()}
+                                            onDragStart={(e) => e.preventDefault()}
+                                            className="absolute top-0 right-0 h-full w-2 cursor-col-resize opacity-40 hover:opacity-100"
+                                            style={{ background: 'transparent', boxShadow: `inset -2px 0 0 ${colors.border}` }}
+                                        />
+                                    ) : null}
                                 </th>
                             ))}
                         </tr>

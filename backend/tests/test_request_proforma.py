@@ -169,13 +169,15 @@ def test_proforma_issue_unique_and_po(proforma_fixtures):
         headers=headers,
         json={
             "extraItems": [
-                {"id": "xi-1", "description": "Late checkout", "quantity": 2, "price": 50, "vatPercent": 15}
+                {"id": "xi-1", "description": "Late checkout", "quantity": 2, "price": 50, "vatPercent": 15, "startDate": "2026-11-04", "endDate": "2026-11-06"}
             ]
         },
     )
     assert items.status_code == 200, items.text
     assert items.json().get("invoiceNumber") == number
     assert items.json().get("extraItems")[0]["description"] == "Late checkout"
+    assert items.json().get("extraItems")[0]["startDate"] == "2026-11-04"
+    assert items.json().get("extraItems")[0]["endDate"] == "2026-11-06"
 
     reissue2 = client.post(
         f"/api/requests/{fx['req_a']}/proforma/reissue",
@@ -185,6 +187,7 @@ def test_proforma_issue_unique_and_po(proforma_fixtures):
     assert reissue2.status_code == 200, reissue2.text
     assert reissue2.json().get("invoiceNumber") == number
     assert reissue2.json().get("extraItems")[0]["description"] == "Late checkout"
+    assert reissue2.json().get("extraItems")[0]["startDate"] == "2026-11-04"
     assert reissue2.json().get("issuedOn") == "2026-10-02"
 
     foreign = client.post(

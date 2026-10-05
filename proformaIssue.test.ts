@@ -96,7 +96,7 @@ describe('proformaIssue', () => {
                 invoiceNumber: 'A0000001',
                 extraItems: [{ description: ' Parking ', quantity: 2, price: 40, vatPercent: 15 }],
             })?.extraItems
-        ).toEqual([{ id: 'xi-0', description: 'Parking', quantity: 2, price: 40, vatPercent: 15 }]);
+        ).toEqual([{ id: 'xi-0', description: 'Parking', quantity: 2, price: 40, vatPercent: 15, startDate: '', endDate: '' }]);
         expect(normalizeProforma({ invoiceNumber: 'nope' })).toBeNull();
         expect(normalizeProforma(null)).toBeNull();
     });

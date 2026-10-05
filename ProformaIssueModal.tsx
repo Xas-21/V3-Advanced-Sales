@@ -77,7 +77,8 @@ export default function ProformaIssueModal({
                 Extra lines appear on this invoice only. They do not change the request total.
             </p>
             {itemsDraft.map((row) => (
-                <div key={row.id} className="grid grid-cols-12 gap-2 items-end">
+                <div key={row.id} className="space-y-2">
+                <div className="grid grid-cols-12 gap-2 items-end">
                     <label className="col-span-12 sm:col-span-5 text-[10px] font-bold uppercase" style={{ color: colors.textMuted }}>
                         Description
                         <input
@@ -135,6 +136,31 @@ export default function ProformaIssueModal({
                     >
                         Delete
                     </button>
+                </div>
+                <div className="grid grid-cols-12 gap-2">
+                    <label className="col-span-6 sm:col-span-3 text-[10px] font-bold uppercase" style={{ color: colors.textMuted }}>
+                        From
+                        <input
+                            type="date"
+                            value={row.startDate || ''}
+                            onChange={(e) => updateItem(row.id, { startDate: e.target.value })}
+                            className="mt-1 w-full px-2 py-1.5 rounded border outline-none text-sm font-normal"
+                            style={fieldStyle}
+                            disabled={busy}
+                        />
+                    </label>
+                    <label className="col-span-6 sm:col-span-3 text-[10px] font-bold uppercase" style={{ color: colors.textMuted }}>
+                        To
+                        <input
+                            type="date"
+                            value={row.endDate || ''}
+                            onChange={(e) => updateItem(row.id, { endDate: e.target.value })}
+                            className="mt-1 w-full px-2 py-1.5 rounded border outline-none text-sm font-normal"
+                            style={fieldStyle}
+                            disabled={busy}
+                        />
+                    </label>
+                </div>
                 </div>
             ))}
             <div className="flex flex-wrap justify-end gap-2">

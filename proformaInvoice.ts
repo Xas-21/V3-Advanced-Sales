@@ -140,7 +140,7 @@ function roomDate(request: ProformaBag, room: ProformaBag): string {
     return stayRange(text(request.checkIn), text(request.checkOut));
 }
 
-function extraItemLines(extraItems: ProformaBag[] = [], date: string): ProformaLine[] {
+function extraItemLines(extraItems: ProformaBag[] = []): ProformaLine[] {
     const lines: ProformaLine[] = [];
     for (const item of extraItems) {
         const description = text(item?.description);
@@ -149,7 +149,7 @@ function extraItemLines(extraItems: ProformaBag[] = [], date: string): ProformaL
         const amount = money(quantity * price);
         if (!description || amount <= 0) continue;
         lines.push({
-            date,
+            date: transportLineDate(item),
             description,
             quantity,
             price: money(price),
@@ -243,7 +243,7 @@ function buildLines(request: ProformaBag, roomTypeNames: string[] = [], extraIte
             kind: 'transport',
         });
     }
-    lines.push(...extraItemLines(extraItems, stayRange(text(request.checkIn), text(request.checkOut))));
+    lines.push(...extraItemLines(extraItems));
     return lines;
 }
 
