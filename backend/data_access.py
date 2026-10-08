@@ -1770,10 +1770,17 @@ def upsert_account(data: dict) -> dict:
                 },
             )
             # nested children
-            cur.execute("DELETE FROM account_contacts WHERE account_id = %s;", (acc_id,))
-            for idx, c in enumerate(item.get("contacts") or []):
-                if isinstance(c, dict):
-                    _insert_account_contact(cur, acc_id, c, idx=idx)
+            # Upsert then prune: delete-all + reinsert fires fk_requests_booker_contact
+            # ON DELETE SET NULL and wipes the booker on every request of this account.
+            kept_contact_ids = [
+                _insert_account_contact(cur, acc_id, c, idx=idx)
+                for idx, c in enumerate(item.get("contacts") or [])
+                if isinstance(c, dict)
+            ]
+            cur.execute(
+                "DELETE FROM account_contacts WHERE account_id = %s AND NOT (id = ANY(%s::text[]));",
+                (acc_id, kept_contact_ids),
+            )
             cur.execute("DELETE FROM account_activities WHERE account_id = %s;", (acc_id,))
             for idx, a in enumerate(item.get("activities") or []):
                 if isinstance(a, dict):
@@ -1831,6 +1838,7 @@ def _insert_account_contact(cur, account_id: str, c: dict, idx: int = 0):
             idx,
         ),
     )
+    return cid
 
 
 def _insert_account_activity(cur, account_id: str, a: dict, idx: int = 0):

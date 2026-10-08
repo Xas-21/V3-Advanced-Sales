@@ -1223,7 +1223,19 @@ export default function RequestsManager({
     );
     useEffect(() => {
         if (!accForm.accountId) return;
-        if (accForm.bookerContactId || accForm.bookerName) return;
+        const currentId = String(accForm.bookerContactId || '');
+        if (currentId && selectedDraftAccountContacts.some((c: any) => c._id === currentId)) return;
+        const name = String(accForm.bookerName || '').trim().toLowerCase();
+        if (currentId || name) {
+            // Account save re-keys browser ids (C123 -> A1:contact:2:C123); re-link by id suffix or name.
+            const match = selectedDraftAccountContacts.find(
+                (c: any) => (currentId && c._id.endsWith(`:${currentId}`)) || (name && c._label.trim().toLowerCase() === name)
+            );
+            if (match) {
+                setAccForm((prev: any) => ({ ...prev, bookerContactId: match._id, bookerName: match._label }));
+            }
+            return;
+        }
         const first = selectedDraftAccountContacts[0];
         if (!first) return;
         setAccForm((prev: any) => ({
