@@ -1,6 +1,6 @@
 # Plan 040 verification gate.
 # Typecheck: blocking (zero errors required).
-# Lint: blocking ratchet at --max-warnings 2319 (brownfield warn baseline; fail if count rises).
+# Lint: blocking ratchet at --max-warnings 2317 (brownfield warn baseline; fail if count rises).
 # Backend pytest: still reporting-only until fresh-CI schema drift is resolved.
 name: CI
 
@@ -21,7 +21,7 @@ jobs:
       - run: npm ci
       - name: Typecheck
         run: npm run typecheck
-      - name: Lint (warn ratchet — max-warnings 2319)
+      - name: Lint (warn ratchet — max-warnings 2317)
         run: npm run lint
       - run: npm run test:frontend
       - run: npm run build
